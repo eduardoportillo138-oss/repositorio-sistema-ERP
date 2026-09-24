@@ -1,0 +1,14 @@
+{
+  "name": "@erp/constants",
+  "version": "0.1.0",
+  "description": "Constantes compartidas para el ERP",
+  "main": "src/index.ts",
+  "scripts": {
+    "build": "tsc",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
