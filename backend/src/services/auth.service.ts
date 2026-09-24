@@ -1,106 +1,110 @@
-// ============================================
-// Servicio de Autenticación
-// ============================================
+import bcrypt from 'bcryptjs';
+import crypto from 'node:crypto';
+import jwt, { SignOptions } from 'jsonwebtoken';
+import { config } from '../config/env';
+import { AuthenticationError, AuthorizationError, ValidationError } from '../errors/AppError';
+import { Company } from '../models/company.model';
+import { Role } from '../models/role.model';
+import { Session } from '../models/session.model';
+import { IUserDocument } from '../models/user.model';
+import { userRepository } from '../repositories/user.repository';
+import { auditService } from './audit.service';
 
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcrypt';
-import { config } from '../../packages/config/src';
-import { logger } from '../../utils/logger';
-import { AuthenticationError, AppError } from '../../errors/AppError';
-import { IUser } from '../../models/user.model';
+type TokenClaims = jwt.JwtPayload & { userId: string; companyId: string; roleId: string };
 
-export const authService = {
-  async authenticate(email: string, password: string, companyId?: string) {
-    // TODO: Implementar con repositorio de usuarios
-    const user = await findUserByEmail(email, companyId);
+const tokenHash = (token: string) => crypto.createHash('sha256').update(token).digest('hex');
 
-    if (!user) {
-      logger.warn('Intento de login con email no registrado', { email });
-      throw new AuthenticationError('Credenciales inválidas');
-    }
+function secrets(): void {
+  if (!config.jwtSecret || !config.jwtRefreshSecret) {
+    throw new Error('Configure JWT_SECRET y JWT_REFRESH_SECRET');
+  }
+}
 
-    const isValid = await bcrypt.compare(password, user.passwordHash);
-    if (!isValid) {
-      logger.warn('Contraseña incorrecta', { userId: user.userId });
-      throw new AuthenticationError('Credenciales inválidas');
-    }
+async function resolveIdentity(user: IUserDocument) {
+  const companyId = String(user.companyId);
+  const role = await Role.findOne({ _id: user.roleId, companyId, status: 'active' }).exec();
+  const company = await Company.findOne({ _id: companyId, status: 'active' }).exec();
+  if (!role || !company || user.status !== 'active') {
+    throw new AuthorizationError('Cuenta, empresa o rol inactivo');
+  }
+  return { role, companyId };
+}
 
-    if (user.status !== 'active') {
-      logger.warn('Intento de login con usuario inactivo', { userId: user.userId });
-      throw new AppError('USER_INACTIVE', 'Usuario inactivo', 403);
-    }
-
-    const tokens = generateTokens(user);
-
-    // Actualizar último login
-    await updateLastLogin(user.userId);
-
-    logger.info('Autenticación exitosa', { userId: user.userId, companyId: user.companyId });
-
-    return tokens;
-  },
-
-  async refreshToken(refreshToken: string) {
-    try {
-      const decoded = jwt.verify(refreshToken, config.jwtRefreshSecret) as { userId: string };
-      const user = await findUserById(decoded.userId);
-
-      if (!user || user.status !== 'active') {
-        throw new AuthenticationError('Usuario no válido');
-      }
-
-      return generateAccessToken(user);
-    } catch (error) {
-      if (error instanceof jwt.TokenExpiredError) {
-        throw new AppError('TOKEN_EXPIRED', 'Refresh token expirado', 401);
-      }
-      throw new AuthenticationError('Refresh token inválido');
-    }
-  },
-
-  async invalidateRefreshToken(userId: string) {
-    // TODO: Implementar con Redis o repositorio
-    logger.info('Refresh token invalidado', { userId });
-  },
-};
-
-function generateTokens(user: IUser) {
-  const payload = {
-    userId: user.userId,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    companyId: user.companyId,
-    permissions: user.permissions,
-  };
-
-  const accessToken = jwt.sign(payload, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn,
+async function issueTokens(user: IUserDocument) {
+  secrets();
+  const payload = { userId: String(user._id), companyId: String(user.companyId), roleId: String(user.roleId) };
+  const accessToken = jwt.sign(payload, config.jwtSecret, { expiresIn: config.jwtExpiresIn as SignOptions['expiresIn'] });
+  const refreshToken = jwt.sign({ ...payload, jti: crypto.randomUUID() }, config.jwtRefreshSecret, {
+    expiresIn: config.jwtRefreshExpiresIn as SignOptions['expiresIn'],
   });
-
-  const refreshToken = jwt.sign({ userId: user.userId }, config.jwtRefreshSecret, {
-    expiresIn: config.jwtRefreshExpiresIn,
+  const decoded = jwt.decode(refreshToken) as jwt.JwtPayload;
+  if (!decoded.exp) throw new Error('Refresh token sin expiración');
+  await Session.create({
+    tokenHash: tokenHash(refreshToken), userId: user._id, companyId: user.companyId,
+    expiresAt: new Date(decoded.exp * 1000),
   });
-
   return { accessToken, refreshToken };
 }
 
-function generateAccessToken(user: IUser): string {
-  const payload = {
-    userId: user.userId,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    companyId: user.companyId,
-    permissions: user.permissions,
-  };
-
-  return jwt.sign(payload, config.jwtSecret, {
-    expiresIn: config.jwtExpiresIn,
-  });
+function verifyRefresh(token: string): TokenClaims {
+  secrets();
+  try {
+    const claims = jwt.verify(token, config.jwtRefreshSecret) as TokenClaims;
+    if (!claims.userId || !claims.companyId || !claims.roleId) throw new AuthenticationError('Refresh token inválido');
+    return claims;
+  } catch (error) {
+    if (error instanceof jwt.TokenExpiredError) throw new AuthenticationError('Refresh token expirado');
+    if (error instanceof jwt.JsonWebTokenError) throw new AuthenticationError('Refresh token inválido');
+    throw error;
+  }
 }
 
-// Stubs - a implementar
-async function findUserByEmail(email: string, companyId?: string): Promise<IUser | null> { return null; }
-async function findUserById(userId: string): Promise<IUser | null> { return null; }
-async function updateLastLogin(userId: string): Promise<void> {}
+export const authService = {
+  async authenticate(email: string, password: string, companyId?: string, ip = '', device = '') {
+    if (typeof email !== 'string' || typeof password !== 'string') throw new ValidationError('Email y contraseña obligatorios');
+    const user = await userRepository.findByEmail(email, companyId);
+    if (!user || user.status !== 'active' || !(await bcrypt.compare(password, user.passwordHash))) {
+      throw new AuthenticationError('Credenciales inválidas');
+    }
+    const { role } = await resolveIdentity(user);
+    const tokens = await issueTokens(user);
+    await userRepository.updateLastLogin(String(user._id), String(user.companyId));
+    await auditService.log({
+      userId: String(user._id), companyId: String(user.companyId), module: 'auth', action: 'login',
+      entity: 'session', entityId: String(user._id), ip, device,
+    });
+    return {
+      ...tokens,
+      user: {
+        id: String(user._id), email: user.email, name: user.name, companyId: String(user.companyId),
+        roleId: String(user.roleId), permissions: role.permissions,
+      },
+    };
+  },
+
+  async refreshToken(token: string) {
+    if (typeof token !== 'string' || !token) throw new ValidationError('Refresh token obligatorio');
+    const claims = verifyRefresh(token);
+    const session = await Session.findOneAndUpdate({
+      tokenHash: tokenHash(token), userId: claims.userId, companyId: claims.companyId,
+      revokedAt: { $exists: false }, expiresAt: { $gt: new Date() },
+    }, { $set: { revokedAt: new Date() } }, { new: true }).exec();
+    if (!session) throw new AuthenticationError('Sesión revocada o expirada');
+    const user = await userRepository.findById(claims.userId, claims.companyId);
+    if (!user || String(user.roleId) !== claims.roleId) throw new AuthenticationError('Usuario no válido');
+    await resolveIdentity(user);
+    return issueTokens(user);
+  },
+
+  async invalidateRefreshToken(token: string, userId: string, companyId: string, ip = '', device = '') {
+    if (typeof token !== 'string' || !token) throw new ValidationError('Refresh token obligatorio');
+    const result = await Session.findOneAndUpdate({
+      tokenHash: tokenHash(token), userId, companyId, revokedAt: { $exists: false },
+    }, { $set: { revokedAt: new Date() } }, { new: true }).exec();
+    if (!result) throw new AuthenticationError('Sesión no encontrada');
+    await auditService.log({
+      userId, companyId, module: 'auth', action: 'logout', entity: 'session',
+      entityId: String(result._id), ip, device,
+    });
+  },
+};

@@ -99,7 +99,7 @@ class ApiClient {
 
   private handleError(error: AxiosError): Error {
     if (error.response?.data) {
-      const { code, message } = error.response.data;
+      const { code, message } = error.response.data as { code?: string; message?: string };
       return new Error(message || code || 'Error desconocido');
     }
     return new Error(error.message || 'Error de conexión');

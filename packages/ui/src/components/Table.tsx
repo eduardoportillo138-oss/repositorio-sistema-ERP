@@ -3,13 +3,13 @@
 // ============================================
 
 import React from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, DimensionValue } from 'react-native';
 
 export interface TableColumn<T> {
   key: string;
   header: string;
   render?: (item: T) => React.ReactNode;
-  width?: string;
+  width?: DimensionValue;
 }
 
 interface TableProps<T> {
@@ -38,9 +38,11 @@ export function Table<T>({ data, columns, keyExtractor, onRowPress, loading }: T
   }
 
   const renderRow = (item: T) => (
-    <View
-      style={[styles.row, onRowPress && styles.rowPressable]}
+    <TouchableOpacity
+      style={styles.row}
       onPress={() => onRowPress?.(item)}
+      disabled={!onRowPress}
+      activeOpacity={0.7}
     >
       {columns.map((column) => (
         <View key={column.key} style={[styles.cell, { width: column.width }]}>
@@ -51,7 +53,7 @@ export function Table<T>({ data, columns, keyExtractor, onRowPress, loading }: T
           )}
         </View>
       ))}
-    </View>
+    </TouchableOpacity>
   );
 
   return (
@@ -95,9 +97,6 @@ const styles = StyleSheet.create({
     borderBottomColor: '#EEEEEE',
     paddingVertical: 12,
     paddingHorizontal: 8,
-  },
-  rowPressable: {
-    activeOpacity: 0.7,
   },
   cell: {
     flex: 1,

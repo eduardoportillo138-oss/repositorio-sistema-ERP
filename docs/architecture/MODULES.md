@@ -1,106 +1,17 @@
-# Estructura de Módulos del ERP
+# Estado de módulos del ERP
 
-## Resumen de Implementación
+Actualizado: 2026-09-24. Esta tabla registra funcionalidad verificada, no la presencia de archivos.
 
-| Módulo | Modelos | Controladores | Servicios | Rutas | Tests | Estado |
-|--------|---------|---------------|-----------|-------|-------|--------|
-| Auth | User | Auth | AuthService | auth.routes | ✅ | COMPLETO |
-| Users | User | User | - | user.routes | ✅ | COMPLETO |
-| Roles | Role | - | - | - | ✅ | COMPLETO |
-| Companies | Company | Company | - | company.module | ✅ | COMPLETO |
-| Branches | Branch | - | - | - | ✅ | COMPLETO |
-| Customers | Customer | Customer | - | customer.module | ✅ | COMPLETO |
-| Suppliers | Supplier | Supplier | - | supplier.module | ✅ | COMPLETO |
-| Products | Product | Product | - | product.module | ✅ | COMPLETO |
-| Categories | Category | Category | - | categories.module | ✅ | COMPLETO |
-| Units | Unit | - | - | - | ✅ | COMPLETO |
-| Warehouses | Warehouse | Warehouse | - | warehouses.module | ✅ | COMPLETO |
-| Inventory | InventoryMovement | Inventory | AuditService | inventory.module | ✅ | COMPLETO |
-| Sales | SalesOrder | Sale | - | sales.module | ✅ | COMPLETO |
-| Purchases | PurchaseOrder | Purchase | - | purchase.module | ✅ | COMPLETO |
-| Finance | Invoice, Payment, AR, AP | Finance | - | finance.module | ✅ | COMPLETO |
-| HR | Employee | HR | - | hr.module | ✅ | COMPLETO |
-| Projects | Project | Project | - | project.module | ✅ | COMPLETO |
-| Audit | AuditLog | - | AuditService | - | ✅ | COMPLETO |
-| Notifications | Notification | - | - | - | ✅ | COMPLETO |
-| Settings | SystemSetting | - | - | - | ✅ | COMPLETO |
-| Reports | - | Report | - | report.module | ✅ | COMPLETO |
-| Dashboard | - | Report | - | report.module | ✅ | COMPLETO |
-| CRM | Lead (pendiente) | - | - | - | ⏳ | PENDIENTE |
-| Facturación | Invoice | - | - | finance.module | ✅ | COMPLETO |
+| Módulo | Estado | Nota |
+| --- | --- | --- |
+| Auth | IN_TESTING | Login, refresh, logout y sesiones; sin prueba MongoDB real. |
+| Users | IN_TESTING | CRUD y aislamiento por empresa; pruebas con mocks. |
+| Roles / Permissions | IN_TESTING | CRUD y catálogo de permisos; falta migración de datos. |
+| Companies / Branches | IN_TESTING | CRUD empresarial; falta prueba MongoDB real. |
+| Audit | IN_TESTING | Eventos del núcleo; escritura de mejor esfuerzo. |
+| Customers / Suppliers / Categories / Products / Warehouses | CORRECTION_REQUIRED | Persistencia, validación y alcance empresarial por corregir. |
+| Inventory / Sales / Purchases / Finance | CORRECTION_REQUIRED | Reglas y flujos por implementar/verificar. |
+| HR / Projects / Reports / CRM | PLANNED | Sin funcionalidad verificada. |
+| Web / Mobile | IN_PROGRESS | Estructura parcial; TypeScript falla. |
 
-## Paquetes Compartidos
-
-| Paquete | Archivos | Propósito |
-|---------|----------|-----------|
-| @erp/types | types/src/index.ts | Tipos TypeScript compartidos |
-| @erp/ui | ui/src/components/ | 13 componentes UI |
-| @erp/api-client | api-client/src/index.ts | Cliente API con interceptores |
-| @erp/validation | validation/src/index.ts | Validadores compartidos |
-| @erp/constants | constants/src/index.ts | Constantes del sistema |
-| @erp/config | config/src/index.ts | Configuración de entorno |
-
-## Frontend Web
-
-| Componente | Archivo | Propósito |
-|------------|---------|-----------|
-| LoginScreen | src/screens/LoginScreen.tsx | Autenticación |
-| DashboardScreen | src/screens/DashboardScreen.tsx | Dashboard principal |
-| UsersScreen | src/screens/UsersScreen.tsx | Gestión de usuarios |
-| ProductsScreen | src/screens/ProductsScreen.tsx | Lista de productos |
-| AppNavigator | src/navigation/AppNavigator.tsx | Navegación principal |
-| AuthContext | src/context/AuthContext.tsx | Estado de autenticación |
-| Theme | src/theme/index.ts | Colores y estilos |
-| GlobalStyles | src/styles/global.ts | Estilos globales |
-| Endpoints | src/api/endpoints.ts | Endpoints API |
-
-## Frontend Mobile
-
-| Componente | Archivo | Propósito |
-|------------|---------|-----------|
-| LoginScreen | src/screens/LoginScreen.tsx | Autenticación |
-| DashboardScreen | src/screens/DashboardScreen.tsx | Dashboard |
-| ProductsScreen | src/screens/ProductsScreen.tsx | Productos |
-| SalesScreen | src/screens/SalesScreen.tsx | Ventas |
-| InventoryScreen | src/screens/InventoryScreen.tsx | Inventario |
-| NotificationsScreen | src/screens/NotificationsScreen.tsx | Notificaciones |
-| AppNavigator | src/navigation/AppNavigator.tsx | Navegación |
-| StatCard | src/components/StatCard.tsx | Tarjeta de estadísticas |
-| useApi | src/hooks/useApi.ts | Hook para API |
-| mobileApiClient | src/api/client.ts | Cliente API móvil |
-
-## Modelos de Base de Datos (20+)
-
-- User, Role, Permission
-- Company, Branch, Warehouse
-- Customer, Supplier
-- Product, Category, Unit
-- InventoryMovement
-- SalesOrder, SalesOrderItem, Quote
-- PurchaseOrder, PurchaseOrderItem
-- Invoice, Payment
-- AccountsReceivable, AccountsPayable
-- Employee, Project, Task
-- Notification, AuditLog, SystemSetting
-
-## Middlewares
-
-- auth.ts (autenticación JWT, RBAC, rate limiting)
-- validators.ts (validación de entrada, sanitización)
-- errorHandler.ts (manejo centralizado de errores)
-- audit.ts (auditoría de acciones)
-
-## Seguridad Implementada
-
-- JWT con access + refresh tokens
-- bcrypt hash de contraseñas (12 rounds)
-- RBAC basado en permisos granulares
-- Rate limiting
-- Helmet + CORS
-- Validación y sanitización de entrada
-- Multiempresa con companyId
-- Eliminación lógica de registros
-- Auditoría completa de acciones críticas
-- Control de concurrencia en inventario
-- HTTPS en producción
-- Variables de entorno para secretos
+Las rutas heredadas de negocio responden 501 tras autenticación. Ningún módulo está QA_APPROVED. Véanse [DEVELOPMENT-STATUS.md](../DEVELOPMENT-STATUS.md) y [NEXT-STEPS.md](../NEXT-STEPS.md).

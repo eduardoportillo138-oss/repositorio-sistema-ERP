@@ -3,12 +3,12 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IQuote extends BaseDocument {
-  customerId: string;
+  customerId: mongoose.Types.ObjectId;
   items: Array<{
-    productId: string;
+    productId: mongoose.Types.ObjectId;
     name: string;
     quantity: number;
     unitPrice: number;

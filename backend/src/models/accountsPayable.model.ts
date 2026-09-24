@@ -3,12 +3,12 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IAccountsPayable extends BaseDocument {
-  purchaseOrderId: string;
-  supplierId: string;
-  invoiceId?: string;
+  purchaseOrderId: mongoose.Types.ObjectId;
+  supplierId: mongoose.Types.ObjectId;
+  invoiceId?: mongoose.Types.ObjectId;
   amount: number;
   paidAmount: number;
   balance: number;

@@ -6,7 +6,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Modal } from './Modal';
 
-interface ConfirmationDialogProps {
+export interface ConfirmationDialogProps {
   visible: boolean;
   title: string;
   message: string;
@@ -34,7 +34,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
         <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onCancel}>
           <Text style={styles.cancelText}>{cancelText}</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, styles.confirmButton]} onPress={onConfirm}>
+        <TouchableOpacity style={[styles.button, variant === 'danger' ? styles.confirmButton : styles.primaryButton]} onPress={onConfirm}>
           <Text style={styles.confirmText}>{confirmText}</Text>
         </TouchableOpacity>
       </View>
@@ -70,6 +70,9 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     backgroundColor: '#DC3545',
+  },
+  primaryButton: {
+    backgroundColor: '#0066CC',
   },
   confirmText: {
     color: '#FFFFFF',

@@ -3,8 +3,8 @@
 // ============================================
 
 import mongoose, { Model, Document, FilterQuery, UpdateQuery } from 'mongoose';
-import { BaseDocument } from '../../packages/types/src';
-import { PaginationQuery } from '../../packages/types/src';
+import { BaseDocument } from '../../../packages/types/dist';
+import { PaginationQuery } from '../../../packages/types/dist';
 
 export interface PaginationResult<T> {
   data: T[];

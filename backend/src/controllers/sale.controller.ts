@@ -3,8 +3,8 @@
 // ============================================
 
 import { Request, Response } from 'express';
-import { logger } from '../../utils/logger';
-import { AppError, InventoryInsufficientError } from '../../errors/AppError';
+import { logger } from '../utils/logger';
+import { AppError, InventoryInsufficientError } from '../errors/AppError';
 
 export async function getSales(req: Request, res: Response): Promise<void> {
   try {

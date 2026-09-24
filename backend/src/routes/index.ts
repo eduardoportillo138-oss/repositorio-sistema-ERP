@@ -5,17 +5,10 @@
 import { Application } from 'express';
 import { authRoutes } from './auth.routes';
 import { userRoutes } from './user.routes';
+import { roleRoutes } from './role.routes';
+import { branchRoutes } from './branch.routes';
 import { companiesRouter } from '../modules/companies/company.module';
-import { customersRouter } from '../modules/customers/customer.module';
-import { suppliersRouter } from '../modules/suppliers/supplier.module';
-import { productsRouter } from '../modules/products/product.module';
-import { categoriesRouter } from '../modules/categories/categories.module';
-import { inventoryRouter } from '../modules/inventory/inventory.module';
-import { warehousesRouter } from '../modules/warehouses/warehouses.module';
-import { salesRouter } from '../modules/sales/sales.module';
-import { purchasesRouter } from '../modules/purchases/purchase.module';
-import { financeRouter } from '../modules/finance/finance.module';
-import { reportRouter } from '../modules/reports/report.module';
+import { authenticateToken } from '../middlewares/auth';
 
 export function setupRoutes(app: Application): void {
   // Health Check
@@ -30,15 +23,15 @@ export function setupRoutes(app: Application): void {
   // API v1
   app.use('/api/v1/auth', authRoutes);
   app.use('/api/v1/users', userRoutes);
+  app.use('/api/v1/roles', roleRoutes);
+  app.use('/api/v1/branches', branchRoutes);
   app.use('/api/v1/companies', companiesRouter);
-  app.use('/api/v1/customers', customersRouter);
-  app.use('/api/v1/suppliers', suppliersRouter);
-  app.use('/api/v1/products', productsRouter);
-  app.use('/api/v1/categories', categoriesRouter);
-  app.use('/api/v1/inventory', inventoryRouter);
-  app.use('/api/v1/warehouses', warehousesRouter);
-  app.use('/api/v1/sales', salesRouter);
-  app.use('/api/v1/purchases', purchasesRouter);
-  app.use('/api/v1/finance', financeRouter);
-  app.use('/api/v1/reports', reportRouter);
+  // Los módulos heredados aún contienen controladores placeholder. No se anuncia éxito ficticio.
+  app.use([
+    '/api/v1/customers', '/api/v1/suppliers', '/api/v1/products', '/api/v1/categories',
+    '/api/v1/inventory', '/api/v1/warehouses', '/api/v1/sales', '/api/v1/purchases',
+    '/api/v1/finance', '/api/v1/reports',
+  ], authenticateToken, (_req, res) => {
+    res.status(501).json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Módulo en corrección' } });
+  });
 }

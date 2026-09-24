@@ -3,9 +3,10 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IBranch extends BaseDocument {
+  companyId: mongoose.Types.ObjectId;
   name: string;
   code: string;
   address: string;
@@ -21,6 +22,7 @@ export interface IBranchDocument extends IBranch, Document {}
 
 const branchSchema = new Schema<IBranchDocument>(
   {
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     name: {
       type: String,
       required: [true, 'El nombre de la sucursal es obligatorio'],

@@ -1,158 +1,139 @@
-# ERP Empresarial - Documentación Principal
+# ERP Empresarial
 
-## Descripción
+## Descripción y estado actual
 
-Sistema ERP empresarial modular, escalable, seguro y preparado para crecimiento. Construido con React Native, Node.js, Express y MongoDB Atlas.
+Monorepo TypeScript de un ERP con API Express/Mongoose y clientes React Native en desarrollo. El núcleo está en **hardening**. Auth, Users, Roles, Companies y Branches cuentan con operaciones reales, pero requieren pruebas de integración con MongoDB de prueba y migración de datos históricos antes de aprobarse.
+
+Los módulos heredados contienen controladores placeholder. Sus rutas responden **501 NOT_IMPLEMENTED** después de autenticación para evitar éxitos ficticios. Ningún módulo tiene estado QA_APPROVED.
+
+| Módulo | Estado | Límite actual |
+| --- | --- | --- |
+| Core Infrastructure | IN_PROGRESS | Compila; faltan validación de despliegue y conexión MongoDB real. |
+| Auth | IN_TESTING | Login, JWT, refresh rotatorio y logout con sesiones MongoDB. |
+| Users | IN_TESTING | CRUD, RBAC, alcance por empresa, desactivación y auditoría. |
+| Roles / Permissions | IN_TESTING | Gestión de roles y catálogo compartido de permisos. |
+| Companies / Branches | IN_TESTING | Gestión con filtros empresariales; faltan pruebas con MongoDB. |
+| Customers / Suppliers / Categories / Products / Warehouses | CORRECTION_REQUIRED | Modelos y controladores heredados sin CRUD verificado; faltan campos de empresa en catálogos. |
+| Inventory / Sales / Purchases / Finance | CORRECTION_REQUIRED | Reglas y controladores incompletos. |
+| Reports / HR / Projects / CRM | PLANNED | Sin implementación verificada para producción. |
+| Web / Mobile | IN_PROGRESS | Estructuras parciales; ejecución Expo/native no verificada. |
 
 ## Arquitectura
 
-```
-ERP/
-├── apps/
-│   ├── mobile/     # React Native (Android/iOS)
-│   └── web/        # React Native Web
-├── backend/         # Node.js + Express + TypeScript
-├── packages/        # Paquetes compartidos
-│   ├── types/       # Tipos TypeScript
-│   ├── ui/          # Componentes UI
-│   ├── api-client/  # Cliente API
-│   ├── validation/  # Validadores
-│   ├── constants/   # Constantes
-│   └── config/      # Configuraciones
-├── native/          # Kotlin (Android nativo)
-├── docs/            # Documentación completa
-└── tests/           # Pruebas unitarias, integración, E2E
+```text
+React Native / React Native Web (en desarrollo)
+                    ↓
+             REST API /api/v1
+                    ↓
+             Express routes
+                    ↓
+        Controllers / Services
+                    ↓
+              Repositories
+                    ↓
+                Mongoose
+                    ↓
+          MongoDB local o Atlas
 ```
 
-## Stack Tecnológico
+`backend/src/app.ts` crea Express sin abrir puerto ni conectar MongoDB. `backend/src/server.ts` valida configuración, conecta la base e inicia el listener. Esto permite pruebas HTTP con Supertest sin tocar una base productiva.
 
-- **Frontend**: React Native + React Native Web + TypeScript
-- **Backend**: Node.js + Express + TypeScript
-- **Base de Datos**: MongoDB Atlas + Mongoose
-- **API**: REST versionada en `/api/v1/`
-- **Auth**: JWT + bcrypt + RBAC
-- **Testing**: Jest + Supertest + React Native Testing Library + Playwright
+## Tecnologías y estructura
 
-## Requisitos
+Node.js, TypeScript, Express, MongoDB, Mongoose, bcrypt, JWT, Jest, Supertest, React Native y React Native Web.
 
-- Node.js >= 18
-- npm >= 9
-- MongoDB Atlas (o MongoDB local)
-- Git
-
-## Instalación
-
-1. Clonar el repositorio:
-```bash
-git clone <repo-url> ERP
-cd ERP
+```text
+apps/mobile/           cliente móvil en desarrollo
+apps/web/              cliente web en desarrollo
+backend/src/           API, modelos, servicios y repositorios
+backend/tests/         pruebas unitarias y HTTP
+packages/types/        tipos y catálogo de permisos
+packages/constants/    constantes compartidas
+packages/validation/   validadores compartidos heredados
+packages/api-client/   cliente API
+packages/ui/           componentes UI
+packages/config/       configuración compartida heredada
+native/                base para integración Android
+docs/                  estado y decisiones
 ```
 
-2. Instalar dependencias:
+## Configuración de entorno
+
+Actualmente `.env` funciona como plantilla de configuración del proyecto. No debe contener credenciales reales. En una fase posterior deberá migrarse a `.env.example` y mantenerse `.env` real fuera de Git.
+
+Para ejecutar localmente, proporciona valores reales mediante variables de entorno o modifica tu copia local de `.env` **sin incluir esos cambios en ningún commit**. En producción son obligatorios `MONGODB_URI`, `JWT_SECRET` y `JWT_REFRESH_SECRET`; los secretos JWT deben tener al menos 32 caracteres y no pueden ser los ejemplos.
+
+Formato de URI de Atlas, sin credenciales reales:
+
+```dotenv
+MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@cluster.example.mongodb.net/erp
+MONGODB_DB_NAME=erp_dev
+JWT_SECRET=change_me_in_local_env
+JWT_REFRESH_SECRET=change_me_in_local_env
+```
+
+El servidor usa un pool MongoDB de 0 a 10 conexiones. No se ha verificado una conexión a Atlas en esta ejecución.
+
+## Instalación y desarrollo
+
+Requisitos: Node.js 18+, npm 9+ y MongoDB de desarrollo. Desde la raíz:
+
 ```bash
 npm install
+npm run build
+npm run dev
 ```
 
-3. Configurar variables de entorno:
-```bash
-cp .env.example .env
-```
+`npm run dev` y `npm run backend:dev` inician el backend. La API escucha en `PORT` (3000 por defecto). `GET /health` comprueba Express, no la base de datos.
 
-4. Editar `.env` con credenciales de MongoDB Atlas
+Para crear la primera cuenta en una base de **desarrollo**, configura `MONGODB_URI`, `SEED_ADMIN_EMAIL` y una `SEED_ADMIN_PASSWORD` propia de al menos 12 caracteres; después ejecuta `npm run db:seed -w backend`. El seed no trae credenciales fijas y Mongoose aplica el hash al guardar el usuario. No se probó contra MongoDB en esta ejecución.
 
-5. Ejecutar seed (opcional):
-```bash
-npm run db:seed
-```
+`npm run web:dev` y `npm run mobile:android` están definidos, pero sus clientes aún no tienen una configuración Expo/native verificada; no se consideran comandos listos para uso.
 
-6. Iniciar backend:
-```bash
-npm run dev:backend
-# o
-cd backend && npm run dev
-```
+| Script raíz | Función |
+| --- | --- |
+| `npm run build` | Compila los paquetes compartidos y backend. |
+| `npm run lint` | Ejecuta ESLint sobre TypeScript/TSX. |
+| `npm run test` | Ejecuta Jest. |
+| `npm run test:unit` | Pruebas unitarias. |
+| `npm run test:integration` | Pruebas HTTP. |
 
-7. Iniciar web:
-```bash
-cd apps/web && npm run dev
-```
+Los resultados de verificación están en `docs/DEVELOPMENT-STATUS.md`. El build raíz no compila web/mobile. El lint termina con 0 errores y 235 advertencias heredadas; las 27 pruebas pasan con persistencia simulada.
 
-8. Iniciar mobile:
-```bash
-cd apps/mobile && npm run android
-```
+## API
 
-## Scripts Disponibles
+Base: `/api/v1`. Los listados devuelven `{success, data: [], pagination: {page, limit, total, pages}}`. Los IDs son ObjectId de MongoDB.
 
-Desde la raíz:
-- `npm run build` - Compilar todo
-- `npm run dev` - Iniciar backend en modo desarrollo
-- `npm run test` - Ejecutar todas las pruebas
-- `npm run test:unit` - Solo tests unitarios
-- `npm run test:integration` - Solo tests de integración
-- `npm run lint` - Ejecutar ESLint
-- `npm run lint:fix` - Corregir ESLint
-- `npm run format` - Formatear con Prettier
+| Recurso | Rutas implementadas |
+| --- | --- |
+| Auth | `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout` |
+| Users | `GET /users`, `GET /users/:id`, `POST /users`, `PUT/PATCH /users/:id`, `PATCH /users/:id/deactivate` |
+| Roles | `GET /roles`, `GET /roles/:id`, `POST /roles`, `PUT/PATCH /roles/:id`, `PATCH /roles/:id/deactivate` |
+| Companies | `GET /companies`, `GET /companies/:id`, `POST /companies`, `PUT/PATCH /companies/:id`, `PATCH /companies/:id/deactivate` |
+| Branches | `GET /branches`, `GET /branches/:id`, `POST /branches`, `PUT/PATCH /branches/:id`, `PATCH /branches/:id/deactivate` |
 
-Desde backend:
-- `npm run build` - Compilar TypeScript
-- `npm run dev` - Modo desarrollo con ts-node-dev
-- `npm run start` - Producción
-- `npm run test` - Tests
-- `npm run db:seed` - Seed de desarrollo
-
-## Variables de Entorno
-
-Ver `.env.example` para todas las variables necesarias.
-
-**NUNCA** subas credenciales reales al repositorio.
-
-## Estructura de Módulos Backend
-
-| Módulo | Ruta API | Descripción |
-|--------|----------|-------------|
-| Auth | /api/v1/auth | Autenticación |
-| Users | /api/v1/users | Gestión de usuarios |
-| Companies | /api/v1/companies | Empresas |
-| Customers | /api/v1/customers | Clientes |
-| Suppliers | /api/v1/suppliers | Proveedores |
-| Products | /api/v1/products | Productos |
-| Inventory | /api/v1/inventory | Inventario |
-| Sales | /api/v1/sales | Ventas |
-| Purchases | /api/v1/purchases | Compras |
-| Finance | /api/v1/finance | Finanzas |
-| Reports | /api/v1/reports | Reportes |
-| HR | /api/v1/hr | Recursos Humanos |
-| Projects | /api/v1/projects | Proyectos |
-| Audit | /api/v1/audit | Auditoría |
+Las rutas de módulos heredados devuelven 501 hasta su revisión.
 
 ## Seguridad
 
-- JWT con access + refresh tokens
-- bcrypt para hash de contraseñas
-- RBAC completo
-- Rate limiting
-- Helmet + CORS
-- Validación de entrada en backend
-- Auditoría de acciones
-- Multiempresa con companyId
-- Eliminación lógica de registros
+El access token incluye solo `userId`, `companyId` y `roleId`. Cada solicitud autenticada vuelve a consultar usuario, rol y empresa activos; los permisos provienen del rol vigente. Los refresh tokens se guardan como hash SHA-256 en una colección de sesiones, se rotan y se revocan al cerrar sesión. El modelo User hashea la contraseña al guardar; la API no devuelve `passwordHash`.
 
-## Estado de Desarrollo
+Las consultas del núcleo usan el `companyId` del usuario autenticado. Crear empresas requiere `platform.company.create`, reservado a una cuenta de plataforma aprovisionada fuera de la API pública. La auditoría redacta valores sensibles. Su escritura es de mejor esfuerzo: una falla del registro no revierte la operación de negocio.
 
-Ver `docs/DEVELOPMENT-STATUS.md` para el estado actual de cada módulo.
+**Migración pendiente:** instalaciones existentes pueden tener índices globales de email y documentos Role/Branch sin `companyId`. Deben migrarse antes de usar este código con datos históricos.
 
-## Documentación
+## Testing
 
-- `docs/architecture/ARCHITECTURE.md` - Arquitectura del sistema
-- `docs/architecture/API.md` - Documentación de API
-- `docs/architecture/DECISIONS.md` - Decisiones arquitectónicas (ADR)
-- `docs/requirements/REQUIREMENTS.md` - Requisitos funcionales
-- `docs/database/DATABASE.md` - Modelo de datos
-- `docs/security/SECURITY.md` - Política de seguridad
-- `docs/qa/QA-STRATEGY.md` - Estrategia de QA
-- `docs/NEXT-STEPS.md` - Próximos pasos de desarrollo
+```bash
+npm run test
+npm run test:unit
+npm run test:integration
+```
 
-## Licencia
+Las pruebas del núcleo usan mocks para evitar una base productiva. Cubren validación, login, refresh/logout y filtros empresariales. Falta una suite con MongoDB de prueba para CRUD completo, índices, migración y aislamiento de Customers, Products y Warehouses.
 
-Propiedad de la empresa. Todos los derechos reservados.
+## Roadmap
+
+Core Hardening → Master Data → Inventory → Sales → Purchases → Finance → Dashboard & Reports → HR / Projects / CRM → Mobile & Native Integrations.
+
+Consulta [estado de desarrollo](docs/DEVELOPMENT-STATUS.md) y [próximos pasos](docs/NEXT-STEPS.md).

@@ -3,7 +3,7 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface ISupplier extends BaseDocument {
   name: string;

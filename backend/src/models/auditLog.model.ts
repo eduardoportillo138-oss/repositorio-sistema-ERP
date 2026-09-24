@@ -3,7 +3,7 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IAuditLog extends BaseDocument {
   userId: string;
@@ -74,7 +74,6 @@ const auditLogSchema = new Schema<IAuditLogDocument>(
       type: Date,
       required: [true, 'La fecha es obligatoria'],
       default: Date.now,
-      index: true,
     },
   },
   {

@@ -3,14 +3,14 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IProduct extends BaseDocument {
   code: string;
   name: string;
   description?: string;
-  categoryId: string;
-  unitId: string;
+  categoryId: mongoose.Types.ObjectId;
+  unitId: mongoose.Types.ObjectId;
   unitPrice: number;
   costPrice?: number;
   taxRate?: number;

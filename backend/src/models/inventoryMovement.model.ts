@@ -3,15 +3,15 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export type MovementType = 'entry' | 'exit' | 'transfer' | 'adjustment' | 'return';
 
 export interface IInventoryMovement extends BaseDocument {
-  productId: string;
+  productId: mongoose.Types.ObjectId;
   companyId: string;
-  branchId?: string;
-  warehouseId: string;
+  branchId?: mongoose.Types.ObjectId;
+  warehouseId: mongoose.Types.ObjectId;
   type: MovementType;
   quantity: number;
   unitPrice?: number;

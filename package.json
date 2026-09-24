@@ -9,7 +9,7 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "npm run build -w backend && npm run build -w packages/types",
+    "build": "npm run build -w packages/types && npm run build -w packages/constants && npm run build -w packages/config && npm run build -w packages/validation && npm run build -w packages/api-client && npm run build -w packages/ui && npm run build -w backend",
     "dev": "npm run dev -w backend",
     "test": "jest",
     "test:mongodb": "npm run test:mongodb -w backend",
@@ -26,11 +26,11 @@
     "mobile:android": "npm run android -w apps/mobile",
     "mobile:ios": "npm run ios -w apps/mobile",
     "web:dev": "npm run dev -w apps/web",
-    "web:build": "npm run build -w apps/web",
-    "prepare": "husky install"
+    "web:build": "npm run build -w apps/web"
   },
   "devDependencies": {
     "@types/node": "^20.11.0",
+    "@types/jest": "^29.5.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "eslint": "^8.57.0",

@@ -19,20 +19,19 @@ export function errorHandler(
   const details = isOperational ? (err as AppError).details : undefined;
 
   // Log del error
-  logger.error(message, {
-    code,
-    statusCode,
-    stack: err.stack,
-    details: sanitizeLogData(details || {}),
-  });
+  if (statusCode >= 500) {
+    logger.error(message, { code, statusCode, stack: err.stack, details: sanitizeLogData(details || {}) });
+  } else {
+    logger.warn(message, { code, statusCode });
+  }
 
   const errorResponse = {
     success: false,
     error: {
       code,
       message,
-      ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
-      ...(details && { details }),
+      ...(process.env.NODE_ENV === 'development' && statusCode >= 500 && { stack: err.stack }),
+      ...(details && { details: sanitizeLogData(details) }),
     },
   };
 

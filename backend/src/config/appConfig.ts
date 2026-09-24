@@ -2,7 +2,7 @@
 // Configuración de la Aplicación
 // ============================================
 
-import { config } from '../../packages/config/src';
+import { config } from './env';
 
 export const appConfig = {
   nodeEnv: config.nodeEnv,

@@ -3,12 +3,12 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IAccountsReceivable extends BaseDocument {
-  invoiceId: string;
-  customerId: string;
-  saleId?: string;
+  invoiceId: mongoose.Types.ObjectId;
+  customerId: mongoose.Types.ObjectId;
+  saleId?: mongoose.Types.ObjectId;
   amount: number;
   paidAmount: number;
   balance: number;

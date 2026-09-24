@@ -3,8 +3,7 @@
 // ============================================
 
 import { Request, Response, NextFunction } from 'express';
-import { AuditLogDocument } from '../../packages/types/src';
-import { logger } from '../utils/logger';
+import { auditService } from '../services/audit.service';
 
 declare global {
   namespace Express {
@@ -28,29 +27,8 @@ export interface AuditEntry {
 }
 
 // Función para crear entrada de auditoría
-export async function createAuditLog(entry: Omit<AuditEntry, 'timestamp'>): Promise<void> {
-  try {
-    const auditEntry: AuditLogDocument = {
-      ...entry,
-      timestamp: new Date(),
-    };
-
-    // En producción, esto se guardaría en MongoDB
-    // Por ahora se loggeará
-    logger.info('Audit Log', {
-      userId: entry.userId,
-      companyId: entry.companyId,
-      module: entry.module,
-      action: entry.action,
-      entity: entry.entity,
-      entityId: entry.entityId,
-      ip: entry.ip,
-      device: entry.device,
-    });
-  } catch (error) {
-    logger.error('Error al crear audit log:', error);
-    // No bloquear la petición principal si el audit log falla
-  }
+export async function createAuditLog(entry: AuditEntry): Promise<void> {
+  await auditService.log(entry);
 }
 
 // Middleware para capturar información de la petición

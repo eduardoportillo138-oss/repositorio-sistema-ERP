@@ -1,27 +1,21 @@
-// ============================================
-// Rutas de Autenticación
-// ============================================
-
 import { Router } from 'express';
 import { login, logout, refreshToken } from '../controllers/auth.controller';
 import { authenticateToken } from '../middlewares/auth';
 import { validate } from '../middlewares/validators';
+import { asyncHandler } from '../utils/asyncHandler';
+import { isValidEmail, isValidObjectId } from '../utils/validation';
 
 const router = Router();
-
-// Login
-router.post('/login', validate({
-  body: {
-    email: { type: 'string', required: true, validate: (v: string) => /^\S+@\S+\.\S+$/.test(v), message: 'Email inválido' },
-    password: { type: 'string', required: true },
-    companyId: { type: 'string', validate: (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v || ''), message: 'CompanyId inválido' },
-  },
-}), login);
-
-// Logout (requiere autenticación)
-router.post('/logout', authenticateToken, logout);
-
-// Refresh Token
-router.post('/refresh', refreshToken);
+router.post('/login', validate({ body: {
+  email: { type: 'string', required: true, validate: isValidEmail },
+  password: { type: 'string', required: true },
+  companyId: { type: 'string', validate: isValidObjectId },
+} }), asyncHandler(login));
+router.post('/refresh', validate({ body: {
+  refreshToken: { type: 'string', required: true },
+} }), asyncHandler(refreshToken));
+router.post('/logout', authenticateToken, validate({ body: {
+  refreshToken: { type: 'string', required: true },
+} }), asyncHandler(logout));
 
 export { router as authRoutes };

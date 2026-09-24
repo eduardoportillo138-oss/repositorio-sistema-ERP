@@ -3,7 +3,9 @@
 // ============================================
 
 import request from 'supertest';
-import { app } from '../../src/app';
+import { createApp } from '../../src/app';
+
+const app = createApp();
 
 describe('API de Validación - Integración', () => {
   describe('Protección de rutas', () => {

@@ -2,6 +2,7 @@
 // Módulo de Clientes
 // ============================================
 
+import { isValidObjectId } from '../../utils/validation';
 import { Router } from 'express';
 import { getCustomers, getCustomerById, createCustomer, updateCustomer, deactivateCustomer } from '../../controllers/customer.controller';
 import { authenticateToken, checkPermission } from '../../middlewares/auth';
@@ -14,7 +15,7 @@ router.use(authenticateToken);
 router.get('/', checkPermission('customers.view'), getCustomers);
 
 router.get('/:id', checkPermission('customers.view'), validate({
-  params: { id: { type: 'string', validate: (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v), message: 'ID inválido' } },
+  params: { id: { type: 'string', validate: isValidObjectId, message: 'ID inválido' } },
 }), getCustomerById);
 
 router.post('/', checkPermission('customers.create'), validate({
@@ -26,11 +27,11 @@ router.post('/', checkPermission('customers.create'), validate({
 }), createCustomer);
 
 router.put('/:id', checkPermission('customers.edit'), validate({
-  params: { id: { type: 'string', validate: (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v), message: 'ID inválido' } },
+  params: { id: { type: 'string', validate: isValidObjectId, message: 'ID inválido' } },
 }), updateCustomer);
 
 router.patch('/:id/deactivate', checkPermission('customers.delete'), validate({
-  params: { id: { type: 'string', validate: (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v), message: 'ID inválido' } },
+  params: { id: { type: 'string', validate: isValidObjectId, message: 'ID inválido' } },
 }), deactivateCustomer);
 
 export const customersRouter = router;
