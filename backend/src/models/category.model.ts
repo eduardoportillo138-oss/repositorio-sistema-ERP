@@ -3,13 +3,13 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface ICategory extends BaseDocument {
   name: string;
   code: string;
   description?: string;
-  parentId?: string;
+  parentId?: mongoose.Types.ObjectId;
   level: number;
   status: DocumentStatus;
 }

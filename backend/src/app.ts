@@ -6,7 +6,6 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import compression from 'compression';
-import { config } from './config/database';
 import { appConfig } from './config/appConfig';
 import { errorHandler } from './middlewares/errorHandler';
 import { notFoundHandler } from './middlewares/errorHandler';

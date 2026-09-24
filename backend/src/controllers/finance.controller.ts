@@ -3,7 +3,7 @@
 // ============================================
 
 import { Request, Response } from 'express';
-import { logger } from '../../utils/logger';
+import { logger } from '../utils/logger';
 
 export async function getFinances(req: Request, res: Response): Promise<void> {
   try {

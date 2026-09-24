@@ -3,13 +3,13 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IPurchaseOrder extends BaseDocument {
-  supplierId: string;
-  warehouseId: string;
+  supplierId: mongoose.Types.ObjectId;
+  warehouseId: mongoose.Types.ObjectId;
   items: Array<{
-    productId: string;
+    productId: mongoose.Types.ObjectId;
     name: string;
     quantity: number;
     unitPrice: number;

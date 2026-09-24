@@ -3,9 +3,11 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, Permission, DocumentStatus } from '../../packages/types/src';
+import { PERMISSIONS } from '../../../packages/types/dist';
+import type { BaseDocument, Permission, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IRole extends BaseDocument {
+  companyId: mongoose.Types.ObjectId;
   name: string;
   description: string;
   permissions: Permission[];
@@ -17,6 +19,7 @@ export interface IRoleDocument extends IRole, Document {}
 
 const roleSchema = new Schema<IRoleDocument>(
   {
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     name: {
       type: String,
       required: [true, 'El nombre del rol es obligatorio'],
@@ -31,6 +34,7 @@ const roleSchema = new Schema<IRoleDocument>(
     },
     permissions: {
       type: [String],
+      enum: [...PERMISSIONS],
       default: [],
     },
     isSystemRole: {

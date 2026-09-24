@@ -21,6 +21,8 @@ export const auditService = {
     try {
       await AuditLog.create({
         ...entry,
+        oldValue: redact(entry.oldValue),
+        newValue: redact(entry.newValue),
         timestamp: new Date(),
       });
     } catch (error) {
@@ -29,7 +31,7 @@ export const auditService = {
   },
 
   async getLogs(filters: {
-    companyId?: string;
+    companyId: string;
     module?: string;
     userId?: string;
     entity?: string;
@@ -63,3 +65,12 @@ export const auditService = {
     return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
   },
 };
+
+function redact(value: unknown): any {
+  if (Array.isArray(value)) return value.map(redact);
+  if (!value || typeof value !== 'object') return value;
+  return Object.fromEntries(Object.entries(value).map(([key, item]) => [
+    key,
+    /(password|secret|token|jwt|credential|api.?key|mfa)/i.test(key) ? '[REDACTED]' : redact(item),
+  ]));
+}

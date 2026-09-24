@@ -3,14 +3,14 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IInvoice extends BaseDocument {
-  saleId?: string;
-  customerId: string;
+  saleId?: mongoose.Types.ObjectId;
+  customerId: mongoose.Types.ObjectId;
   invoiceNumber: string;
   items: Array<{
-    productId: string;
+    productId: mongoose.Types.ObjectId;
     name: string;
     quantity: number;
     unitPrice: number;

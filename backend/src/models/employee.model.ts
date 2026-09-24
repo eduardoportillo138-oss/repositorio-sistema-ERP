@@ -3,7 +3,7 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IEmployee extends BaseDocument {
   firstName: string;
@@ -17,7 +17,7 @@ export interface IEmployee extends BaseDocument {
   hireDate: Date;
   salary?: number;
   status: DocumentStatus;
-  userId?: string;
+  userId?: mongoose.Types.ObjectId;
 }
 
 export interface IEmployeeDocument extends IEmployee, Document {}

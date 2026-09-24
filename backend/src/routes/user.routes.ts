@@ -1,44 +1,23 @@
-// ============================================
-// Rutas de Usuarios
-// ============================================
-
 import { Router } from 'express';
 import { getUsers, getUserById, createUser, updateUser, deactivateUser } from '../controllers/user.controller';
 import { authenticateToken, checkPermission } from '../middlewares/auth';
 import { validate } from '../middlewares/validators';
+import { asyncHandler } from '../utils/asyncHandler';
+import { isValidEmail, isValidObjectId, isValidPassword } from '../utils/validation';
 
 const router = Router();
-
-// Todos los routes requieren autenticación
+const idRule = validate({ params: { id: { type: 'string', validate: isValidObjectId, message: 'ID inválido' } } });
 router.use(authenticateToken);
-
-// Obtener lista de usuarios
-router.get('/', checkPermission('users.view'), getUsers);
-
-// Obtener usuario por ID
-router.get('/:id', checkPermission('users.view'), validate({
-  params: { id: { type: 'string', validate: (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v), message: 'ID inválido' } },
-}), getUserById);
-
-// Crear usuario
-router.post('/', checkPermission('users.create'), validate({
-  body: {
-    email: { type: 'string', required: true, validate: (v: string) => /^\S+@\S+\.\S+$/.test(v), message: 'Email inválido' },
-    name: { type: 'string', required: true },
-    password: { type: 'string', required: true },
-    roleId: { type: 'string', required: true },
-    companyId: { type: 'string', required: true },
-  },
-}), createUser);
-
-// Actualizar usuario
-router.put('/:id', checkPermission('users.edit'), validate({
-  params: { id: { type: 'string', validate: (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v), message: 'ID inválido' } },
-}), updateUser);
-
-// Desactivar usuario
-router.patch('/:id/deactivate', checkPermission('users.delete'), validate({
-  params: { id: { type: 'string', validate: (v: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v), message: 'ID inválido' } },
-}), deactivateUser);
+router.get('/', checkPermission('users.view'), asyncHandler(getUsers));
+router.get('/:id', checkPermission('users.view'), idRule, asyncHandler(getUserById));
+router.post('/', checkPermission('users.create'), validate({ body: {
+  email: { type: 'string', required: true, validate: isValidEmail },
+  name: { type: 'string', required: true },
+  password: { type: 'string', required: true, validate: isValidPassword },
+  roleId: { type: 'string', required: true, validate: isValidObjectId },
+} }), asyncHandler(createUser));
+router.put('/:id', checkPermission('users.edit'), idRule, asyncHandler(updateUser));
+router.patch('/:id', checkPermission('users.edit'), idRule, asyncHandler(updateUser));
+router.patch('/:id/deactivate', checkPermission('users.disable'), idRule, asyncHandler(deactivateUser));
 
 export { router as userRoutes };

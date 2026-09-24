@@ -3,19 +3,27 @@
 // ============================================
 
 import mongoose from 'mongoose';
-import { config } from '../../packages/config/src';
+import { config } from '../config/env';
 import { Company } from '../models/company.model';
 import { Role } from '../models/role.model';
 import { User } from '../models/user.model';
 import { Branch } from '../models/branch.model';
 import { Warehouse } from '../models/warehouse.model';
 import { Category } from '../models/category.model';
+import { PERMISSIONS } from '../../../packages/types/dist';
+import { isValidEmail, isValidPassword } from './validation';
 
-const ADMIN_EMAIL = 'admin@erp.local';
-const ADMIN_PASSWORD = 'Admin123!';
+const adminEmail = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
+const adminPassword = process.env.SEED_ADMIN_PASSWORD;
 
 async function seed(): Promise<void> {
   try {
+    if (!config.mongodbUri || config.mongodbUri.includes('cluster.example.mongodb.net')) {
+      throw new Error('Configure MONGODB_URI de desarrollo antes de ejecutar el seed');
+    }
+    if (!isValidEmail(adminEmail) || !isValidPassword(adminPassword) || adminPassword.length < 12) {
+      throw new Error('Configure SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD válidos (12 caracteres o más)');
+    }
     await mongoose.connect(config.mongodbUri, { dbName: config.mongodbDbName });
     console.log('[SEED] Conectado a MongoDB');
 
@@ -65,44 +73,26 @@ async function seed(): Promise<void> {
       companyId: company._id,
       name: 'super_admin',
       description: 'Administrador del sistema',
-      permissions: [
-        'users.view', 'users.create', 'users.edit', 'users.delete',
-        'companies.view', 'companies.create', 'companies.edit', 'companies.delete',
-        'customers.view', 'customers.create', 'customers.edit', 'customers.delete',
-        'suppliers.view', 'suppliers.create', 'suppliers.edit', 'suppliers.delete',
-        'products.view', 'products.create', 'products.edit', 'products.delete',
-        'inventory.view', 'inventory.create', 'inventory.edit', 'inventory.adjust',
-        'sales.view', 'sales.create', 'sales.edit', 'sales.approve',
-        'purchases.view', 'purchases.create', 'purchases.edit', 'purchases.approve',
-        'finances.view', 'finances.create', 'finances.edit', 'finances.approve',
-        'reports.view', 'reports.export',
-        'audit.view',
-        'settings.view', 'settings.edit',
-        'notifications.view', 'notifications.read',
-      ],
+      permissions: [...PERMISSIONS],
       isSystemRole: true,
       status: 'active',
     });
     console.log(`[SEED] Rol creado: ${adminRole.name}`);
 
     // Crear usuario admin
-    const existingAdmin = await User.findOne({ email: ADMIN_EMAIL });
+    const existingAdmin = await User.findOne({ email: adminEmail, companyId: company._id });
     if (!existingAdmin) {
-      const bcrypt = await import('bcrypt');
-      const salt = await bcrypt.genSalt(12);
-      const passwordHash = await bcrypt.hash(ADMIN_PASSWORD, salt);
-
       await User.create({
-        email: ADMIN_EMAIL,
+        email: adminEmail,
         name: 'Administrador',
-        passwordHash,
+        passwordHash: adminPassword,
         roleId: adminRole._id,
         companyId: company._id,
         branchId: branch._id,
         permissions: adminRole.permissions,
         status: 'active',
       });
-      console.log(`[SEED] Usuario admin creado: ${ADMIN_EMAIL} / ${ADMIN_PASSWORD}`);
+      console.log('[SEED] Usuario admin creado');
     } else {
       console.log('[SEED] Usuario admin ya existe');
     }

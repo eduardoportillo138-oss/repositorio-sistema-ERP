@@ -3,13 +3,13 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IPayment extends BaseDocument {
-  invoiceId?: string;
-  purchaseOrderId?: string;
-  customerId?: string;
-  supplierId?: string;
+  invoiceId?: mongoose.Types.ObjectId;
+  purchaseOrderId?: mongoose.Types.ObjectId;
+  customerId?: mongoose.Types.ObjectId;
+  supplierId?: mongoose.Types.ObjectId;
   amount: number;
   paymentMethod: string;
   reference?: string;

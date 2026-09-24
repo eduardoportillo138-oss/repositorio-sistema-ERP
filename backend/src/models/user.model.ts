@@ -3,22 +3,22 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import bcrypt from 'bcrypt';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import bcrypt from 'bcryptjs';
+import { PERMISSIONS } from '../../../packages/types/dist';
+import type { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IUser extends BaseDocument {
   email: string;
   name: string;
   passwordHash: string;
-  roleId: string;
-  companyId: string;
-  branchId?: string;
+  roleId: mongoose.Types.ObjectId;
+  companyId: mongoose.Types.ObjectId;
+  branchId?: mongoose.Types.ObjectId;
   phone?: string;
   status: DocumentStatus;
   lastLoginAt?: Date;
   mfaEnabled?: boolean;
   mfaSecret?: string;
-  refreshTokens?: string[];
   permissions: string[];
 }
 
@@ -29,7 +29,6 @@ const userSchema = new Schema<IUserDocument>(
     email: {
       type: String,
       required: [true, 'El email es obligatorio'],
-      unique: true,
       trim: true,
       lowercase: true,
       index: true,
@@ -82,30 +81,10 @@ const userSchema = new Schema<IUserDocument>(
       type: String,
       select: false,
     },
-    refreshTokens: [
-      {
-        token: String,
-        expiresAt: Date,
-      },
-    ],
     permissions: [
       {
         type: String,
-        enum: [
-          'users.view', 'users.create', 'users.edit', 'users.delete',
-          'companies.view', 'companies.create', 'companies.edit',
-          'customers.view', 'customers.create', 'customers.edit',
-          'suppliers.view', 'suppliers.create', 'suppliers.edit',
-          'products.view', 'products.create', 'products.edit',
-          'inventory.view', 'inventory.create', 'inventory.edit', 'inventory.adjust',
-          'sales.view', 'sales.create', 'sales.edit', 'sales.approve',
-          'purchases.view', 'purchases.create', 'purchases.edit', 'purchases.approve',
-          'finances.view', 'finances.create', 'finances.edit', 'finances.approve',
-          'reports.view', 'reports.export',
-          'audit.view',
-          'settings.view', 'settings.edit',
-          'notifications.view', 'notifications.read',
-        ],
+        enum: [...PERMISSIONS],
       },
     ],
     createdBy: {

@@ -2,11 +2,7 @@
 // Servidor Principal
 // ============================================
 
-import path from 'node:path';
-import dotenv from 'dotenv';
-
-dotenv.config({ path: path.resolve(__dirname, '../../.env') });
-import { config } from './config/database';
+import { validateConfig } from './config/env';
 import { appConfig } from './config/appConfig';
 import { createApp } from './app';
 import { logger } from './utils/logger';
@@ -14,6 +10,7 @@ import { connectDatabase, disconnectDatabase } from './config/database';
 
 const startServer = async (): Promise<void> => {
   try {
+    validateConfig();
     // Conectar a MongoDB
     await connectDatabase();
 
@@ -28,20 +25,14 @@ const startServer = async (): Promise<void> => {
       });
     });
 
-    // Manejo de cierre graceful
-    process.on('SIGTERM', async () => {
-      logger.info('SIGTERM recibido. Cerrando servidor...');
-      server.close();
+    const shutdown = async () => {
+      logger.info('Cerrando servidor...');
+      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
       await disconnectDatabase();
       process.exit(0);
-    });
-
-    process.on('SIGINT', async () => {
-      logger.info('SIGINT recibido. Cerrando servidor...');
-      server.close();
-      await disconnectDatabase();
-      process.exit(0);
-    });
+    };
+    process.once('SIGTERM', () => { void shutdown(); });
+    process.once('SIGINT', () => { void shutdown(); });
 
     // Manejo de errores no capturados
     process.on('uncaughtException', (error) => {

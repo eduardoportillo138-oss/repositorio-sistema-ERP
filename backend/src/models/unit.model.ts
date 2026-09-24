@@ -3,7 +3,7 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument } from '../../packages/types/src';
+import { BaseDocument } from '../../../packages/types/dist';
 
 export interface IUnit extends BaseDocument {
   name: string;

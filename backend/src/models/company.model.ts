@@ -3,7 +3,7 @@
 // ============================================
 
 import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../packages/types/src';
+import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface ICompany extends BaseDocument {
   name: string;
@@ -105,7 +105,6 @@ const companySchema = new Schema<ICompanyDocument>(
 );
 
 // Índices
-companySchema.index({ taxId: 1 }, { unique: true });
 companySchema.index({ name: 1, status: 1 });
 companySchema.index({ status: 1, createdAt: -1 });
 
