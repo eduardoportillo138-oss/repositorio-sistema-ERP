@@ -16,6 +16,7 @@ pnpm-debug.log*
 # Build
 dist/
 build/
+*.tsbuildinfo
 .out/
 
 # IDE
@@ -58,7 +59,6 @@ native/android/local.properties
 native/android/gradle.properties
 
 # Package lock
-package-lock.json
 yarn.lock
 pnpm-lock.yaml
 

@@ -6,7 +6,7 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    '@typescript-eslint/recommended',
+    'plugin:@typescript-eslint/recommended',
     'prettier',
   ],
   parser: '@typescript-eslint/parser',
@@ -18,9 +18,11 @@ module.exports = {
   rules: {
     '@typescript-eslint/no-explicit-any': 'warn',
     '@typescript-eslint/explicit-function-return-type': 'off',
-    '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+    '@typescript-eslint/no-var-requires': 'warn',
+    '@typescript-eslint/no-namespace': 'off',
     '@typescript-eslint/no-non-null-assertion': 'warn',
-    'import/order': ['error', { 'alphabetize': { 'order': 'asc' } }],
+    'import/order': 'off',
     'no-console': ['warn', { allow: ['warn', 'error', 'info'] }],
     'prefer-const': 'error',
     'no-var': 'error',

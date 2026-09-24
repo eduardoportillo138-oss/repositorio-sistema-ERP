@@ -2,8 +2,8 @@
 // Componente Input
 // ============================================
 
-import React, { useState } from 'react';
-import { TextInput, StyleSheet, View } from 'react-native';
+import React from 'react';
+import { Text, TextInput, StyleSheet, View } from 'react-native';
 
 export interface InputProps {
   value: string;
@@ -30,7 +30,7 @@ export const Input: React.FC<InputProps> = ({
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
-        style={[styles.input, error && styles.inputError]}
+        style={[styles.input, error ? styles.inputError : undefined]}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}

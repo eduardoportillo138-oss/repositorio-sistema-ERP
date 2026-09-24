@@ -5,7 +5,7 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 
-interface PaginationProps {
+export interface PaginationProps {
   page: number;
   totalPages: number;
   onPageChange: (page: number) => void;

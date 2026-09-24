@@ -3,7 +3,7 @@
 // ============================================
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, StyleProp, ViewStyle } from 'react-native';
 
 export interface CardProps {
   title: string;
@@ -11,6 +11,7 @@ export interface CardProps {
   children?: React.ReactNode;
   onPress?: () => void;
   variant?: 'default' | 'elevated' | 'outlined';
+  style?: StyleProp<ViewStyle>;
 }
 
 export const Card: React.FC<CardProps> = ({
@@ -19,10 +20,11 @@ export const Card: React.FC<CardProps> = ({
   children,
   onPress,
   variant = 'default',
+  style,
 }) => {
   return (
     <TouchableOpacity
-      style={[styles.card, variant === 'elevated' && styles.elevated, variant === 'outlined' && styles.outlined]}
+      style={[styles.card, variant === 'elevated' && styles.elevated, variant === 'outlined' && styles.outlined, style]}
       onPress={onPress}
       activeOpacity={0.7}
     >

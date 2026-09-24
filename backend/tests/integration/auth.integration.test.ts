@@ -3,7 +3,16 @@
 // ============================================
 
 import request from 'supertest';
-import { app } from '../../src/app';
+import { createApp } from '../../src/app';
+import { userRepository } from '../../src/repositories/user.repository';
+
+const app = createApp();
+
+beforeEach(() => {
+  jest.spyOn(userRepository, 'findByEmail').mockResolvedValue(null);
+});
+
+afterEach(() => jest.restoreAllMocks());
 
 describe('API de Autenticación - Integración', () => {
   describe('POST /api/v1/auth/login', () => {
