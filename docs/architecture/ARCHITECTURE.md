@@ -2,7 +2,7 @@
 
 ## 1. Estado actual
 
-El repositorio está vacío. No existe ningún proyecto previo, ni aplicación web, ni backend, ni configuración de entorno. Por este motivo, la solución debe construirse como base verde (greenfield) con una arquitectura modular, clara y escalable.
+El repositorio contiene un ERP existente. El núcleo Auth, Users, Roles, Companies y Branches se encuentra en pruebas; los módulos de negocio y las apps web/mobile conservan partes incompletas. Esta arquitectura expresa el diseño objetivo y no acredita funcionalidad implementada. El estado verificado está en `docs/DEVELOPMENT-STATUS.md`.
 
 ## 2. Objetivo arquitectónico
 
