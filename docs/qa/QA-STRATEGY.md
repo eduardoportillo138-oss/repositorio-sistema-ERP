@@ -1,155 +1,58 @@
-# Estrategia de QA para el ERP
+# Estrategia de QA
 
-## 1. Objetivo
+Actualizado: 2026-09-28. [Resultados ejecutados](../QA-VERIFICATION.md).
 
-Garantizar que cada módulo del ERP no solo compile, sino que funcione correctamente, sea seguro, esté validado y tenga trazabilidad en requisitos, pruebas y resultados.
+## Alcance disponible
 
-## 2. Política de calidad
+Jest unitario y HTTP con Supertest; una suite usa MongoDB 7.0.24 real efímero en loopback. Playwright usa Chromium y API compilada con otra base temporal, más Vite web/mobile. Ninguna suite usa Atlas productivo como base de pruebas.
 
-El estado de un módulo no será considerado terminado solo por compilación. Debe cumplirse lo siguiente:
-- requiere funcionalidad validada,
-- permisos verificados,
-- manejo de errores implementado,
-- pruebas ejecutadas,
-- documentación actualizada,
-- impacto en otros módulos revisado.
+Las pruebas unitarias incluyen mocks donde corresponde; distinguirlas de persistencia Mongo real. Credenciales y empresas de fixtures son ficticias y no se presentan en la interfaz productiva.
 
-## 3. Niveles de prueba
+## Ejecución reproducible
 
-### 3.1 Pruebas unitarias
-- Validan lógica de negocio aislada.
-- Se usan en servicios, utilidades y validadores.
-- Herramientas: Jest.
+```powershell
+npm install
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path (Get-Location) 'node_modules/.cache/ms-playwright'
+npx playwright install chromium
+node backend/scripts/cache-test-mongo.cjs
+npm run build
+npm run lint
+npm run format:check
+npm run test -- --runInBand --silent
+npm run test:unit -- --runInBand --silent
+npm run test:integration -- --runInBand --silent
+npm run test:e2e
+```
 
-### 3.2 Pruebas de integración
-- Validan interacción entre componentes del backend.
-- Se revisa API + servicios + repositorios.
-- Herramientas: Jest + Supertest.
+La primera descarga de MongoDB/Chromium requiere red. Caches bajo node_modules/.cache están ignoradas. El wrapper E2E fija el directorio de navegador; necesita puertos 3081, 4173 y 4174 libres y no reutiliza un servidor ajeno. serve-qa.cjs genera secretos JWT aleatorios y cierra API/Mongo al terminar.
 
-### 3.3 Pruebas E2E
-- Validan flujos reales del usuario.
-- Se aplican en web y, cuando corresponde, en mobile.
-- Herramientas: Playwright, Detox si es necesario.
+## Matriz mínima implementada
 
-### 3.4 Pruebas de frontend
-- React Native Testing Library.
-- Validación visual y de flujo de interacción.
+| Área       | Casos                                                                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Auth       | Password inválido, inactivos, email multiempresa, persistencia/hash y ausencia de hash en identidad                                       |
+| Sessions   | Refresh concurrente: un ganador; replay; logout; sesión ajena; access/refresh tipo; expiración; reactivación                              |
+| Core CRUD  | Users/Roles/Companies/Branches, referencias empresariales, duplicados, paginación y campos inválidos                                      |
+| RBAC       | Permiso faltante/vigente, rol sistema, escalada plataforma histórica y asignación                                                         |
+| MongoDB    | Índices únicos por tenant y TTL presente; no se espera la limpieza TTL                                                                    |
+| Audit      | Eventos persistidos, arrays/cadenas secretas redactadas, consulta tenant obligatoria                                                      |
+| Cliente    | Deduplicación, reintento único, errores/red, generación antigua y logout tras access vencido                                              |
+| Assets     | Metro real carga PNG con image-size parcheado                                                                                             |
+| Pendientes | POST de 14 módulos devuelve 501, sin éxito ficticio                                                                                       |
+| E2E        | Login/teclado/logo, dashboard sin datos inventados, creación/edición/desactivación de usuario y modal, revocación remota y mobile preview |
 
-## 4. Matriz de pruebas
+Viewport: desktop 1440×1000, tablet 900×1100, mobile 390×844. Se verifican overflow horizontal y flujos accesibles por rol/label. Las capturas esperan el cierre real del modal; screenshots desactivan animaciones donde se captura el formulario.
 
-La matriz debe incluir:
-- ID
-- Módulo
-- Requisito
-- Precondición
-- Pasos
-- Datos
-- Resultado esperado
-- Resultado obtenido
-- Estado
-- Severidad
+## Qué falta probar
 
-Estados permitidos:
-- PASS
-- FAIL
-- BLOCKED
-- NOT TESTED
+Migración de históricos; fallos de auditoría y recuperación durable; transacciones sobre replica set; carga/concurrencia más allá del refresh; rate limit/orígenes/arranque productivo; respaldo/restauración; accesibilidad completa y lector de pantalla; Android/iOS y dispositivo; cobertura/CI. Inventory/Sales/Purchases/Finance esperan implementación real para pruebas de negocio.
 
-Severidades:
-- CRITICAL
-- HIGH
-- MEDIUM
-- LOW
+No se ejecutó coverage global; el umbral declarado en Jest no constituye un resultado. No hay Detox ni harness nativo instalado: se retiró esa dependencia sin uso.
 
-## 5. Casos negativos obligatorios
+## Aprobación y evidencia
 
-Se deben probar escenarios de error y riesgo, no solo casos exitosos:
-- usuario sin permisos,
-- datos incompletos,
-- IDs inexistentes,
-- producto inexistente,
-- cliente inexistente,
-- inventario insuficiente,
-- cantidades negativas,
-- precios negativos,
-- tokens expirados,
-- tokens inválidos,
-- empresa incorrecta,
-- sucursal incorrecta,
-- doble envío de solicitud,
-- errores de red,
-- datos duplicados.
+Estados de ejecución: PASS, FAIL, BLOCKED y NOT TESTED. Estados de desarrollo: QA_APPROVED, IN_TESTING, IMPLEMENTED, IN_PROGRESS, CORRECTION_REQUIRED, PLANNED y BLOCKED_EXTERNAL_DEPENDENCY.
 
-## 6. Validación por módulo
+Un módulo solo puede pasar a QA_APPROVED con requisitos completos, build, pruebas positivas/negativas, aislamiento, RBAC, integridad, errores y documentación, sin funcionalidad TODO/stub. Un módulo que devuelve 501 no está aprobado. El preview navegador tampoco aprueba un release nativo.
 
-Cada módulo debe contar con:
-1. Requisitos claros.
-2. Casos de uso.
-3. Casos de prueba.
-4. Pruebas unitarias.
-5. Pruebas de integración.
-6. E2E cuando corresponda.
-7. Validación de permisos.
-8. Validación de errores.
-9. Revisión de UX.
-10. Documentación.
-
-## 7. Validaciones críticas del ERP
-
-### 7.1 Autenticación
-- login correcto
-- login con usuario inexistente
-- password incorrecto
-- refresh token válido/inválido
-- sesión expirada
-
-### 7.2 Permisos y RBAC
-- usuario sin acceso a módulo
-- usuario con acceso limitado a empresa
-- rol con permisos incompletos
-- operación no autorizada
-
-### 7.3 Inventario
-- saldo insuficiente
-- movimiento no permitido
-- registro histórico completo
-- cantidades inválidas
-- transferencias con almacenes incorrectos
-
-### 7.4 Ventas y compras
-- flujo completo validado
-- estados no permitidos rechazados
-- pedidos con inventario insuficiente bloqueados
-- facturas y cuentas por pagar/cobrar correctas
-
-### 7.5 Finanzas
-- cálculo de totales en backend
-- consistencia entre ventas, cuentas por cobrar y pagos
-- diferencia entre ingresos/gastos/cancelaciones
-
-## 8. Calidad de entregables
-
-Cada entrega debe revisar:
-- compilación
-- tipado
-- linter
-- pruebas unitarias
-- pruebas de integración
-- build
-- E2E cuando aplique
-- documentación actualizada
-
-## 9. Criterio de aprobación QA
-
-Un módulo solo puede pasar a aprobado QA si:
-- cumple con requisitos,
-- responde correctamente a casos negativos,
-- valida permisos,
-- maneja errores esperables,
-- tiene pruebas automatizadas,
-- mantiene seguridad y trazabilidad,
-- no introduce regresiones conocidas.
-
-## 10. Conclusión
-
-La estrategia de QA del ERP debe estar alineada con la arquitectura modular y con el enfoque de negocio. La clave no es solo validar lo correcto, sino asegurar que el sistema se comporte de forma segura y consistente ante errores, permisos insuficientes y operaciones críticas.
+Guardar resultados sanitizados en documentación y capturas. Los logs técnicos locales en logs/ están ignorados; no subir secretos para “demostrar” una conexión. Repetir pruebas cuando cambie comportamiento o aparezca un fallo; no sustituir resultados ejecutados por expectativas.

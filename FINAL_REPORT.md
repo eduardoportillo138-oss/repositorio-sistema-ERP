@@ -1,34 +1,7 @@
-# CORE HARDENING REPORT
+# Informe vigente del ERP
 
-Actualizado: 2026-09-24. Este informe sustituye el reporte anterior, que declaraba el ERP completo y varios módulos QA_APPROVED sin evidencia.
+El informe de 2026-09-24 queda sustituido por [ERP SOFTWARE AUDIT REPORT](docs/ERP-SOFTWARE-AUDIT-REPORT.md), fechado 2026-09-28.
 
-## Estado real
+Ahora existen pruebas de MongoDB temporal real, builds web de ambas apps, sesión/RBAC corregidos y una nueva identidad visual compartida. Persisten condiciones de cierre del Core; ningún módulo se declara QA_APPROVED.
 
-| Área | Estado | Evidencia y límite |
-| --- | --- | --- |
-| Auth | IN_TESTING | Login, JWT, refresh rotatorio y logout con sesión persistida; pruebas con mocks, sin MongoDB real. |
-| Users | IN_TESTING | CRUD, aislamiento empresarial, permisos, desactivación y auditoría; falta integración MongoDB. |
-| Roles / Permissions | IN_TESTING | CRUD y catálogo central; requieren migración y prueba de índices reales. |
-| Companies / Branches | IN_TESTING | Operaciones empresariales reales; falta integración MongoDB. |
-| Audit | IN_TESTING | Eventos del núcleo con redacción; escritura de mejor esfuerzo. |
-| Catálogos | CORRECTION_REQUIRED | Modelos y controladores heredados incompletos; rutas 501. |
-| Inventario, Ventas, Compras, Finanzas | CORRECTION_REQUIRED | Reglas y persistencia no verificadas; rutas 501. |
-| HR, Proyectos, Reportes, CRM | PLANNED | Sin flujo funcional verificado. |
-| Web / Mobile | IN_PROGRESS | TypeScript falla por archivos y configuraciones faltantes. |
-
-Ningún módulo está QA_APPROVED.
-
-## Verificación
-
-- `npm install`: PASS.
-- `npm run build`: PASS para paquetes compartidos y backend; las apps no forman parte del script.
-- `npm run lint`: PASS con 0 errores y 235 advertencias.
-- `npm run test -- --runInBand --silent`: PASS, 4 suites y 27 pruebas.
-- MongoDB real: NO VERIFICADO; las pruebas usan mocks.
-- Compilación TypeScript aislada de web/mobile: FAIL.
-
-## Riesgos y siguiente fase
-
-No desplegar el núcleo sin probarlo con una base MongoDB de prueba y sin migrar los índices de email y los documentos históricos de Role/Branch al alcance por empresa. El siguiente trabajo es cerrar CORE HARDENING y después avanzar a MASTER DATA HARDENING.
-
-Ver [README.md](README.md) y [docs/DEVELOPMENT-STATUS.md](docs/DEVELOPMENT-STATUS.md).
+Consulte [verificación ejecutada](docs/QA-VERIFICATION.md), [estado por módulo](docs/DEVELOPMENT-STATUS.md) y [continuación](docs/NEXT-STEPS.md). La revisión no acredita Atlas, migraciones históricas, despliegue ni release nativo.

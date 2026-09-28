@@ -79,7 +79,7 @@ const auditLogSchema = new Schema<IAuditLogDocument>(
   {
     timestamps: true,
     collection: 'auditLogs',
-  }
+  },
 );
 
 // Índices compuestos para consultas eficientes

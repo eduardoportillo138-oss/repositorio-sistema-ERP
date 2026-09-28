@@ -37,7 +37,7 @@ const unitSchema = new Schema<IUnitDocument>(
     },
     description: { type: String, trim: true, maxlength: 500 },
   },
-  { timestamps: true, collection: 'units' }
+  { timestamps: true, collection: 'units' },
 );
 
 unitSchema.index({ companyId: 1, code: 1 }, { unique: true });

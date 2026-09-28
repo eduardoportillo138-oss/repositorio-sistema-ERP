@@ -1,3 +1,4 @@
+import { colors } from '../tokens';
 // ============================================
 // Componente Search
 // ============================================
@@ -11,7 +12,11 @@ interface SearchProps {
   placeholder?: string;
 }
 
-export const Search: React.FC<SearchProps> = ({ value, onChangeText, placeholder = 'Buscar...' }) => {
+export const Search: React.FC<SearchProps> = ({
+  value,
+  onChangeText,
+  placeholder = 'Buscar...',
+}) => {
   return (
     <View style={styles.container}>
       <TextInput
@@ -31,12 +36,12 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   searchInput: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: colors.background,
     borderRadius: 8,
     paddingVertical: 10,
     paddingHorizontal: 16,
     fontSize: 16,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: colors.border,
   },
 });

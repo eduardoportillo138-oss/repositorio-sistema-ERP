@@ -20,10 +20,21 @@ export const ProductsScreen: React.FC = () => {
   const { data, loading, error, refetch } = useApi<{ data: Product[] }>('/products');
   const [search, setSearch] = useState('');
 
-  if (loading) return <View style={styles.loading}><Text>Cargando...</Text></View>;
-  if (error) return <View style={styles.error}><Text>{error}</Text></View>;
+  if (loading)
+    return (
+      <View style={styles.loading}>
+        <Text>Cargando...</Text>
+      </View>
+    );
+  if (error)
+    return (
+      <View style={styles.error}>
+        <Text>{error}</Text>
+      </View>
+    );
 
-  const filtered = data?.data?.filter(p => p.name.toLowerCase().includes(search.toLowerCase())) || [];
+  const filtered =
+    data?.data?.filter((p) => p.name.toLowerCase().includes(search.toLowerCase())) || [];
 
   return (
     <View style={styles.container}>

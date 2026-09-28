@@ -42,11 +42,14 @@ const accountsPayableSchema = new Schema<IAccountsPayableDocument>(
       index: true,
     },
   },
-  { timestamps: true, collection: 'accountsPayable' }
+  { timestamps: true, collection: 'accountsPayable' },
 );
 
 accountsPayableSchema.index({ companyId: 1, supplierId: 1, status: 1 });
 accountsPayableSchema.index({ companyId: 1, dueDate: 1 });
 accountsPayableSchema.index({ companyId: 1, status: 1, balance: 1 });
 
-export const AccountsPayable = mongoose.model<IAccountsPayableDocument>('AccountsPayable', accountsPayableSchema);
+export const AccountsPayable = mongoose.model<IAccountsPayableDocument>(
+  'AccountsPayable',
+  accountsPayableSchema,
+);

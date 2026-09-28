@@ -58,7 +58,7 @@ const employeeSchema = new Schema<IEmployeeDocument>(
     },
     userId: { type: Schema.Types.ObjectId, ref: 'User' },
   },
-  { timestamps: true, collection: 'employees' }
+  { timestamps: true, collection: 'employees' },
 );
 
 employeeSchema.index({ companyId: 1, email: 1 });

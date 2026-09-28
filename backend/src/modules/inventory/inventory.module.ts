@@ -3,7 +3,12 @@
 // ============================================
 
 import { Router } from 'express';
-import { getInventory, getInventoryMovement, createInventoryMovement, getWarehouses } from '../../controllers/inventory.controller';
+import {
+  getInventory,
+  getInventoryMovement,
+  createInventoryMovement,
+  getWarehouses,
+} from '../../controllers/inventory.controller';
 import { authenticateToken, checkPermission } from '../../middlewares/auth';
 import { validate } from '../../middlewares/validators';
 

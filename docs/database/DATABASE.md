@@ -1,5 +1,7 @@
 # Modelo de datos y base de datos
 
+> Actualizado 2026-09-28: las siguientes secciones describen el diseño propuesto. No acreditan schemas implementados ni una conexión Atlas. La revisión real encontró 16 modelos empresariales sin companyId efectivo y Warehouse sin branchId efectivo; se mantienen bloqueados con HTTP 501. Solo el Core se probó con MongoDB temporal. La lista y las migraciones pendientes están en [ERP SOFTWARE AUDIT REPORT](../ERP-SOFTWARE-AUDIT-REPORT.md). Los ejemplos de IDs/campos no son fixtures del schema actual; los IDs reales son ObjectId.
+
 ## 1. Objetivo
 
 Definir la base de datos del ERP como un sistema multiempresa, multisucursal, con trazabilidad, auditoría y operación por movimientos. La base de datos debe soportar crecimiento y complejidad sin sacrificar integridad.
@@ -23,6 +25,7 @@ Definir la base de datos del ERP como un sistema multiempresa, multisucursal, co
 ## 4. Colecciones propuestas
 
 ### 4.1 Core / seguridad
+
 - users
 - roles
 - permissions
@@ -33,6 +36,7 @@ Definir la base de datos del ERP como un sistema multiempresa, multisucursal, co
 - notifications
 
 ### 4.2 Catálogos
+
 - customers
 - suppliers
 - products
@@ -41,6 +45,7 @@ Definir la base de datos del ERP como un sistema multiempresa, multisucursal, co
 - warehouses
 
 ### 4.3 Operaciones
+
 - inventoryMovements
 - quotes
 - salesOrders
@@ -53,6 +58,7 @@ Definir la base de datos del ERP como un sistema multiempresa, multisucursal, co
 - accountsPayable
 
 ### 4.4 Administración
+
 - employees
 - projects
 - tasks
@@ -64,15 +70,16 @@ Las colecciones empresariales deben implementar aislamiento por tenant.
 Ejemplo de patrón:
 
 {
-  companyId: "company_123",
-  branchId: "branch_456",
-  warehouseId: "warehouse_789",
-  status: "active",
-  createdAt: "ISODate",
-  updatedAt: "ISODate"
+companyId: "company_123",
+branchId: "branch_456",
+warehouseId: "warehouse_789",
+status: "active",
+createdAt: "ISODate",
+updatedAt: "ISODate"
 }
 
 Esto permite:
+
 - Segregar datos por empresa.
 - Restricción de acceso por contexto.
 - Validación de permisos según empresa y sucursal.
@@ -80,21 +87,25 @@ Esto permite:
 ## 6. Relaciones y decisiones importantes
 
 ### 6.1 Usuarios y roles
+
 - users: referencia a roles y compañías.
 - roles: contienen permisos o referencias a permissions.
 - permissions: identificadores de acceso, por ejemplo ventas.ver, inventario.ajustar.
 
 ### 6.2 Empresas y sucursales
+
 - companies contiene la compañía matriz.
 - branches pertenece a una empresa.
 - warehouses pertenece a una empresa y puede derivarse de branch.
 
 ### 6.3 Productos e inventario
+
 - products almacena el catálogo base.
 - inventoryMovements registra cada movimiento físico.
 - El stock no se actualiza como valor único sin historial.
 
 ### 6.4 Ventas
+
 - quotes: cotización.
 - salesOrders: pedido.
 - salesOrderItems: líneas del pedido.
@@ -102,6 +113,7 @@ Esto permite:
 - accountsReceivable: cartera por cobrar.
 
 ### 6.5 Compras
+
 - purchaseOrders: orden de compra.
 - purchaseOrderItems: líneas de compra.
 - accountsPayable: obligaciones por pagar.
@@ -117,6 +129,7 @@ InventoryMovement
 Entrada / Salida / Transferencia / Ajuste / Devolución
 
 Cada movimiento debe registrar:
+
 - productoId
 - companyId
 - warehouseId
@@ -137,6 +150,7 @@ Esto permite reconstruir el historial de existencias y no depender de un stock m
 La colección auditLogs debe observarse como una fuente de evidencia administrativa.
 
 Campos mínimos:
+
 - userId
 - companyId
 - module
@@ -150,6 +164,7 @@ Campos mínimos:
 - device
 
 Debe capturarse especialmente en:
+
 - Login y logout
 - Cambios de permisos
 - Creación y modificación de usuarios
@@ -159,6 +174,7 @@ Debe capturarse especialmente en:
 ## 9. Índices recomendados
 
 Se recomienda crear índices para:
+
 - companyId
 - branchId
 - warehouseId
@@ -172,6 +188,7 @@ Se recomienda crear índices para:
 - entity + companyId en auditLogs
 
 ### Ejemplos
+
 - users: { companyId: 1, email: 1 }
 - products: { companyId: 1, code: 1 }
 - inventoryMovements: { companyId: 1, productId: 1, createdAt: -1 }
@@ -180,21 +197,27 @@ Se recomienda crear índices para:
 ## 10. Integridad y consistencia
 
 ### 10.1 Eliminación física
+
 Se evitará la eliminación de registros históricos. Se usarán estados como:
+
 - active
 - inactive
 - cancelled
 - draft
 
 ### 10.2 Transacciones
+
 Se evaluarán transacciones de MongoDB cuando se produzcan cambios cruzados entre varias colecciones, por ejemplo:
+
 - Venta con inventario, factura y cuenta por cobrar.
 - Compra con recepción, factura y cuenta por pagar.
 
 No se usarán transacciones de forma indiscriminada; solo cuando el negocio requiera consistencia fuerte.
 
 ### 10.3 Concurrencia
+
 Se debe proteger la integridad de stock cuando dos usuarios intenten vender el mismo artículo al mismo tiempo. La solución adecuada incluye:
+
 - validación del stock en backend,
 - actualizaciones atómicas,
 - control de concurrencia a nivel de operación,

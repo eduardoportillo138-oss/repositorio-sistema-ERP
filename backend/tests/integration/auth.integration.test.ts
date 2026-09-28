@@ -17,9 +17,7 @@ afterEach(() => jest.restoreAllMocks());
 describe('API de Autenticación - Integración', () => {
   describe('POST /api/v1/auth/login', () => {
     test('debe rechazar login sin credenciales', async () => {
-      const response = await request(app)
-        .post('/api/v1/auth/login')
-        .send({});
+      const response = await request(app).post('/api/v1/auth/login').send({});
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);

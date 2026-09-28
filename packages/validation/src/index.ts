@@ -88,6 +88,14 @@ export function sanitizeString(value: string): string {
 
 // Validación de estado
 export function isValidDocumentStatus(status: string): boolean {
-  const validStatuses = ['active', 'inactive', 'cancelled', 'draft', 'pending', 'confirmed', 'completed'];
+  const validStatuses = [
+    'active',
+    'inactive',
+    'cancelled',
+    'draft',
+    'pending',
+    'confirmed',
+    'completed',
+  ];
   return validStatuses.includes(status);
 }

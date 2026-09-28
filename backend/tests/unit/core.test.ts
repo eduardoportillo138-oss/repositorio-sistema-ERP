@@ -32,9 +32,19 @@ beforeAll(() => {
 afterEach(() => jest.restoreAllMocks());
 
 function mockLoginUser(passwordHash: string, status = 'active') {
-  const user = { _id: userId, companyId: companyA, roleId, email: 'a@example.com', name: 'A', passwordHash, status } as any;
+  const user = {
+    _id: userId,
+    companyId: companyA,
+    roleId,
+    email: 'a@example.com',
+    name: 'A',
+    passwordHash,
+    status,
+  } as any;
   jest.spyOn(userRepository, 'findByEmail').mockResolvedValue(user);
-  jest.spyOn(Role, 'findOne').mockReturnValue(query({ _id: roleId, permissions: ['users.view'], status: 'active' }));
+  jest
+    .spyOn(Role, 'findOne')
+    .mockReturnValue(query({ _id: roleId, permissions: ['users.view'], status: 'active' }));
   jest.spyOn(Company, 'findOne').mockReturnValue(query({ _id: companyA, status: 'active' }));
   jest.spyOn(Session, 'create').mockResolvedValue({} as any);
   jest.spyOn(userRepository, 'updateLastLogin').mockResolvedValue({} as any);
@@ -44,9 +54,18 @@ function mockLoginUser(passwordHash: string, status = 'active') {
 
 describe('Auth', () => {
   test('el modelo hashea la contraseña una sola vez', async () => {
-    const user = new User({ email: 'hash@example.com', name: 'Hash', passwordHash: 'ValidPass123',
-      roleId, companyId: companyA, permissions: [], status: 'active' });
-    jest.spyOn(User.collection, 'insertOne').mockResolvedValue({ acknowledged: true, insertedId: user._id } as any);
+    const user = new User({
+      email: 'hash@example.com',
+      name: 'Hash',
+      passwordHash: 'ValidPass123',
+      roleId,
+      companyId: companyA,
+      permissions: [],
+      status: 'active',
+    });
+    jest
+      .spyOn(User.collection, 'insertOne')
+      .mockResolvedValue({ acknowledged: true, insertedId: user._id } as any);
     jest.spyOn(User.collection, 'findOne').mockResolvedValue({ _id: user._id } as any);
     await user.save();
     const firstHash = user.passwordHash;
@@ -63,72 +82,125 @@ describe('Auth', () => {
     expect(result.refreshToken).toBeTruthy();
     expect(result.user).not.toHaveProperty('passwordHash');
     expect(jwt.decode(result.accessToken)).not.toHaveProperty('email');
-    expect(Session.create).toHaveBeenCalledWith(expect.objectContaining({ tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/) }));
+    expect(Session.create).toHaveBeenCalledWith(
+      expect.objectContaining({ tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/) }),
+    );
     expect(userRepository.updateLastLogin).toHaveBeenCalledWith(userId, companyA);
   });
 
   test('rechaza contraseña incorrecta', async () => {
     mockLoginUser(await bcrypt.hash('ValidPass123', 4));
-    await expect(authService.authenticate('a@example.com', 'WrongPass123', companyA)).rejects.toMatchObject({ statusCode: 401 });
+    await expect(
+      authService.authenticate('a@example.com', 'WrongPass123', companyA),
+    ).rejects.toMatchObject({ statusCode: 401 });
     expect(Session.create).not.toHaveBeenCalled();
   });
 
   test('rechaza email inexistente', async () => {
     jest.spyOn(userRepository, 'findByEmail').mockResolvedValue(null);
-    await expect(authService.authenticate('missing@example.com', 'ValidPass123', companyA)).rejects.toMatchObject({ statusCode: 401 });
+    await expect(
+      authService.authenticate('missing@example.com', 'ValidPass123', companyA),
+    ).rejects.toMatchObject({ statusCode: 401 });
   });
 
   test('rechaza usuario inactivo', async () => {
     mockLoginUser(await bcrypt.hash('ValidPass123', 4), 'inactive');
-    await expect(authService.authenticate('a@example.com', 'ValidPass123', companyA)).rejects.toMatchObject({ statusCode: 401 });
+    await expect(
+      authService.authenticate('a@example.com', 'ValidPass123', companyA),
+    ).rejects.toMatchObject({ statusCode: 401 });
   });
 
   test('rechaza refresh expirado', async () => {
-    const token = jwt.sign({ userId, companyId: companyA, roleId }, config.jwtRefreshSecret, { expiresIn: -1 });
+    const token = jwt.sign(
+      { userId, companyId: companyA, roleId, sid: userId, type: 'refresh' },
+      config.jwtRefreshSecret,
+      { expiresIn: -1 },
+    );
     await expect(authService.refreshToken(token)).rejects.toMatchObject({ statusCode: 401 });
   });
 
   test('revocación bloquea refresh', async () => {
-    const token = jwt.sign({ userId, companyId: companyA, roleId }, config.jwtRefreshSecret, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { userId, companyId: companyA, roleId, sid: userId, type: 'refresh' },
+      config.jwtRefreshSecret,
+      { expiresIn: '1h' },
+    );
+    const user = mockLoginUser(await bcrypt.hash('ValidPass123', 4));
+    jest.spyOn(userRepository, 'findById').mockResolvedValue(user);
     jest.spyOn(Session, 'findOneAndUpdate').mockReturnValue(query(null));
     await expect(authService.refreshToken(token)).rejects.toMatchObject({ statusCode: 401 });
   });
 
   test('refresh válido rota sesión', async () => {
-    const token = jwt.sign({ userId, companyId: companyA, roleId }, config.jwtRefreshSecret, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { userId, companyId: companyA, roleId, sid: userId, type: 'refresh' },
+      config.jwtRefreshSecret,
+      { expiresIn: '1h' },
+    );
     const user = mockLoginUser(await bcrypt.hash('ValidPass123', 4));
     jest.spyOn(Session, 'findOneAndUpdate').mockReturnValue(query({ _id: 'session' }));
     jest.spyOn(userRepository, 'findById').mockResolvedValue(user);
     const result = await authService.refreshToken(token);
     expect(result.refreshToken).not.toBe(token);
-    expect(Session.findOneAndUpdate).toHaveBeenCalledWith(expect.objectContaining({ companyId: companyA }), expect.anything(), expect.anything());
+    expect(Session.findOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ companyId: companyA }),
+      expect.anything(),
+      expect.anything(),
+    );
   });
 
   test('logout revoca sesión correspondiente', async () => {
     jest.spyOn(Session, 'findOneAndUpdate').mockReturnValue(query({ _id: 'session' }));
     jest.spyOn(auditService, 'log').mockResolvedValue();
     await authService.invalidateRefreshToken('refresh-value', userId, companyA);
-    expect(Session.findOneAndUpdate).toHaveBeenCalledWith(expect.objectContaining({ userId, companyId: companyA }), expect.anything(), expect.anything());
+    expect(Session.findOneAndUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ userId, companyId: companyA }),
+      expect.anything(),
+      expect.anything(),
+    );
   });
 });
 
 describe('Aislamiento de empresa', () => {
   test('Users crea dentro de la empresa del actor y audita', async () => {
-    const user = { _id: companyB, companyId: companyA, roleId, email: 'b@example.com', name: 'B', status: 'active' } as any;
+    const user = {
+      _id: companyB,
+      companyId: companyA,
+      roleId,
+      email: 'b@example.com',
+      name: 'B',
+      status: 'active',
+    } as any;
     jest.spyOn(Role, 'findOne').mockReturnValue(query({ _id: roleId, status: 'active' }));
     jest.spyOn(userRepository, 'create').mockResolvedValue(user);
     jest.spyOn(auditService, 'log').mockResolvedValue();
-    const created = await userService.create(actor, { email: user.email, name: user.name, password: 'ValidPass123', roleId }, '', '');
+    const created = await userService.create(
+      actor,
+      { email: user.email, name: user.name, password: 'ValidPass123', roleId },
+      '',
+      '',
+    );
     expect(created.companyId).toBe(companyA);
-    expect(userRepository.create).toHaveBeenCalledWith(expect.objectContaining({ companyId: companyA, actorId: userId }));
-    expect(auditService.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'create', companyId: companyA }));
+    expect(userRepository.create).toHaveBeenCalledWith(
+      expect.objectContaining({ companyId: companyA, actorId: userId }),
+    );
+    expect(auditService.log).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'create', companyId: companyA }),
+    );
   });
 
   test('Users actualiza y desactiva con filtro empresarial', async () => {
-    const before = { _id: companyB, companyId: companyA, roleId, status: 'active', name: 'B' } as any;
+    const before = {
+      _id: companyB,
+      companyId: companyA,
+      roleId,
+      status: 'active',
+      name: 'B',
+    } as any;
     jest.spyOn(userRepository, 'findById').mockResolvedValue(before);
     jest.spyOn(userRepository, 'update').mockResolvedValue({ ...before, name: 'Nuevo' });
     jest.spyOn(userRepository, 'deactivate').mockResolvedValue({ ...before, status: 'inactive' });
+    jest.spyOn(Session, 'updateMany').mockReturnValue(query({ modifiedCount: 1 }));
     jest.spyOn(auditService, 'log').mockResolvedValue();
     await userService.update(actor, companyB, { name: 'Nuevo' }, '', '');
     await userService.deactivate(actor, companyB, '', '');
@@ -149,37 +221,70 @@ describe('Aislamiento de empresa', () => {
   });
 
   test('Users rechaza companyId arbitrario al crear', async () => {
-    await expect(userService.create(actor, { companyId: companyB, email: 'b@example.com', name: 'B', password: 'ValidPass123' }, '', '')).rejects.toMatchObject({ statusCode: 400 });
+    await expect(
+      userService.create(
+        actor,
+        { companyId: companyB, email: 'b@example.com', name: 'B', password: 'ValidPass123' },
+        '',
+        '',
+      ),
+    ).rejects.toMatchObject({ statusCode: 400 });
   });
 
   test('Roles filtra por empresa', async () => {
     jest.spyOn(Role, 'findOne').mockReturnValue(query(null));
-    await expect(getRole({ params: { id: roleId }, user: actor } as any, {} as any)).rejects.toMatchObject({ statusCode: 404 });
+    await expect(
+      getRole({ params: { id: roleId }, user: actor } as any, {} as any),
+    ).rejects.toMatchObject({ statusCode: 404 });
     expect(Role.findOne).toHaveBeenCalledWith(expect.objectContaining({ companyId: companyA }));
   });
 
   test('Roles modifica permisos y audita', async () => {
-    const role = { _id: roleId, companyId: companyA, name: 'Operador', description: '', permissions: ['users.view'],
-      isSystemRole: false, status: 'active', save: jest.fn().mockResolvedValue(undefined) };
+    const role = {
+      _id: roleId,
+      companyId: companyA,
+      name: 'Operador',
+      description: '',
+      permissions: ['users.view'],
+      isSystemRole: false,
+      status: 'active',
+      save: jest.fn().mockResolvedValue(undefined),
+    };
     jest.spyOn(Role, 'findOne').mockReturnValue(query(role));
     jest.spyOn(auditService, 'log').mockResolvedValue();
     const json = jest.fn();
-    await updateRole({ params: { id: roleId }, user: actor, body: { permissions: ['users.view', 'users.create'] },
-      ip: '', get: () => '' } as any, { json } as any);
+    await updateRole(
+      {
+        params: { id: roleId },
+        user: actor,
+        body: { permissions: ['users.view', 'users.create'] },
+        ip: '',
+        get: () => '',
+      } as any,
+      { json } as any,
+    );
     expect(role.save).toHaveBeenCalled();
     expect(role.permissions).toEqual(['users.view', 'users.create']);
-    expect(auditService.log).toHaveBeenCalledWith(expect.objectContaining({ action: 'update', companyId: companyA }));
+    expect(auditService.log).toHaveBeenCalledWith(
+      expect.objectContaining({ action: 'update', companyId: companyA }),
+    );
   });
 
   test('Companies no desactiva otra empresa', async () => {
     const mutation = jest.spyOn(Company, 'findOneAndUpdate');
-    await expect(deactivateCompany({ params: { id: companyB }, user: actor } as any, {} as any)).rejects.toMatchObject({ statusCode: 404 });
+    await expect(
+      deactivateCompany({ params: { id: companyB }, user: actor } as any, {} as any),
+    ).rejects.toMatchObject({ statusCode: 404 });
     expect(mutation).not.toHaveBeenCalled();
   });
 
   test('Branches filtra por empresa', async () => {
-    const querySpy = jest.spyOn(require('../../src/models/branch.model').Branch, 'findOne').mockReturnValue(query(null));
-    await expect(getBranch({ params: { id: companyB }, user: actor } as any, {} as any)).rejects.toMatchObject({ statusCode: 404 });
+    const querySpy = jest
+      .spyOn(require('../../src/models/branch.model').Branch, 'findOne')
+      .mockReturnValue(query(null));
+    await expect(
+      getBranch({ params: { id: companyB }, user: actor } as any, {} as any),
+    ).rejects.toMatchObject({ statusCode: 404 });
     expect(querySpy).toHaveBeenCalledWith(expect.objectContaining({ companyId: companyA }));
   });
 
@@ -189,8 +294,15 @@ describe('Aislamiento de empresa', () => {
     jest.spyOn(auditService, 'log').mockResolvedValue();
     const json = jest.fn();
     const status = jest.fn().mockReturnValue({ json });
-    await createBranch({ user: actor, body: { name: 'Centro', code: 'CTR', address: 'A', city: 'B', country: 'MX' },
-      ip: '', get: () => '' } as any, { status } as any);
+    await createBranch(
+      {
+        user: actor,
+        body: { name: 'Centro', code: 'CTR', address: 'A', city: 'B', country: 'MX' },
+        ip: '',
+        get: () => '',
+      } as any,
+      { status } as any,
+    );
     expect(Branch.create).toHaveBeenCalledWith(expect.objectContaining({ companyId: companyA }));
     expect(status).toHaveBeenCalledWith(201);
   });

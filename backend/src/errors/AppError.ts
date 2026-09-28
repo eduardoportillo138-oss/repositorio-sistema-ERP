@@ -26,7 +26,12 @@ export class AppError extends Error {
   public details?: Record<string, any>;
   public isOperational: boolean;
 
-  constructor(code: ErrorCode, message: string, statusCode: number = 400, details?: Record<string, any>) {
+  constructor(
+    code: ErrorCode,
+    message: string,
+    statusCode: number = 400,
+    details?: Record<string, any>,
+  ) {
     super(message);
     this.code = code;
     this.statusCode = statusCode;
@@ -83,7 +88,7 @@ export class InventoryInsufficientError extends AppError {
     super(
       ErrorCode.INVENTORY_INSUFFICIENT,
       `Stock insuficiente para "${productName}". Disponible: ${available}, Solicitado: ${requested}`,
-      409
+      409,
     );
   }
 }

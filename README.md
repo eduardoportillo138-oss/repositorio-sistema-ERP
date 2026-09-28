@@ -1,139 +1,113 @@
 # ERP Empresarial
 
-## Descripción y estado actual
+Monorepo TypeScript con API Express/Mongoose y una interfaz compartida en React Native y React Native Web.
 
-Monorepo TypeScript de un ERP con API Express/Mongoose y clientes React Native en desarrollo. El núcleo está en **hardening**. Auth, Users, Roles, Companies y Branches cuentan con operaciones reales, pero requieren pruebas de integración con MongoDB de prueba y migración de datos históricos antes de aprobarse.
+**Estado al 2026-09-28:** CORE HARDENING. Login, sesiones, usuarios, roles, empresas y sucursales tienen operaciones reales y pruebas con MongoDB temporal. Los módulos empresariales pendientes devuelven HTTP 501. La nueva interfaz web y el preview móvil compilan; Android/iOS y Atlas no fueron verificados. Ningún módulo está QA_APPROVED.
 
-Los módulos heredados contienen controladores placeholder. Sus rutas responden **501 NOT_IMPLEMENTED** después de autenticación para evitar éxitos ficticios. Ningún módulo tiene estado QA_APPROVED.
-
-| Módulo | Estado | Límite actual |
-| --- | --- | --- |
-| Core Infrastructure | IN_PROGRESS | Compila; faltan validación de despliegue y conexión MongoDB real. |
-| Auth | IN_TESTING | Login, JWT, refresh rotatorio y logout con sesiones MongoDB. |
-| Users | IN_TESTING | CRUD, RBAC, alcance por empresa, desactivación y auditoría. |
-| Roles / Permissions | IN_TESTING | Gestión de roles y catálogo compartido de permisos. |
-| Companies / Branches | IN_TESTING | Gestión con filtros empresariales; faltan pruebas con MongoDB. |
-| Customers / Suppliers / Categories / Products / Warehouses | CORRECTION_REQUIRED | Modelos y controladores heredados sin CRUD verificado; faltan campos de empresa en catálogos. |
-| Inventory / Sales / Purchases / Finance | CORRECTION_REQUIRED | Reglas y controladores incompletos. |
-| Reports / HR / Projects / CRM | PLANNED | Sin implementación verificada para producción. |
-| Web / Mobile | IN_PROGRESS | Estructuras parciales; ejecución Expo/native no verificada. |
-
-## Arquitectura
-
-```text
-React Native / React Native Web (en desarrollo)
-                    ↓
-             REST API /api/v1
-                    ↓
-             Express routes
-                    ↓
-        Controllers / Services
-                    ↓
-              Repositories
-                    ↓
-                Mongoose
-                    ↓
-          MongoDB local o Atlas
-```
-
-`backend/src/app.ts` crea Express sin abrir puerto ni conectar MongoDB. `backend/src/server.ts` valida configuración, conecta la base e inicia el listener. Esto permite pruebas HTTP con Supertest sin tocar una base productiva.
-
-## Tecnologías y estructura
-
-Node.js, TypeScript, Express, MongoDB, Mongoose, bcrypt, JWT, Jest, Supertest, React Native y React Native Web.
-
-```text
-apps/mobile/           cliente móvil en desarrollo
-apps/web/              cliente web en desarrollo
-backend/src/           API, modelos, servicios y repositorios
-backend/tests/         pruebas unitarias y HTTP
-packages/types/        tipos y catálogo de permisos
-packages/constants/    constantes compartidas
-packages/validation/   validadores compartidos heredados
-packages/api-client/   cliente API
-packages/ui/           componentes UI
-packages/config/       configuración compartida heredada
-native/                base para integración Android
-docs/                  estado y decisiones
-```
-
-## Configuración de entorno
-
-Actualmente `.env` funciona como plantilla de configuración del proyecto. No debe contener credenciales reales. En una fase posterior deberá migrarse a `.env.example` y mantenerse `.env` real fuera de Git.
-
-Para ejecutar localmente, proporciona valores reales mediante variables de entorno o modifica tu copia local de `.env` **sin incluir esos cambios en ningún commit**. En producción son obligatorios `MONGODB_URI`, `JWT_SECRET` y `JWT_REFRESH_SECRET`; los secretos JWT deben tener al menos 32 caracteres y no pueden ser los ejemplos.
-
-Formato de URI de Atlas, sin credenciales reales:
-
-```dotenv
-MONGODB_URI=mongodb+srv://USERNAME:PASSWORD@cluster.example.mongodb.net/erp
-MONGODB_DB_NAME=erp_dev
-JWT_SECRET=change_me_in_local_env
-JWT_REFRESH_SECRET=change_me_in_local_env
-```
-
-El servidor usa un pool MongoDB de 0 a 10 conexiones. No se ha verificado una conexión a Atlas en esta ejecución.
+El [ERP SOFTWARE AUDIT REPORT](docs/ERP-SOFTWARE-AUDIT-REPORT.md) contiene los hallazgos, correcciones, matriz de estados, evidencia y límites. Las credenciales MongoDB que estuvieron en el historial de Git deben rotarse antes de desplegar.
 
 ## Instalación y desarrollo
 
-Requisitos: Node.js 18+, npm 9+ y MongoDB de desarrollo. Desde la raíz:
+Requisitos: Node.js y npm compatibles con las dependencias del lockfile; ejecución verificada con Node 24.21.0. MongoDB de desarrollo para usar la API. Ejecuta desde la raíz de este repositorio:
 
-```bash
+```powershell
 npm install
+if (!(Test-Path .env)) { Copy-Item .env.example .env }
+# Edita .env con tu base de desarrollo y dos secretos JWT aleatorios y distintos.
 npm run build
-npm run dev
+npm run backend:dev
 ```
 
-`npm run dev` y `npm run backend:dev` inician el backend. La API escucha en `PORT` (3000 por defecto). `GET /health` comprueba Express, no la base de datos.
+En otra terminal:
 
-Para crear la primera cuenta en una base de **desarrollo**, configura `MONGODB_URI`, `SEED_ADMIN_EMAIL` y una `SEED_ADMIN_PASSWORD` propia de al menos 12 caracteres; después ejecuta `npm run db:seed -w backend`. El seed no trae credenciales fijas y Mongoose aplica el hash al guardar el usuario. No se probó contra MongoDB en esta ejecución.
-
-`npm run web:dev` y `npm run mobile:android` están definidos, pero sus clientes aún no tienen una configuración Expo/native verificada; no se consideran comandos listos para uso.
-
-| Script raíz | Función |
-| --- | --- |
-| `npm run build` | Compila los paquetes compartidos y backend. |
-| `npm run lint` | Ejecuta ESLint sobre TypeScript/TSX. |
-| `npm run test` | Ejecuta Jest. |
-| `npm run test:unit` | Pruebas unitarias. |
-| `npm run test:integration` | Pruebas HTTP. |
-
-Los resultados de verificación están en `docs/DEVELOPMENT-STATUS.md`. El build raíz no compila web/mobile. El lint termina con 0 errores y 235 advertencias heredadas; las 27 pruebas pasan con persistencia simulada.
-
-## API
-
-Base: `/api/v1`. Los listados devuelven `{success, data: [], pagination: {page, limit, total, pages}}`. Los IDs son ObjectId de MongoDB.
-
-| Recurso | Rutas implementadas |
-| --- | --- |
-| Auth | `POST /auth/login`, `POST /auth/refresh`, `POST /auth/logout` |
-| Users | `GET /users`, `GET /users/:id`, `POST /users`, `PUT/PATCH /users/:id`, `PATCH /users/:id/deactivate` |
-| Roles | `GET /roles`, `GET /roles/:id`, `POST /roles`, `PUT/PATCH /roles/:id`, `PATCH /roles/:id/deactivate` |
-| Companies | `GET /companies`, `GET /companies/:id`, `POST /companies`, `PUT/PATCH /companies/:id`, `PATCH /companies/:id/deactivate` |
-| Branches | `GET /branches`, `GET /branches/:id`, `POST /branches`, `PUT/PATCH /branches/:id`, `PATCH /branches/:id/deactivate` |
-
-Las rutas de módulos heredados devuelven 501 hasta su revisión.
-
-## Seguridad
-
-El access token incluye solo `userId`, `companyId` y `roleId`. Cada solicitud autenticada vuelve a consultar usuario, rol y empresa activos; los permisos provienen del rol vigente. Los refresh tokens se guardan como hash SHA-256 en una colección de sesiones, se rotan y se revocan al cerrar sesión. El modelo User hashea la contraseña al guardar; la API no devuelve `passwordHash`.
-
-Las consultas del núcleo usan el `companyId` del usuario autenticado. Crear empresas requiere `platform.company.create`, reservado a una cuenta de plataforma aprovisionada fuera de la API pública. La auditoría redacta valores sensibles. Su escritura es de mejor esfuerzo: una falla del registro no revierte la operación de negocio.
-
-**Migración pendiente:** instalaciones existentes pueden tener índices globales de email y documentos Role/Branch sin `companyId`. Deben migrarse antes de usar este código con datos históricos.
-
-## Testing
-
-```bash
-npm run test
-npm run test:unit
-npm run test:integration
+```powershell
+npm run web:dev
 ```
 
-Las pruebas del núcleo usan mocks para evitar una base productiva. Cubren validación, login, refresh/logout y filtros empresariales. Falta una suite con MongoDB de prueba para CRUD completo, índices, migración y aislamiento de Customers, Products y Warehouses.
+Web: http://127.0.0.1:5173. API: http://127.0.0.1:3000/api/v1. Vite envía /api al backend mediante proxy; no hace falta publicar las credenciales de MongoDB en el frontend. VITE_API_BASE_URL permite cambiar la URL pública de la API. CORS_ORIGIN debe coincidir con el origen real cuando se accede directamente entre orígenes.
 
-## Roadmap
+.env permanece local e ignorado; .env.example contiene valores ficticios que deben reemplazarse. En producción se validan secretos JWT distintos, de al menos 32 caracteres, sin marcadores de ejemplo. El servidor no está preparado para arrancar con los valores ficticios.
 
-Core Hardening → Master Data → Inventory → Sales → Purchases → Finance → Dashboard & Reports → HR / Projects / CRM → Mobile & Native Integrations.
+Para crear una cuenta de desarrollo, configura SEED_ADMIN_EMAIL y SEED_ADMIN_PASSWORD (mínimo 12 caracteres, máximo 72 bytes UTF-8, mayúsculas, minúsculas y números) y ejecuta:
 
-Consulta [estado de desarrollo](docs/DEVELOPMENT-STATUS.md) y [próximos pasos](docs/NEXT-STEPS.md).
+```powershell
+npm run db:seed -w backend
+```
+
+El seed crea empresa, sucursal, rol empresarial y administrador; excluye permisos de plataforma y rechaza NODE_ENV=production. No crea productos ni stock y no fue ejecutado contra una instalación existente.
+
+## Estructura y arquitectura
+
+```text
+apps/web/              entrada web y pruebas Playwright
+apps/mobile/           entrada React Native y preview web con Vite
+backend/src/           rutas, middleware, servicios, repositorios y modelos
+backend/tests/         Jest, Supertest y MongoDB temporal
+packages/api-client/   contratos HTTP, refresh y sesión en memoria
+packages/session/      AuthProvider compartido
+packages/ui/           tokens, logo, layout, pantallas y componentes
+packages/types/        tipos y catálogo de permisos
+docs/                  auditoría, estado, arquitectura, seguridad y QA
+patches/               compatibilidad Metro / image-size
+```
+
+Frontend → REST /api/v1 → Express → controladores → servicios/repositorios → Mongoose → MongoDB. Auth/Users siguen esas capas; Roles/Companies/Branches aún consultan modelos desde controladores. Consulta [arquitectura real](docs/architecture/ARCHITECTURE.md).
+
+## UI / Branding
+
+El logo oficial de castor, baúl y cerradura conserva su proporción cuadrada. Se optimizó a PNG de 512 × 512 para UI y 128 × 128 para favicon. ERPLogo ofrece tamaños sm, md y lg. El activo compartido está en packages/ui/src/assets/logo/logo.png.
+
+El design system centraliza #602CF5, fondos claros, tarjetas blancas, bordes, estados, tipografía, radios y espaciado. Web y Mobile usan la misma aplicación, sesión, login, dashboard y pantalla de usuarios. Desktop tiene sidebar fija; tablet, sidebar compacta; móvil, navegación inferior y menú de módulos. Los cortes son 768 y 1100 píxeles.
+
+El dashboard prepara siete KPI y cinco categorías de gráficas. Muestra “Próximamente” cuando el backend responde 501; no presenta ceros ni tendencias ficticias. Productos, clientes e inventario muestran su disponibilidad real.
+
+![Dashboard de escritorio en entorno de pruebas](docs/qa/screenshots/dashboard-desktop.png)
+
+[Login desktop](docs/qa/screenshots/login-desktop.png) · [Dashboard móvil](docs/qa/screenshots/dashboard-mobile.png) · [Formulario móvil](docs/qa/screenshots/user-form-mobile.png)
+
+Las capturas usan una empresa y cuentas ficticias almacenadas únicamente en MongoDB temporal de QA. Son evidencia de interfaz, no datos productivos.
+
+## Seguridad y API
+
+- JWT de acceso y refresh con tipo y sid; sesión activa comprobada en cada petición.
+- Refresh rotatorio mediante actualización atómica de un documento; logout revoca ambos tokens.
+- RBAC vigente consultado en backend, aislamiento por empresa y referencias de rol/sucursal validadas.
+- Permisos platform.* requieren una cuenta de plataforma aprovisionada fuera de la API empresarial.
+- Tokens frontend solo en memoria: recargar o cerrar la app exige iniciar sesión de nuevo.
+- Auditoría redactada; la persistencia de eventos aún es de mejor esfuerzo.
+
+Rutas reales: /auth/login, /auth/refresh, /auth/logout, /users, /roles, /companies y /branches. Listados: {success, data, pagination}. Errores: {success:false, error:{code,message}}. Los módulos pendientes responden 501 NOT_IMPLEMENTED después de autenticación.
+
+GET /health comprueba Express; no acredita que MongoDB esté disponible. No hay recuperación de contraseña ni MFA funcionales.
+
+## Pruebas y builds
+
+```powershell
+npm run build
+npm run lint
+npm run format:check
+npm run test -- --runInBand --silent
+npm run test:unit -- --runInBand --silent
+npm run test:integration -- --runInBand --silent
+npm run test:e2e
+```
+
+El build raíz compila paquetes/backend y genera bundles web de ambas apps; no produce APK/IPA. El preview móvil se inicia con npm run mobile:web. Los scripts Android/iOS requieren proyectos nativos que aún no están disponibles.
+
+Para preparar E2E la primera vez:
+
+```powershell
+$env:PLAYWRIGHT_BROWSERS_PATH = Join-Path (Get-Location) 'node_modules/.cache/ms-playwright'
+npx playwright install chromium
+node backend/scripts/cache-test-mongo.cjs
+npm run build
+npm run test:e2e
+```
+
+Los servidores E2E usan puertos 3081, 4173 y 4174 y una base efímera aislada. No usan la URI Atlas de .env. npm install aplica el parche Metro que permite image-size 2.0.4; una prueba carga el logo mediante el lector real de assets.
+
+Resultados y límites: [verificación](docs/QA-VERIFICATION.md), [estrategia QA](docs/qa/QA-STRATEGY.md), [seguridad](docs/security/SECURITY.md), [dependencias](docs/qa/DEPENDENCY-AUDIT.md).
+
+## Continuación
+
+[Estado por módulo](docs/DEVELOPMENT-STATUS.md) y [siguiente fase](docs/NEXT-STEPS.md). Antes de MASTER DATA HARDENING deben cerrarse rotación de secretos históricos, migraciones e integridad de auditoría. Después: Categories → Units → Customers → Suppliers → Warehouses → Products.

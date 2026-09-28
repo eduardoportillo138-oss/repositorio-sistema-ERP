@@ -1,3 +1,4 @@
+import { colors } from '../tokens';
 // ============================================
 // Componente Loading
 // ============================================
@@ -11,7 +12,11 @@ interface LoadingProps {
   color?: string;
 }
 
-export const Loading: React.FC<LoadingProps> = ({ message = 'Cargando...', size = 'large', color = '#0066CC' }) => {
+export const Loading: React.FC<LoadingProps> = ({
+  message = 'Cargando...',
+  size = 'large',
+  color = colors.primary,
+}) => {
   return (
     <View style={styles.container}>
       <ActivityIndicator size={size} color={color} />
@@ -30,6 +35,6 @@ const styles = StyleSheet.create({
   text: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: colors.textSecondary,
   },
 });

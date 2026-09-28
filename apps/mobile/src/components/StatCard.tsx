@@ -14,7 +14,12 @@ interface StatCardProps {
   color?: string;
 }
 
-export const StatCard: React.FC<StatCardProps> = ({ title, value, icon, color = colors.primary }) => {
+export const StatCard: React.FC<StatCardProps> = ({
+  title,
+  value,
+  icon,
+  color = colors.primary,
+}) => {
   return (
     <Card style={styles.card}>
       <Text style={styles.icon}>{icon}</Text>

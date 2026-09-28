@@ -36,24 +36,29 @@ const purchaseOrderSchema = new Schema<IPurchaseOrderDocument>(
       ref: 'Warehouse',
       required: [true, 'El almacén es obligatorio'],
     },
-    items: [{
-      productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-      name: { type: String, required: true },
-      quantity: { type: Number, required: true, min: 0 },
-      unitPrice: { type: Number, required: true, min: 0 },
-      total: { type: Number, required: true, min: 0 },
-    }],
+    items: [
+      {
+        productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true, min: 0 },
+        unitPrice: { type: Number, required: true, min: 0 },
+        total: { type: Number, required: true, min: 0 },
+      },
+    ],
     subtotal: { type: Number, required: true, min: 0 },
     taxRate: { type: Number, default: 0, min: 0, max: 100 },
     taxAmount: { type: Number, default: 0, min: 0 },
     total: { type: Number, required: true, min: 0 },
     notes: { type: String, trim: true, maxlength: 1000 },
   },
-  { timestamps: true, collection: 'purchaseOrders' }
+  { timestamps: true, collection: 'purchaseOrders' },
 );
 
 purchaseOrderSchema.index({ companyId: 1, supplierId: 1, status: 1 });
 purchaseOrderSchema.index({ companyId: 1, createdAt: -1 });
 purchaseOrderSchema.index({ companyId: 1, warehouseId: 1, status: 1 });
 
-export const PurchaseOrder = mongoose.model<IPurchaseOrderDocument>('PurchaseOrder', purchaseOrderSchema);
+export const PurchaseOrder = mongoose.model<IPurchaseOrderDocument>(
+  'PurchaseOrder',
+  purchaseOrderSchema,
+);

@@ -49,7 +49,7 @@ const warehouseSchema = new Schema<IWarehouseDocument>(
       index: true,
     },
   },
-  { timestamps: true, collection: 'warehouses' }
+  { timestamps: true, collection: 'warehouses' },
 );
 
 warehouseSchema.index({ companyId: 1, code: 1 }, { unique: true });

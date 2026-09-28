@@ -3,3 +3,7 @@ dist/
 build/
 coverage/
 *.min.js
+logs/
+tmp/
+test-results/
+playwright-report/

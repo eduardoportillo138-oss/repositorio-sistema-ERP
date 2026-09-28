@@ -50,10 +50,13 @@ const notificationSchema = new Schema<INotificationDocument>(
     relatedEntity: { type: String, trim: true },
     relatedEntityId: { type: String },
   },
-  { timestamps: true, collection: 'notifications' }
+  { timestamps: true, collection: 'notifications' },
 );
 
 notificationSchema.index({ userId: 1, read: 1 });
 notificationSchema.index({ userId: 1, type: 1, createdAt: -1 });
 
-export const Notification = mongoose.model<INotificationDocument>('Notification', notificationSchema);
+export const Notification = mongoose.model<INotificationDocument>(
+  'Notification',
+  notificationSchema,
+);

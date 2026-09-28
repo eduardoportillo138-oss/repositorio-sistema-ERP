@@ -1,93 +1,46 @@
-# API REST Documentation
+# API REST: contrato real
 
-## Base URL
-
-```
-/api/v1
-```
+Actualizado: 2026-09-28. Base /api/v1. Atlas y despliegue no fueron verificados.
 
 ## Autenticación
 
-Todos los endpoints requieren autenticación excepto `/auth/login` y `/auth/refresh`.
+Login/refresh son públicos y están sujetos al limitador. Logout requiere access válido y refresh actual. Las rutas de negocio requieren Authorization: Bearer <accessToken>. GET /health es público y comprueba HTTP, no readiness de MongoDB.
 
-### Header
+| Endpoint           | Entrada / resultado                                                                |
+| ------------------ | ---------------------------------------------------------------------------------- |
+| POST /auth/login   | email, password, companyId opcional; obligatorio para email ambiguo entre empresas |
+| POST /auth/refresh | refreshToken actual; rotación de un solo uso                                       |
+| POST /auth/logout  | refreshToken actual + access válido; revoca la sesión                              |
 
-```
-Authorization: Bearer <access_token>
-Content-Type: application/json
-```
+Login/refresh retornan {success:true,data:{accessToken,refreshToken,user}}. user es identidad pública con empresa/rol/permisos vigentes, sin hash. Tokens con sid/tipo; la API consulta la sesión activa. Un logout con access vencido debe renovar primero y enviar el refresh recién recibido.
 
-## Estructura de Respuesta Exitosa
+## Core disponible
+
+| Recurso    | Operaciones reales                                      | Scope                                            |
+| ---------- | ------------------------------------------------------- | ------------------------------------------------ |
+| /users     | GET listado/ID, POST, PUT/PATCH ID, PATCH ID/deactivate | Empresa autenticada                              |
+| /roles     | GET listado/ID, POST, PUT/PATCH ID, PATCH ID/deactivate | Empresa; sin platform.* en roles empresariales   |
+| /branches  | GET listado/ID, POST, PUT/PATCH ID, PATCH ID/deactivate | Empresa; guardas de referencias/usuarios activos |
+| /companies | GET listado/ID, POST, PUT/PATCH ID, PATCH ID/deactivate | Empresa propia; POST requiere plataforma         |
+
+Cada operación valida su permiso específico en backend. IDs son ObjectId. El listado Companies no es un catálogo global; retorna la propia empresa. Aprovisionamiento de plataforma ocurre fuera del CRUD empresarial.
+
+Listado: {success:true,data:[],pagination:{page,limit,total,pages}}. Recurso individual: {success:true,data:resource}. No interpretar una página vacía como placeholder: el Core consulta datos reales.
+
+## Errores
 
 ```json
-{
-  "success": true,
-  "data": {},
-  "message": "Operación realizada correctamente"
-}
+{ "success": false, "error": { "code": "VALIDATION_ERROR", "message": "Descripción segura" } }
 ```
 
-## Estructura de Respuesta de Error
+HTTP 400 validación/JSON inválido, 401 autenticación/sesión, 403 permiso, 404 recurso inexistente/fuera de empresa, 409 duplicados, 413 cuerpo demasiado grande, 429 límite y 500 interno sin stack. La información detallada de DB no se devuelve.
+
+## Negocio pendiente
+
+/customers, /suppliers, /categories, /units, /products, /warehouses, /inventory, /sales, /purchases, /finance, /reports, /hr, /projects, /crm, /notifications y /settings están bloqueados para cualquier método después de autenticación.
 
 ```json
-{
-  "success": false,
-  "error": {
-    "code": "ERROR_CODE",
-    "message": "Descripción del error"
-  }
-}
+{ "success": false, "error": { "code": "NOT_IMPLEMENTED", "message": "Módulo en desarrollo" } }
 ```
 
-## Endpoints Principales
-
-### Auth
-- `POST /api/v1/auth/login` - Iniciar sesión
-- `POST /api/v1/auth/logout` - Cerrar sesión
-- `POST /api/v1/auth/refresh` - Renovar token
-
-### Usuarios
-- `GET /api/v1/users` - Listar usuarios
-- `GET /api/v1/users/:id` - Obtener usuario
-- `POST /api/v1/users` - Crear usuario
-- `PUT /api/v1/users/:id` - Actualizar usuario
-
-### Empresas
-- `GET /api/v1/companies` - Listar empresas
-- `POST /api/v1/companies` - Crear empresa
-
-### Clientes
-- `GET /api/v1/customers` - Listar clientes
-- `POST /api/v1/customers` - Crear cliente
-
-### Productos
-- `GET /api/v1/products` - Listar productos
-- `POST /api/v1/products` - Crear producto
-
-### Inventario
-- `GET /api/v1/inventory` - Ver inventario
-- `POST /api/v1/inventory/movements` - Crear movimiento
-
-### Ventas
-- `GET /api/v1/sales` - Listar ventas
-- `POST /api/v1/sales` - Crear venta
-
-### Compras
-- `GET /api/v1/purchases` - Listar compras
-- `POST /api/v1/purchases` - Crear compra
-
-### Finanzas
-- `GET /api/v1/finance/accounts-receivable` - Cuentas por cobrar
-- `GET /api/v1/finance/accounts-payable` - Cuentas por pagar
-- `GET /api/v1/finance/invoices` - Facturas
-- `POST /api/v1/finance/invoices` - Crear factura
-
-### Reportes
-- `GET /api/v1/reports/dashboard` - Dashboard
-- `GET /api/v1/reports/sales` - Reporte de ventas
-- `GET /api/v1/reports/inventory` - Reporte de inventario
-- `GET /api/v1/reports/finance` - Reporte financiero
-
----
-
-*Documentación generada como parte de FASE 0*
+HTTP 501 no es CRUD ni éxito. No existe un endpoint operativo de movimientos de stock, facturación o reporte por aparecer en documentación antigua. [Estado actual](../DEVELOPMENT-STATUS.md).

@@ -51,7 +51,7 @@ const roleSchema = new Schema<IRoleDocument>(
   {
     timestamps: true,
     collection: 'roles',
-  }
+  },
 );
 
 // Índices

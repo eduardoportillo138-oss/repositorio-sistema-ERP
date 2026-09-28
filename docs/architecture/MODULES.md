@@ -1,17 +1,9 @@
-# Estado de módulos del ERP
+# Estado de módulos
 
-Actualizado: 2026-09-24. Esta tabla registra funcionalidad verificada, no la presencia de archivos.
+Actualizado: 2026-09-28. La matriz vigente está en [DEVELOPMENT-STATUS](../DEVELOPMENT-STATUS.md) y en [ERP SOFTWARE AUDIT REPORT](../ERP-SOFTWARE-AUDIT-REPORT.md).
 
-| Módulo | Estado | Nota |
-| --- | --- | --- |
-| Auth | IN_TESTING | Login, refresh, logout y sesiones; sin prueba MongoDB real. |
-| Users | IN_TESTING | CRUD y aislamiento por empresa; pruebas con mocks. |
-| Roles / Permissions | IN_TESTING | CRUD y catálogo de permisos; falta migración de datos. |
-| Companies / Branches | IN_TESTING | CRUD empresarial; falta prueba MongoDB real. |
-| Audit | IN_TESTING | Eventos del núcleo; escritura de mejor esfuerzo. |
-| Customers / Suppliers / Categories / Products / Warehouses | CORRECTION_REQUIRED | Persistencia, validación y alcance empresarial por corregir. |
-| Inventory / Sales / Purchases / Finance | CORRECTION_REQUIRED | Reglas y flujos por implementar/verificar. |
-| HR / Projects / Reports / CRM | PLANNED | Sin funcionalidad verificada. |
-| Web / Mobile | IN_PROGRESS | Estructura parcial; TypeScript falla. |
+Auth, Users, Roles, Companies y Branches tienen operaciones reales y pruebas con MongoDB temporal. Continúan IN_TESTING por migración, integridad de auditoría y verificación de entorno pendientes. Audit está CORRECTION_REQUIRED por persistencia de mejor esfuerzo.
 
-Las rutas heredadas de negocio responden 501 tras autenticación. Ningún módulo está QA_APPROVED. Véanse [DEVELOPMENT-STATUS.md](../DEVELOPMENT-STATUS.md) y [NEXT-STEPS.md](../NEXT-STEPS.md).
+Categories, Units, Customers, Suppliers, Warehouses y Products requieren corrección de schemas, tenant y CRUD. Inventory, Sales, Purchases y Finance no tienen flujos habilitados. Reports, HR, Projects y CRM están PLANNED. Todos esos endpoints devuelven 501 después de autenticación.
+
+La interfaz web y el preview móvil tienen build y E2E en tres tamaños; el release Android/iOS no fue probado. Ningún módulo está QA_APPROVED. El [roadmap](../NEXT-STEPS.md) mantiene las dependencias entre fases.

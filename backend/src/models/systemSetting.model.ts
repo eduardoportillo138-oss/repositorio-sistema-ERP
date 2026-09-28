@@ -43,10 +43,13 @@ const systemSettingSchema = new Schema<ISystemSettingDocument>(
       default: false,
     },
   },
-  { timestamps: true, collection: 'systemSettings' }
+  { timestamps: true, collection: 'systemSettings' },
 );
 
 systemSettingSchema.index({ companyId: 1, key: 1 });
 systemSettingSchema.index({ isSystem: 1 });
 
-export const SystemSetting = mongoose.model<ISystemSettingDocument>('SystemSetting', systemSettingSchema);
+export const SystemSetting = mongoose.model<ISystemSettingDocument>(
+  'SystemSetting',
+  systemSettingSchema,
+);

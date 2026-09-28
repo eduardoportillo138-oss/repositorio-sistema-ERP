@@ -13,13 +13,21 @@ export async function getUserById(req: Request, res: Response): Promise<void> {
 }
 
 export async function createUser(req: Request, res: Response): Promise<void> {
-  res.status(201).json({ success: true, data: await userService.create(req.user!, req.body, ...meta(req)) });
+  res
+    .status(201)
+    .json({ success: true, data: await userService.create(req.user!, req.body, ...meta(req)) });
 }
 
 export async function updateUser(req: Request, res: Response): Promise<void> {
-  res.json({ success: true, data: await userService.update(req.user!, req.params.id!, req.body, ...meta(req)) });
+  res.json({
+    success: true,
+    data: await userService.update(req.user!, req.params.id!, req.body, ...meta(req)),
+  });
 }
 
 export async function deactivateUser(req: Request, res: Response): Promise<void> {
-  res.json({ success: true, data: await userService.deactivate(req.user!, req.params.id!, ...meta(req)) });
+  res.json({
+    success: true,
+    data: await userService.deactivate(req.user!, req.params.id!, ...meta(req)),
+  });
 }

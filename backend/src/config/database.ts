@@ -10,7 +10,9 @@ export async function connectDatabase(): Promise<void> {
   if (!eventsRegistered) {
     mongoose.connection.on('connected', () => logger.info('MongoDB conectado'));
     mongoose.connection.on('disconnected', () => logger.warn('MongoDB desconectado'));
-    mongoose.connection.on('error', (error: Error) => logger.error('MongoDB connection error', { name: error.name }));
+    mongoose.connection.on('error', (error: Error) =>
+      logger.error('MongoDB connection error', { name: error.name }),
+    );
     eventsRegistered = true;
   }
   try {
@@ -20,6 +22,8 @@ export async function connectDatabase(): Promise<void> {
       minPoolSize: 0,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 45000,
+      connectTimeoutMS: 10000,
+      autoIndex: config.nodeEnv !== 'production',
     });
   } catch (error) {
     logger.error('No se pudo conectar a MongoDB', { name: (error as Error).name });

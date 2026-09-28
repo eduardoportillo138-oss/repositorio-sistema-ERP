@@ -36,7 +36,7 @@ const paymentSchema = new Schema<IPaymentDocument>(
       index: true,
     },
   },
-  { timestamps: true, collection: 'payments' }
+  { timestamps: true, collection: 'payments' },
 );
 
 paymentSchema.index({ companyId: 1, invoiceId: 1 });

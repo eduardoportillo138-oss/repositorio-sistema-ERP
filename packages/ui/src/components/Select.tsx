@@ -1,3 +1,4 @@
+import { colors } from '../tokens';
 // ============================================
 // Componente Select
 // ============================================
@@ -35,6 +36,9 @@ export const Select: React.FC<SelectProps> = ({
         style={styles.trigger}
         onPress={() => !disabled && setIsOpen(!isOpen)}
         disabled={disabled}
+        accessibilityRole="button"
+        accessibilityLabel={selectedOption?.label || placeholder}
+        accessibilityState={{ disabled, expanded: isOpen }}
       >
         <Text style={[styles.text, !selectedOption && styles.placeholder]}>
           {selectedOption?.label || placeholder}
@@ -52,8 +56,12 @@ export const Select: React.FC<SelectProps> = ({
                   onChange(item.value);
                   setIsOpen(false);
                 }}
+                accessibilityRole="button"
+                accessibilityState={{ selected: item.value === value }}
               >
-                <Text style={[styles.optionText, item.value === value && styles.selectedOptionText]}>
+                <Text
+                  style={[styles.optionText, item.value === value && styles.selectedOptionText]}
+                >
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -72,27 +80,27 @@ const styles = StyleSheet.create({
   },
   trigger: {
     borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderColor: colors.border,
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     minHeight: 44,
     justifyContent: 'center',
   },
   text: {
     fontSize: 16,
-    color: '#333',
+    color: colors.textPrimary,
   },
   placeholder: {
-    color: '#999',
+    color: colors.textSecondary,
   },
   dropdown: {
     borderWidth: 1,
-    borderColor: '#CCCCCC',
+    borderColor: colors.border,
     borderRadius: 8,
     marginTop: 4,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
     maxHeight: 200,
   },
   option: {
@@ -100,14 +108,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   selectedOption: {
-    backgroundColor: '#E8F0FE',
+    backgroundColor: colors.primaryLight,
   },
   optionText: {
     fontSize: 16,
-    color: '#333',
+    color: colors.textPrimary,
   },
   selectedOptionText: {
-    color: '#0066CC',
+    color: colors.primary,
     fontWeight: '600',
   },
 });

@@ -1,10 +1,7 @@
-// ============================================
-// Repositorio Base
-// ============================================
-
-import mongoose, { Model, Document, FilterQuery, UpdateQuery } from 'mongoose';
-import { BaseDocument } from '../../../packages/types/dist';
-import { PaginationQuery } from '../../../packages/types/dist';
+import { Model, Document, FilterQuery } from 'mongoose';
+import { BaseDocument, PaginationQuery } from '../../../packages/types/dist';
+import { ValidationError } from '../errors/AppError';
+import { isValidObjectId, pagination } from '../utils/validation';
 
 export interface PaginationResult<T> {
   data: T[];
@@ -14,71 +11,74 @@ export interface PaginationResult<T> {
   totalPages: number;
 }
 
+/** Company context must come from the authenticated actor, never request input. */
 export class BaseRepository<T extends BaseDocument & Document> {
-  protected model: Model<T>;
-
-  constructor(model: Model<T>) {
-    this.model = model;
+  constructor(
+    protected model: Model<T>,
+    private companyId: string,
+  ) {
+    if (!isValidObjectId(companyId) || !model.schema.path('companyId'))
+      throw new ValidationError('Repositorio empresarial sin contexto');
   }
-
-  async findById(id: string): Promise<T | null> {
-    return this.model.findById(id).exec();
+  private scoped(filter: FilterQuery<T> = {}): FilterQuery<T> {
+    return { ...filter, companyId: this.companyId } as FilterQuery<T>;
   }
-
-  async findByIdWithCompany(id: string, companyId: string): Promise<T | null> {
-    return this.model.findOne({ _id: id, companyId }).exec();
+  findById(id: string): Promise<T | null> {
+    if (!isValidObjectId(id)) throw new ValidationError('ID inválido');
+    return this.model.findOne(this.scoped({ _id: id } as FilterQuery<T>)).exec();
   }
-
-  async findMany(filter: FilterQuery<T> = {}, pagination?: PaginationQuery): Promise<PaginationResult<T>> {
-    const page = pagination?.page || 1;
-    const limit = pagination?.limit || 20;
-    const sort = pagination?.sort || 'createdAt';
-    const order = pagination?.order === 'asc' ? 1 : -1;
-
-    const total = await this.model.countDocuments(filter).exec();
-    const data = await this.model
-      .find(filter)
-      .sort({ [sort]: order })
-      .skip((page - 1) * limit)
-      .limit(limit)
+  async findMany(
+    filter: FilterQuery<T> = {},
+    query: PaginationQuery = {},
+  ): Promise<PaginationResult<T>> {
+    const { page, limit, skip } = pagination(query as Record<string, unknown>);
+    const scope = this.scoped(filter);
+    const sort = ['createdAt', 'updatedAt', 'name'].includes(query.sort || '')
+      ? query.sort!
+      : 'createdAt';
+    const [total, data] = await Promise.all([
+      this.model.countDocuments(scope).exec(),
+      this.model
+        .find(scope)
+        .sort({ [sort]: query.order === 'asc' ? 1 : -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+    ]);
+    return { data, total, page, limit, totalPages: Math.ceil(total / limit) };
+  }
+  create(data: Partial<T>): Promise<T> {
+    return new this.model({ ...data, companyId: this.companyId }).save();
+  }
+  update(id: string, data: Partial<T>): Promise<T | null> {
+    if (
+      Object.keys(data).some(
+        (key) => key.startsWith('$') || key.includes('.') || ['companyId', '_id'].includes(key),
+      )
+    ) {
+      throw new ValidationError('Campos de actualización inválidos');
+    }
+    return this.model
+      .findOneAndUpdate(
+        this.scoped({ _id: id } as FilterQuery<T>),
+        { $set: data },
+        { new: true, runValidators: true },
+      )
       .exec();
-
-    return {
-      data,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit),
-    };
   }
-
-  async create(data: Partial<T>): Promise<T> {
-    const document = new this.model(data);
-    return document.save();
+  softDelete(id: string): Promise<T | null> {
+    return this.model
+      .findOneAndUpdate(
+        this.scoped({ _id: id } as FilterQuery<T>),
+        { $set: { status: 'cancelled' } },
+        { new: true },
+      )
+      .exec();
   }
-
-  async update(id: string, data: Partial<T>): Promise<T | null> {
-    return this.model.findByIdAndUpdate(id, data, { new: true, runValidators: true }).exec();
+  count(filter: FilterQuery<T> = {}): Promise<number> {
+    return this.model.countDocuments(this.scoped(filter)).exec();
   }
-
-  async updateByCompany(id: string, companyId: string, data: Partial<T>): Promise<T | null> {
-    return this.model.findOneAndUpdate({ _id: id, companyId }, data, { new: true, runValidators: true }).exec();
-  }
-
-  async softDelete(id: string): Promise<T | null> {
-    return this.model.findByIdAndUpdate(id, { status: 'cancelled' }, { new: true }).exec();
-  }
-
-  async softDeleteByCompany(id: string, companyId: string): Promise<T | null> {
-    return this.model.findOneAndUpdate({ _id: id, companyId }, { status: 'cancelled' }, { new: true }).exec();
-  }
-
-  async count(filter: FilterQuery<T> = {}): Promise<number> {
-    return this.model.countDocuments(filter).exec();
-  }
-
   async exists(filter: FilterQuery<T>): Promise<boolean> {
-    const count = await this.model.countDocuments(filter).exec();
-    return count > 0;
+    return !!(await this.model.exists(this.scoped(filter)));
   }
 }
