@@ -3,7 +3,12 @@
 // ============================================
 
 import { Router } from 'express';
-import { getDashboard, getSalesReport, getInventoryReport, getFinanceReport } from '../../controllers/report.controller';
+import {
+  getDashboard,
+  getSalesReport,
+  getInventoryReport,
+  getFinanceReport,
+} from '../../controllers/report.controller';
 import { authenticateToken, checkPermission } from '../../middlewares/auth';
 
 const router = Router();

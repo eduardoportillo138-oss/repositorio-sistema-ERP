@@ -9,6 +9,8 @@ pnpm-debug.log*
 .env
 .env.local
 .env.*.local
+.env.*
+!.env.example
 
 # MongoDB
 *.mongodb
@@ -17,6 +19,10 @@ pnpm-debug.log*
 dist/
 build/
 *.tsbuildinfo
+packages/validation/src/index.js
+packages/validation/src/index.js.map
+packages/validation/src/index.d.ts
+packages/validation/src/index.d.ts.map
 .out/
 
 # IDE

@@ -13,6 +13,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 ## 3. Alcance funcional esperado
 
 ### 3.1 Núcleo del sistema
+
 - Autenticación segura.
 - Usuarios, roles y permisos.
 - Empresas y sucursales.
@@ -21,6 +22,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Notificaciones básicas.
 
 ### 3.2 Catálogos y entidades principales
+
 - Clientes.
 - Proveedores.
 - Productos.
@@ -29,6 +31,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Almacenes.
 
 ### 3.3 Operaciones empresariales
+
 - Inventario con movimientos.
 - Ventas.
 - Compras.
@@ -36,6 +39,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Gestión de documentos y aprobaciones.
 
 ### 3.4 Finanzas
+
 - Facturación.
 - Cuentas por cobrar.
 - Cuentas por pagar.
@@ -43,12 +47,14 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Integración con inventario, ventas y compras.
 
 ### 3.5 Administración y operación
+
 - Recursos humanos.
 - Proyectos.
 - CRM avanzado.
 - Dashboard y reportes.
 
 ### 3.6 Preparación para evolución
+
 - Integraciones externas.
 - Webhooks.
 - Automatizaciones.
@@ -57,12 +63,14 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 ## 4. Requisitos funcionales principales
 
 ### 4.1 Multiempresa y multisucursal
+
 - Un usuario puede pertenecer a una o varias empresas.
 - Cada entidad debe aislar datos por companyId.
 - Sucursales y almacenes deben quedar asociados a una empresa y, cuando aplique, a una sucursal.
 - El acceso a recursos debe validarse en backend.
 
 ### 4.2 Seguridad y acceso
+
 - Login, logout, refresh token y expiración de sesión.
 - Protected routes y control de sesiones.
 - RBAC basado en permisos.
@@ -71,22 +79,26 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Auditoría de acciones críticas.
 
 ### 4.3 Inventario
+
 - El stock no debe modificarse arbitrariamente.
 - Todo movimiento debe estar apoyado por un registro histórico.
 - Se deben soportar entradas, salidas, transferencias, ajustes y devoluciones.
 - Debe existir trazabilidad completa.
 
 ### 4.4 Ventas y compras
+
 - Flujo operativos con estados definidos.
 - Validaciones de permisos y disponibilidad en inventario.
 - Cálculos importantes hechos en backend.
 - Integración con facturación, cuentas por cobrar y por pagar.
 
 ### 4.5 Financiero
+
 - Las ventas y compras deben influir en finanzas de manera consistente.
 - Los movimientos deben seguir una lógica contable y operativa compatible con la documentación del negocio.
 
 ### 4.6 Auditoría y trazabilidad
+
 - Todo cambio relevante debe quedar registrado.
 - Debe existir un registro de qué usuario hizo qué, cuándo, desde dónde y qué cambió.
 - Los registros no deben eliminarse de forma física cuando representen historial empresarial.
@@ -94,17 +106,20 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 ## 5. Requisitos no funcionales
 
 ### 5.1 Arquitectura y mantenibilidad
+
 - Arquitectura modular, por capas y por módulos.
 - Separación clara entre frontend, backend, servicios, repositorios, base de datos y contratos.
 - Estructura monorepo con paquetes compartidos para tipos y utilidades.
 
 ### 5.2 Escalabilidad
+
 - Soporte a crecimiento de empresas, sucursales y volumen de transacciones.
 - Índices apropiados en MongoDB.
 - Paginación y consultas server-side.
 - Preparación para integraciones, automatizaciones y analítica avanzada.
 
 ### 5.3 Seguridad
+
 - HTTPS.
 - Variables de entorno.
 - CORS y helmet.
@@ -114,12 +129,14 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - No almacenamiento de secretos en repositorio.
 
 ### 5.4 Calidad
+
 - Pruebas unitarias, de integración y E2E.
 - Validación de permisos y errores.
 - Desarrollo guiado por requisitos verificables.
 - Revisión de código y documentación técnica.
 
 ### 5.5 Experiencia de usuario
+
 - Diseño claro y consistente.
 - Componentes reutilizables entre React Native y React Native Web.
 - Interfaz orientada a tareas.
@@ -138,6 +155,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 ## 7. Fases previstas
 
 ### Fase 0: análisis y documentación
+
 - Estado del repositorio.
 - Arquitectura base.
 - Requisitos.
@@ -146,6 +164,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Estrategia de QA.
 
 ### Fase 1: infraestructura inicial
+
 - Monorepo.
 - TypeScript.
 - Backend.
@@ -155,6 +174,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - ESLint, Prettier, testing base.
 
 ### Fase 2: core ERP
+
 - Autenticación.
 - Usuarios.
 - Roles.
@@ -165,6 +185,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Configuración.
 
 ### Fase 3: catálogos
+
 - Clientes.
 - Proveedores.
 - Productos.
@@ -173,6 +194,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Almacenes.
 
 ### Fase 4: operaciones
+
 - Ventas.
 - Compras.
 - Inventario.
@@ -181,6 +203,7 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Devoluciones.
 
 ### Fase 5: finanzas
+
 - Facturación.
 - Cuentas por cobrar.
 - Cuentas por pagar.
@@ -188,17 +211,20 @@ Construir un ERP empresarial modular, multiempresa, multisucursal y preparado pa
 - Ingresos y gastos.
 
 ### Fase 6: administración
+
 - Recursos humanos.
 - Proyectos.
 - CRM avanzado.
 
 ### Fase 7: analítica
+
 - Dashboard.
 - Reportes.
 - KPIs.
 - Exportaciones.
 
 ### Fase 8: IA e integraciones
+
 - APIs externas.
 - Webhooks.
 - Automatizaciones.

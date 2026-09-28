@@ -3,7 +3,13 @@
 // ============================================
 
 import { Router } from 'express';
-import { getFinances, getInvoice, createInvoice, getAccountsReceivable, getAccountsPayable } from '../../controllers/finance.controller';
+import {
+  getFinances,
+  getInvoice,
+  createInvoice,
+  getAccountsReceivable,
+  getAccountsPayable,
+} from '../../controllers/finance.controller';
 import { authenticateToken, checkPermission } from '../../middlewares/auth';
 import { validate } from '../../middlewares/validators';
 

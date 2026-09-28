@@ -4,14 +4,21 @@
 
 import React from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { Card, Button } from '@erp/ui';
+import { Card, ErrorState, EmptyState } from '@erp/ui';
 import { useApi } from '../hooks/useApi';
 import { colors } from '../theme';
 
 export const SalesScreen: React.FC = () => {
-  const { data, loading } = useApi<any>('/sales');
+  const { data, loading, error, refetch } = useApi<any>('/sales');
 
-  if (loading) return <View style={styles.loading}><Text>Cargando...</Text></View>;
+  if (loading)
+    return (
+      <View style={styles.loading}>
+        <Text>Cargando...</Text>
+      </View>
+    );
+  if (error) return <ErrorState message={error} onRetry={refetch} />;
+  if (!data?.data?.length) return <EmptyState />;
 
   return (
     <View style={styles.container}>
@@ -19,7 +26,9 @@ export const SalesScreen: React.FC = () => {
       <FlatList
         data={data?.data}
         keyExtractor={(item, i) => i.toString()}
-        renderItem={({ item }) => <Card title={item.customerName} subtitle={`Total: $${item.total}`} />}
+        renderItem={({ item }) => (
+          <Card title={item.customerName} subtitle={`Total: $${item.total}`} />
+        )}
         contentContainerStyle={styles.list}
       />
     </View>

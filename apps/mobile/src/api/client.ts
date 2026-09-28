@@ -1,25 +1,11 @@
-// ============================================
-// API Client para Mobile
-// ============================================
-
-import { apiClient, getApiClient, setTokens, getAccessToken, clearTokens } from '@erp/api-client';
-
-const API_BASE_URL = 'http://localhost:3000/api/v1';
-
-export const mobileApiClient = getApiClient({ baseURL: API_BASE_URL });
-
+import { apiClient, getRefreshToken, setTokens, clearTokens } from '@erp/api-client';
+export const mobileApiClient = apiClient;
+export const api = apiClient;
 export const authAPI = {
-  login: (email: string, password: string) =>
-    mobileApiClient.post('/auth/login', { email, password }),
-  logout: () => mobileApiClient.post('/auth/logout'),
-  refreshToken: (refreshToken: string) =>
-    mobileApiClient.post('/auth/refresh', { refreshToken }),
+  login: (email: string, password: string, companyId?: string) =>
+    apiClient.post('/auth/login', { email, password, companyId }),
+  logout: () => apiClient.post('/auth/logout', { refreshToken: getRefreshToken() }),
+  refreshToken: (refreshToken: string) => apiClient.post('/auth/refresh', { refreshToken }),
 };
-
-export const setMobileTokens = (accessToken: string, refreshToken: string) => {
-  setTokens(accessToken, refreshToken);
-};
-
-export const clearMobileTokens = () => {
-  clearTokens();
-};
+export const setMobileTokens = setTokens;
+export const clearMobileTokens = clearTokens;

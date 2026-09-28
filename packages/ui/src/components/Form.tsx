@@ -1,3 +1,4 @@
+import { colors } from '../tokens';
 // ============================================
 // Componente Form
 // ============================================
@@ -23,7 +24,7 @@ export const Form: React.FC<FormProps> = ({ children, onSubmit, isSubmitting, st
 const styles = StyleSheet.create({
   form: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.surface,
   },
   content: {
     padding: 16,

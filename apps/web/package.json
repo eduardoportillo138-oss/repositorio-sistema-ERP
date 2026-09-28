@@ -3,13 +3,15 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "expo start --web",
-    "build": "expo export:web",
-    "start": "expo start",
+    "dev": "vite --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build",
+    "start": "vite --host 127.0.0.1",
     "test": "jest",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "test:e2e": "playwright test"
+    "test:e2e": "node ../../scripts/run-e2e.cjs",
+    "typecheck": "tsc --noEmit",
+    "build:web": "tsc --noEmit && vite build"
   },
   "dependencies": {
     "react": "18.2.0",
@@ -22,13 +24,8 @@
     "@erp/validation": "file:../../packages/validation",
     "@erp/constants": "file:../../packages/constants",
     "@erp/config": "file:../../packages/config",
-    "zustand": "^4.5.0",
-    "axios": "^1.6.5",
-    "react-router-dom": "^6.21.0",
-    "@react-navigation/native": "^6.1.0",
-    "@react-navigation/bottom-tabs": "^6.5.0",
-    "react-native-safe-area-context": "^4.8.0",
-    "react-native-screens": "^3.27.0"
+    "react-native-safe-area-context": "4.14.1",
+    "@erp/session": "file:../../packages/session"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",

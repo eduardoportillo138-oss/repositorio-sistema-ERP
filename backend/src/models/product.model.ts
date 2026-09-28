@@ -114,7 +114,7 @@ const productSchema = new Schema<IProductDocument>(
       index: true,
     },
   },
-  { timestamps: true, collection: 'products' }
+  { timestamps: true, collection: 'products' },
 );
 
 // Índices compuestos para consultas de inventario

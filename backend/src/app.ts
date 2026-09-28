@@ -9,7 +9,7 @@ import compression from 'compression';
 import { appConfig } from './config/appConfig';
 import { errorHandler } from './middlewares/errorHandler';
 import { notFoundHandler } from './middlewares/errorHandler';
-import { rateLimiter } from './middlewares/auth';
+import { createRateLimiter } from './middlewares/auth';
 import { setupRoutes } from './routes';
 
 export function createApp(): express.Application {
@@ -23,19 +23,22 @@ export function createApp(): express.Application {
   const corsOrigin = appConfig.corsOrigin;
   app.use(
     cors({
-      origin: Array.isArray(corsOrigin) ? corsOrigin : [corsOrigin],
+      origin: corsOrigin
+        .split(',')
+        .map((origin) => origin.trim())
+        .filter(Boolean),
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
       credentials: true,
       allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
-    })
+    }),
   );
 
   // Rate Limiting
-  app.use(rateLimiter);
+  app.use(createRateLimiter());
 
   // Parseo de JSON
   app.use(express.json({ limit: '10kb' }));
-  app.use(express.urlencoded({ extended: true }));
+  app.use(express.urlencoded({ extended: false, limit: '10kb' }));
 
   // Headers personalizados
   app.use((req, _res, next) => {

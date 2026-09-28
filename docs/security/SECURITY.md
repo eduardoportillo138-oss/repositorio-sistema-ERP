@@ -1,146 +1,48 @@
-# Política de seguridad del ERP
+# Seguridad del ERP
 
-## 1. Objetivo
+Actualizado: 2026-09-28. Estado global CORRECTION_REQUIRED; véase [informe](../ERP-SOFTWARE-AUDIT-REPORT.md).
 
-Diseñar un ERP con seguridad desde el primer nivel de arquitectura, garantizando confidencialidad, integridad, control de acceso y trazabilidad. La seguridad no es un add-on; es parte esencial del diseño.
+## Exposición histórica: acción externa requerida
 
-## 2. Principios base
+.env salió del tracking y permanece local/ignorado. .env.example es ficticio. Revisiones cec3053 y d8a63aa contienen credenciales MongoDB de apariencia real. No se reproducen aquí.
 
-- Nunca confiar en el frontend para permisos o cálculos críticos.
-- Never store secrets in code.
-- Toda entrada del cliente debe validarse en backend.
-- Los permisos deben evaluarse por empresa, sucursal y rol.
-- Los datos sensibles nunca deben devolverse en respuesta ni registrarse sin control.
+Rotar las credenciales afectadas, revisar accesos y permisos Atlas y las copias donde se distribuyeron. Rotar también cualquier otro secreto que se confirme expuesto. La validez actual de esos valores no fue comprobada. Quitar .env del estado actual no borra Git ni revoca credenciales. La limpieza coordinada del historial ocurre después de la rotación; no se realizó en esta ejecución.
 
-## 3. Autenticación
+## Controles implementados y probados
 
-### Requisitos mínimos
-- Login con email/usuario y contraseña.
-- JWT para acceso principal.
-- Refresh token para renovaciones seguras.
-- Expiración de sesiones.
-- Logout con invalidación de sesiones.
-- Recuperación de contraseña segura.
-- Preparación para MFA futuro.
+- Login bcrypt con usuario/rol/empresa activos; costo configurable 10–15.
+- Política API: mínimo 8 caracteres, mayúsculas/minúsculas/números y máximo 72 bytes UTF-8; seed requiere además mínimo 12.
+- Access/refresh JWT HS256, tipo explícito, sid/jti y secretos independientes.
+- Refresh almacenado solo como hash SHA-256 y rotado mediante CAS atómico.
+- Toda petición valida sesión/identidad actual; logout y desactivaciones revocan sesiones.
+- RBAC backend por rol vigente. isPlatformAdmin inmutable + permiso platform.* para acciones de plataforma; la API empresarial no aprovisiona esa marca.
+- Queries Core scoped por empresa y referencias de rol/sucursal del mismo tenant.
+- Validación de IDs/campos/paginación, errores normalizados y duplicados 409.
+- Helmet, rate limiting y CORS con origen configurado.
+- Logs y auditoría redactan secretos, URI MongoDB, JWT y Bearer recursivamente.
+- Server/seed/conexión no imprimen errores completos con credenciales.
+- Producción exige secretos >=32 caracteres y rechaza ejemplos; autoIndex desactivado.
 
-### Contraseñas
-- Se debe guardar un hash seguro, nunca texto plano.
-- Se recomienda bcrypt, scrypt o PBKDF2 con costo configurable.
-- No se deben devolver hashes ni tokens en respuestas.
+Los tokens se devuelven únicamente en las respuestas de autenticación autorizadas para establecer/renovar la sesión. Ninguna respuesta devuelve passwordHash. No confundir la emisión legítima de tokens con filtrarlos en logs o respuestas de negocio.
 
-## 4. Autorización RBAC
+## Sesión frontend
 
-El sistema debe seguir el modelo:
+Tokens y usuario se guardan solo en memoria, sin localStorage/AsyncStorage simulado. Recargar o reiniciar requiere login. Refresh comparte una promesa concurrente y solo reintenta una vez. Una respuesta de una generación antigua no restaura una sesión cerrada.
 
-Usuario
-↓
-Rol
-↓
-Permisos
+Logout intenta revocar remotamente; con access vencido obtiene un nuevo refresh y revoca el actual. Si falla la red, se borra la sesión local y se informa el error, sin prometer revocación remota. Almacenamiento seguro Keychain/Keystore es trabajo futuro.
 
-Ejemplos de permisos:
-- ventas.ver
-- ventas.crear
-- ventas.editar
-- ventas.eliminar
-- ventas.aprobar
-- inventario.ver
-- inventario.ajustar
-- finanzas.ver
+## Auditoría
 
-Reglas:
-- El cliente no decide permisos.
-- El backend debe validar cada acción.
-- El contexto empresarial debe validarse junto con el permiso.
+Se registran eventos del Core con empresa, actor, acción y entidad; se redactan valores sensibles antes de persistir. Consultas exigen companyId. La escritura es best effort: si falla, la operación puede continuar sin evento. Este riesgo impide una declaración de auditabilidad productiva. Requiere outbox/transacción, recuperación y pruebas de fallo.
 
-## 5. Multiempresa y aislamiento
+## Módulos y migración
 
-Cada operación debe validar:
-- que el usuario esté autenticado,
-- que tenga permiso para la empresa,
-- que la empresa exista,
-- que la sucursal o almacén asociado sea válido,
-- que la entidad pertenezca a la empresa correcta.
+Dieciséis schemas empresariales aún carecen de companyId efectivo. Están contenidos por endpoints 501 y no deben habilitarse hasta migrar y probar aislamiento. Datos históricos del Core e índices globales tampoco fueron migrados.
 
-Esto previene fugas de datos entre compañías o sucursales.
+No existe un control completo de alcance por sucursal/almacén, recuperación de contraseña ni MFA funcional; los flags de configuración no acreditan implementación.
 
-## 6. Protección de API
+## Dependencias y operación
 
-### 6.1 HTTP y transporte
-- HTTPS obligatorio en producción.
-- CORS configurado con políticas cerradas por origen.
-- Helmet para cabeceras de seguridad.
-- Rate limiting para evitar abuso.
+npm audit: 7 moderadas, 0 altas/críticas; detalle en [DEPENDENCY-AUDIT](../qa/DEPENDENCY-AUDIT.md). Parche Metro/image-size instalado y probado. Requiere seguimiento y migración de React Native compatible.
 
-### 6.2 Validación
-- Esquemas de entrada con validación estricta.
-- Rechazo de IDs inválidos, cantidades negativas y datos malformados.
-- Sanitización de campos de texto.
-- Validación de tipos y formatos.
-
-### 6.3 Errores
-- Manejo centralizado de errores.
-- No exponer stack traces ni detalles internos al frontend.
-- Respuestas normalizadas con código de error.
-
-## 7. Auditoría y trazabilidad
-
-Se debe registrar en auditLogs:
-- usuario
-- empresa
-- módulo
-- acción
-- entidad
-- identificador
-- valores antiguos y nuevos
-- fecha
-- IP
-- dispositivo
-
-Eventos prioritarios:
-- login / logout
-- cambios de permisos
-- creación y modificación de usuarios
-- ventas, compras e inventario
-- finanzas
-- cancelaciones
-- cambios de configuración
-
-Los registros de auditoría no deben poder ser eliminados por usuarios normales.
-
-## 8. Seguridad del frontend
-
-- El frontend no debe almacenar información sensible innecesaria.
-- Debe separar estado de autenticación, empresa, usuario y configuración.
-- No debe guardar tokens o secretos en almacenamiento local sin estrategia segura.
-- Debe usar comunicación únicamente con la API REST del backend.
-
-## 9. Seguridad de MongoDB
-
-- Las credenciales deben estar en variables de entorno.
-- Usar MongoDB Atlas con roles mínimos según necesidad.
-- Usar conexiones con TLS habilitado.
-- Cerrar accesos innecesarios.
-- Mantener auditoría de accesos y conexiones.
-
-## 10. Seguridad de entorno y despliegue
-
-- Variables de entorno en .env y .env.example.
-- No subir secretos al repositorio.
-- Separación entre entornos: desarrollo, pruebas, staging, producción.
-- Revisión de dependencias y vulnerabilidades.
-- Manejo de secretos por gestor propio del entorno.
-
-## 11. MFA y preparación futura
-
-El diseño debe ser compatible con MFA, o bien con soporte para autenticación de segunda factor. Sin embargo, no se debe implementar de forma improvisada ni como una dependencia crítica del core inicial si no está justificado.
-
-## 12. Registro y monitoreo
-
-- Logs estructurados con niveles INFO, WARN, ERROR y DEBUG.
-- Evitar loggear contraseñas, tokens, secretos o contenido sensible.
-- Monitorear fallas, intentos de acceso no autorizado y errores repetidos.
-
-## 13. Recomendación final
-
-La seguridad debe implementarse como una capa transversal. Las decisiones clave son: validación centralizada en backend, permisos por empresa, JWT con refresh token, auditoría fuerte, control de sesiones y política estricta sobre secretos y datos sensibles.
+No se verificaron TLS del despliegue, redes/roles de Atlas, backups, restauración, pentest, HA ni secretos del entorno productivo. Antes de desplegar: rotación histórica, migración controlada, auditoría durable, índices y configuración del entorno. Nunca adjuntar URI completa, .env ni tokens a incidencias.

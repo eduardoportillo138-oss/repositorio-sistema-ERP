@@ -4,14 +4,21 @@
 
 import React from 'react';
 import { View, Text, FlatList, StyleSheet } from 'react-native';
-import { Card } from '@erp/ui';
+import { Card, ErrorState, EmptyState } from '@erp/ui';
 import { useApi } from '../hooks/useApi';
 import { colors } from '../theme';
 
 export const InventoryScreen: React.FC = () => {
-  const { data, loading } = useApi<any>('/inventory');
+  const { data, loading, error, refetch } = useApi<any>('/inventory');
 
-  if (loading) return <View style={styles.loading}><Text>Cargando...</Text></View>;
+  if (loading)
+    return (
+      <View style={styles.loading}>
+        <Text>Cargando...</Text>
+      </View>
+    );
+  if (error) return <ErrorState message={error} onRetry={refetch} />;
+  if (!data?.data?.length) return <EmptyState />;
 
   return (
     <View style={styles.container}>

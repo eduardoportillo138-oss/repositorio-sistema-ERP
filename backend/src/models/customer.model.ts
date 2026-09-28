@@ -69,7 +69,7 @@ const customerSchema = new Schema<ICustomerDocument>(
     },
     tags: [{ type: String }],
   },
-  { timestamps: true, collection: 'customers' }
+  { timestamps: true, collection: 'customers' },
 );
 
 customerSchema.index({ companyId: 1, name: 1 });

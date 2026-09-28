@@ -103,7 +103,7 @@ const inventoryMovementSchema = new Schema<IInventoryMovementDocument>(
   {
     timestamps: true,
     collection: 'inventoryMovements',
-  }
+  },
 );
 
 // Índices compuestos
@@ -112,4 +112,7 @@ inventoryMovementSchema.index({ companyId: 1, warehouseId: 1, createdAt: -1 });
 inventoryMovementSchema.index({ referenceType: 1, referenceId: 1 });
 inventoryMovementSchema.index({ productId: 1, warehouseId: 1, createdAt: -1 });
 
-export const InventoryMovement = mongoose.model<IInventoryMovementDocument>('InventoryMovement', inventoryMovementSchema);
+export const InventoryMovement = mongoose.model<IInventoryMovementDocument>(
+  'InventoryMovement',
+  inventoryMovementSchema,
+);

@@ -45,7 +45,7 @@ const categorySchema = new Schema<ICategoryDocument>(
       index: true,
     },
   },
-  { timestamps: true, collection: 'categories' }
+  { timestamps: true, collection: 'categories' },
 );
 
 categorySchema.index({ companyId: 1, code: 1 }, { unique: true });

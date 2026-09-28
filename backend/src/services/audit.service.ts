@@ -3,7 +3,9 @@
 // ============================================
 
 import { AuditLog } from '../models/auditLog.model';
-import { logger } from '../utils/logger';
+import { logger, sanitizeLogData } from '../utils/logger';
+import { ValidationError } from '../errors/AppError';
+import { isValidObjectId } from '../utils/validation';
 
 export const auditService = {
   async log(entry: {
@@ -21,12 +23,14 @@ export const auditService = {
     try {
       await AuditLog.create({
         ...entry,
+        ip: entry.ip || 'unknown',
+        device: entry.device || 'unknown',
         oldValue: redact(entry.oldValue),
         newValue: redact(entry.newValue),
         timestamp: new Date(),
       });
     } catch (error) {
-      logger.error('Error creando audit log', { error: (error as Error).message });
+      logger.error('Error creando audit log', { name: (error as Error).name });
     }
   },
 
@@ -40,7 +44,9 @@ export const auditService = {
     page?: number;
     limit?: number;
   }): Promise<any> {
-    const query: any = {};
+    if (!isValidObjectId(filters.companyId))
+      throw new ValidationError('Empresa obligatoria para auditoría');
+    const query: any = { companyId: filters.companyId };
 
     if (filters.companyId) query.companyId = filters.companyId;
     if (filters.module) query.module = filters.module;
@@ -67,10 +73,15 @@ export const auditService = {
 };
 
 function redact(value: unknown): any {
+  if (typeof value === 'string') return sanitizeLogData({ value }).value;
   if (Array.isArray(value)) return value.map(redact);
   if (!value || typeof value !== 'object') return value;
-  return Object.fromEntries(Object.entries(value).map(([key, item]) => [
-    key,
-    /(password|secret|token|jwt|credential|api.?key|mfa)/i.test(key) ? '[REDACTED]' : redact(item),
-  ]));
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      /(password|secret|token|jwt|credential|api.?key|mfa)/i.test(key)
+        ? '[REDACTED]'
+        : redact(item),
+    ]),
+  );
 }

@@ -45,7 +45,7 @@ const projectSchema = new Schema<IProjectDocument>(
     budget: { type: Number, min: 0 },
     spent: { type: Number, default: 0, min: 0 },
   },
-  { timestamps: true, collection: 'projects' }
+  { timestamps: true, collection: 'projects' },
 );
 
 projectSchema.index({ companyId: 1, code: 1 }, { unique: true });

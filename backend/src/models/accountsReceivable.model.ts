@@ -42,11 +42,14 @@ const accountsReceivableSchema = new Schema<IAccountsReceivableDocument>(
       index: true,
     },
   },
-  { timestamps: true, collection: 'accountsReceivable' }
+  { timestamps: true, collection: 'accountsReceivable' },
 );
 
 accountsReceivableSchema.index({ companyId: 1, customerId: 1, status: 1 });
 accountsReceivableSchema.index({ companyId: 1, dueDate: 1 });
 accountsReceivableSchema.index({ companyId: 1, status: 1, balance: 1 });
 
-export const AccountsReceivable = mongoose.model<IAccountsReceivableDocument>('AccountsReceivable', accountsReceivableSchema);
+export const AccountsReceivable = mongoose.model<IAccountsReceivableDocument>(
+  'AccountsReceivable',
+  accountsReceivableSchema,
+);

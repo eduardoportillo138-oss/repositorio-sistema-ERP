@@ -1,74 +1,69 @@
-// ============================================
-// Componente Button
-// ============================================
-
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet } from 'react-native';
-
+import { Pressable, Text, StyleSheet, ActivityIndicator, StyleProp, ViewStyle } from 'react-native';
+import { colors, radius } from '../tokens';
 export interface ButtonProps {
   title: string;
   onPress: () => void;
   variant?: 'primary' | 'secondary' | 'outline' | 'danger';
   disabled?: boolean;
   loading?: boolean;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
+  accessibilityLabel?: string;
 }
-
-export const Button: React.FC<ButtonProps> = ({
+export function Button({
   title,
   onPress,
   variant = 'primary',
   disabled = false,
   loading = false,
   style,
-}) => {
-  const getVariantStyles = () => {
-    switch (variant) {
-      case 'primary':
-        return { backgroundColor: '#0066CC', color: '#FFFFFF' };
-      case 'secondary':
-        return { backgroundColor: '#6C757D', color: '#FFFFFF' };
-      case 'outline':
-        return { backgroundColor: 'transparent', borderColor: '#0066CC', color: '#0066CC' };
-      case 'danger':
-        return { backgroundColor: '#DC3545', color: '#FFFFFF' };
-      default:
-        return { backgroundColor: '#0066CC', color: '#FFFFFF' };
-    }
-  };
-
-  const variantStyles = getVariantStyles();
-
+  accessibilityLabel,
+}: ButtonProps) {
+  const blocked = disabled || loading;
+  const background =
+    variant === 'outline'
+      ? colors.surface
+      : variant === 'secondary'
+        ? colors.primaryLight
+        : variant === 'danger'
+          ? colors.danger
+          : colors.primary;
+  const foreground =
+    variant === 'outline' || variant === 'secondary' ? colors.primary : colors.surface;
   return (
-    <TouchableOpacity
-      style={[styles.button, variantStyles, disabled && styles.disabled, style]}
+    <Pressable
       onPress={onPress}
-      disabled={disabled || loading}
-      activeOpacity={0.7}
+      disabled={blocked}
       accessibilityRole="button"
-      accessibilityLabel={title}
+      accessibilityLabel={accessibilityLabel || title}
+      accessibilityState={{ disabled: blocked, busy: loading }}
+      style={({ pressed }) => [
+        styles.button,
+        {
+          backgroundColor: background,
+          borderColor: variant === 'outline' ? colors.border : background,
+        },
+        (pressed || blocked) && { opacity: 0.65 },
+        style,
+      ]}
     >
-      <Text style={[styles.text, { color: variantStyles.color }]}>
-        {loading ? 'Cargando...' : title}
-      </Text>
-    </TouchableOpacity>
+      {loading ? (
+        <ActivityIndicator color={foreground} />
+      ) : (
+        <Text style={[styles.text, { color: foreground }]}>{title}</Text>
+      )}
+    </Pressable>
   );
-};
-
+}
 const styles = StyleSheet.create({
   button: {
     paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 8,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderRadius: radius.medium,
+    minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 44,
   },
-  text: {
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  disabled: {
-    opacity: 0.5,
-  },
+  text: { fontSize: 14, fontWeight: '600' },
 });

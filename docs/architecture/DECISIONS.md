@@ -1,64 +1,47 @@
-# Decisiones Arquitectónicas (ADR)
+# Decisiones de arquitectura
 
-## ADR-001: Zustand vs Redux Toolkit
-**Decisión:** Zustand
-**Contexto:** Se necesita un estado global para el ERP con múltiples módulos.
-**Opciones:** Zustand, Redux Toolkit, MobX, Recoil
-**Seleccionada:** Zustand
-**Motivo:** Menor boilerplate, API más simple, excelente rendimiento con selectors.
-**Consecuencias:** Menos código de configuración, menos middleware disponible.
+Actualizado: 2026-09-28. Decisiones implementadas y propuestas identificadas por separado.
 
-## ADR-002: JWT vs Sessions con Redis
-**Decisión:** JWT + Refresh Token
-**Contexto:** Autenticación para API REST.
-**Opciones:** JWT, Sessions con Redis, OAuth2
-**Seleccionada:** JWT con refresh token
-**Motivo:** Escalable, stateless, compatible con microservicios.
+## ADR-001: sesión compartida en React Context — IMPLEMENTED
 
-## ADR-003: Repository Pattern
-**Decisión:** Repository base simplificado
-**Contexto:** Persistencia de datos con Mongoose.
-**Seleccionada:** Repository base con métodos comunes
-**Motivo:** Reduce duplicación en queries, facilita testing.
+AuthProvider de packages/session y store en memoria del cliente HTTP. Se retiró Zustand al no existir consumidores reales. Un state manager de negocio puede evaluarse cuando haya necesidad concreta. Recargar implica nuevo login.
 
-## ADR-004: MongoDB Transactions
-**Decisión:** Selectivo, no indiscriminado
-**Contexto:** Operaciones multi-documento como ventas.
-**Seleccionada:** Transacciones solo cuando hay consistencia crítica
-**Motivo:** Las transacciones MongoDB tienen overhead. Se usarán para ventas completas.
+## ADR-002: JWT con sesión MongoDB — IMPLEMENTED
 
-## ADR-005: Stock por Movimientos
-**Decisión:** Inventario basado en movimientos
-**Contexto:** Evitar manipulación directa de stock.
-**Seleccionada:** Cada stock cambia mediante InventoryMovement
-**Motivo:** Trazabilidad completa, prevención de stock negativo, auditoría.
+Access y refresh identifican Session por sid/tipo. Se consulta identidad, permisos y sesión en backend; el sistema no es stateless. Logout/desactivación revocan y refresh rota mediante CAS en un documento. No requiere Redis para este alcance.
 
-## ADR-006: Monorepo con Workspaces
-**Decisión:** npm workspaces
-**Contexto:** Compartir código entre frontend y backend.
-**Seleccionada:** Monorepo con npm workspaces
-**Motivo:** Paquetes compartidos, versión consistente.
+## ADR-003: repositorio empresarial con contexto obligatorio — IMPLEMENTED
 
-## ADR-007: Valores Monetarios
-**Decisión:** Decimal128 de MongoDB
-**Contexto:** Evitar floats para cálculos financieros.
-**Seleccionada:** Tipo Number en Mongoose
-**Motivo:** Precisión decimal para operaciones financieras.
+BaseRepository exige companyId y schema adecuado. Impone filtro de tenant y protege actualizaciones. Auth/Users tienen repositorios; otros controladores Core aún acceden directamente a Mongoose.
 
-## ADR-008: Eliminación Lógica
-**Decisión:** status = active/inactive/cancelled
-**Contexto:** Preservar historial empresarial.
-**Seleccionada:** Eliminación lógica mediante campo status
-**Motivo:** Información fiscal debe preservarse.
+## ADR-004: transacciones/outbox para integridad — PLANNED
 
-## ADR-009: Separación Frontend/Backend
-**Decisión:** API REST estricta
-**Contexto:** React Native y Web no acceden a MongoDB.
-**Seleccionada:** Toda comunicación vía /api/v1/
-**Motivo:** Seguridad, escalabilidad.
+Auditoría actual es best effort. Antes de producción debe garantizarse la escritura durable del evento junto con el cambio. Transacciones multidocumento necesitan replica set y pruebas de fallo; las suites actuales no prueban ese diseño futuro.
 
-## ADR-010: TypeScript Compartido
-**Decisión:** packages/types para contratos
-**Contexto:** Tipos compartidos entre frontend y backend.
-**Seleccionada:** Paquete @erp/types
-**Motivo:** Evitar desalineación de tipos, single source of truth.
+## ADR-005: stock por movimientos — PLANNED
+
+ENTRY/EXIT/TRANSFER/ADJUSTMENT/RETURN serán la fuente de cambios. No hay libro operativo aprobado; no se acredita inventario por existir InventoryMovement.
+
+## ADR-006: monorepo npm workspaces — IMPLEMENTED
+
+Paquetes compartidos, un lockfile y build que incluye backend y bundles web de ambas apps. Native Android/iOS sigue pendiente.
+
+## ADR-007: precisión monetaria — PLANNED
+
+La documentación anterior decía Decimal128 y a la vez Number: era contradictoria. Los modelos heredados usan Number y no son un motor financiero aprobado. La fase Finance debe decidir representación decimal o unidades menores, moneda, redondeo y serialización; probar exactitud. No atribuir precisión decimal a Number.
+
+## ADR-008: desactivación en vez de borrado físico — IMPLEMENTED EN CORE
+
+Estados y operaciones de desactivación preservan datos; la desactivación de identidad revoca sesiones. Las reglas de conservación fiscal del negocio aún requieren definición.
+
+## ADR-009: frontend consume REST — IMPLEMENTED
+
+La interfaz solo consume /api/v1; no recibe URI/credenciales MongoDB. Se comparten UI, sesión y transporte. Los permisos del frontend son presentación, la autorización vive en API.
+
+## ADR-010: contratos compartidos — IN_PROGRESS
+
+packages/types tiene catálogo/tipos; api-client define envelope, sesión y errores del transporte actual. Persisten tipos heredados y any. Consolidar contratos antes de ampliar negocio.
+
+## ADR-011: Metro/image-size — IMPLEMENTED Y VERIFIED EN ASSET
+
+Override image-size 2.0.4 y parche versionado de Metro 0.80.12 aplicado por postinstall. Prueba carga el logo con Metro. Revisar el parche al actualizar stack nativo.

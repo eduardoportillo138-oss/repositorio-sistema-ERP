@@ -1,10 +1,12 @@
+import { colors } from '../tokens';
 // ============================================
 // Componente ConfirmationDialog
 // ============================================
 
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import { Modal } from './Modal';
+import { Button } from './Button';
 
 export interface ConfirmationDialogProps {
   visible: boolean;
@@ -13,6 +15,7 @@ export interface ConfirmationDialogProps {
   confirmText?: string;
   cancelText?: string;
   variant?: 'danger' | 'primary';
+  loading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -24,6 +27,7 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
   confirmText = 'Confirmar',
   cancelText = 'Cancelar',
   variant = 'danger',
+  loading = false,
   onConfirm,
   onCancel,
 }) => {
@@ -31,12 +35,8 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
     <Modal visible={visible} onClose={onCancel} title={title}>
       <Text style={styles.message}>{message}</Text>
       <View style={styles.buttonRow}>
-        <TouchableOpacity style={[styles.button, styles.cancelButton]} onPress={onCancel}>
-          <Text style={styles.cancelText}>{cancelText}</Text>
-        </TouchableOpacity>
-        <TouchableOpacity style={[styles.button, variant === 'danger' ? styles.confirmButton : styles.primaryButton]} onPress={onConfirm}>
-          <Text style={styles.confirmText}>{confirmText}</Text>
-        </TouchableOpacity>
+        <Button title={cancelText} variant="outline" onPress={onCancel} disabled={loading} />
+        <Button title={confirmText} variant={variant} onPress={onConfirm} loading={loading} />
       </View>
     </Modal>
   );
@@ -45,37 +45,14 @@ export const ConfirmationDialog: React.FC<ConfirmationDialogProps> = ({
 const styles = StyleSheet.create({
   message: {
     fontSize: 16,
-    color: '#333',
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 20,
   },
   buttonRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'flex-end',
     gap: 12,
-  },
-  button: {
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    minWidth: 80,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: '#E9ECEF',
-  },
-  cancelText: {
-    color: '#333',
-    fontWeight: '600',
-  },
-  confirmButton: {
-    backgroundColor: '#DC3545',
-  },
-  primaryButton: {
-    backgroundColor: '#0066CC',
-  },
-  confirmText: {
-    color: '#FFFFFF',
-    fontWeight: '600',
   },
 });

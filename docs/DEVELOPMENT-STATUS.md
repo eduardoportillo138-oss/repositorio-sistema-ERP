@@ -1,59 +1,52 @@
 # Estado de desarrollo del ERP
 
-Actualizado: 2026-09-24. Los estados reflejan código y verificación observados, no la cantidad de archivos creados.
+Actualizado: 2026-09-28. Fuente canónica: [ERP SOFTWARE AUDIT REPORT](ERP-SOFTWARE-AUDIT-REPORT.md). Los estados se refieren al alcance real, no al número de archivos.
 
-## Resumen
+**CURRENT PHASE: CORE HARDENING. NEXT PHASE: MASTER DATA HARDENING.** Las pruebas reales del Core ya pasaron; faltan rotación histórica, migración, auditoría durable y entorno de producción. Ningún módulo está QA_APPROVED.
 
-| Área | Estado | Motivo |
-| --- | --- | --- |
-| Infraestructura y TypeScript | IN_PROGRESS | Instalación reproducible y build del backend verificados; faltan despliegue y base de datos real. |
-| Auth | IN_TESTING | Login bcrypt, JWT, refresh rotatorio, logout y sesiones hash; pruebas con mocks. |
-| Users | IN_TESTING | CRUD acotado por empresa, permisos, desactivación y auditoría; faltan pruebas MongoDB reales. |
-| Roles / Permissions | IN_TESTING | CRUD de roles y catálogo compartido; falta verificación de índices y datos históricos. |
-| Companies / Branches | IN_TESTING | Operaciones reales y alcance empresarial; falta integración MongoDB. |
-| Audit | IN_TESTING | Registra acciones del núcleo y redacta secretos; escritura de mejor esfuerzo. |
-| Customers / Suppliers / Categories / Products / Warehouses | CORRECTION_REQUIRED | Modelos y controladores heredados no garantizan CRUD ni aislamiento empresarial. |
-| Inventory / Sales / Purchases / Finance | CORRECTION_REQUIRED | Controladores y reglas de negocio incompletos. |
-| Reports / HR / Projects / CRM | PLANNED | Sin funcionalidad verificada. |
-| Web / Mobile | IN_PROGRESS | Estructuras parciales; la compilación TypeScript de ambas apps falla por archivos/contextos faltantes. |
+| Área                     | Estado              | Implementado                                             | Verificado / pendiente                                                              |
+| ------------------------ | ------------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Architecture             | IN_PROGRESS         | Monorepo, paquetes UI/sesión/API y build de apps         | Build completo; controladores Core aún mezclan capas                                |
+| MongoDB                  | IN_TESTING          | Pool/timeouts/cierre/config por entorno                  | Mongo temporal e índices; Atlas/migración pendientes                                |
+| Auth / Sessions          | IN_TESTING          | Login, JWT sid/type, refresh CAS, logout y revocación    | Mongo real, concurrent refresh y cliente probados; fallos multioperación pendientes |
+| Users                    | IN_TESTING          | CRUD API y pantalla real, scope empresa, validación refs | Persistencia/tenant/RBAC; migración histórica pendiente                             |
+| Roles / Permissions      | IN_TESTING          | CRUD, catálogo, protección plataforma                    | Denegaciones, sistema/tenant y permisos vigentes probados                           |
+| Companies                | IN_TESTING          | Empresa propia y creación reservada plataforma           | Scope/cambios/desactivación probados; provisioning operativo pendiente              |
+| Branches                 | IN_TESTING          | CRUD empresarial y protección de usuarios activos        | Referencias e índices probados; alcance sucursal completo pendiente                 |
+| Audit                    | CORRECTION_REQUIRED | Eventos Core y redacción                                 | Persistencia/redacción probadas; pérdida de eventos posible ante fallo              |
+| Categories               | CORRECTION_REQUIRED | Modelo heredado, 501                                     | Falta companyId efectivo y CRUD real                                                |
+| Units                    | CORRECTION_REQUIRED | Modelo heredado, 501                                     | Falta companyId efectivo y CRUD real                                                |
+| Customers                | CORRECTION_REQUIRED | Modelo heredado, 501                                     | Falta companyId efectivo y CRUD real                                                |
+| Suppliers                | CORRECTION_REQUIRED | Modelo heredado, 501                                     | Falta companyId efectivo y CRUD real                                                |
+| Warehouses               | CORRECTION_REQUIRED | Modelo heredado, 501                                     | Faltan companyId/branchId efectivos y CRUD real                                     |
+| Products                 | CORRECTION_REQUIRED | Modelo heredado, 501                                     | Falta companyId efectivo, refs/costos/unidades y CRUD real                          |
+| Inventory                | CORRECTION_REQUIRED | Bloqueo 501                                              | Sin libro de movimientos ni concurrencia verificada                                 |
+| Sales                    | CORRECTION_REQUIRED | Bloqueo 501                                              | Sin flujo quote/order/delivery/invoice/AR                                           |
+| Purchases                | CORRECTION_REQUIRED | Bloqueo 501                                              | Sin flujo request/approval/order/reception/AP                                       |
+| Finance                  | CORRECTION_REQUIRED | Bloqueo 501                                              | Sin pagos/AR/AP/conciliación fiable                                                 |
+| Reports                  | PLANNED             | Contenedor visual de métricas/gráficas                   | Backend 501, no datos ficticios                                                     |
+| HR / Projects / CRM      | PLANNED             | Modelos parciales y bloqueos 501                         | Requisitos/tenant/servicios pendientes                                              |
+| Settings / Notifications | PLANNED             | Estados de indisponibilidad                              | Sin funcionalidad real habilitada                                                   |
+| UI / Web                 | IN_TESTING          | Design system, logo, layout/login/dashboard/usuarios     | Bundle y E2E en escritorio/tablet/móvil                                             |
+| Mobile preview           | IN_TESTING          | Misma aplicación con entrada propia                      | Bundle y Chromium; no acredita native                                               |
+| Mobile native            | IN_PROGRESS         | Entry point/config inicial                               | Faltan proyectos/harness, SDK/dispositivo/firma y QA                                |
+| Security                 | CORRECTION_REQUIRED | Revocación, RBAC, redacción y .env fuera de Git          | Rotación histórica y 7 alertas moderadas abiertas                                   |
+| QA                       | IN_PROGRESS         | Jest/MongoDB/Playwright y capturas                       | 69 + 15 tests; migración, audit-failure/native/CI pendientes                        |
 
-Ningún módulo está marcado QA_APPROVED.
+## Verificación ejecutada
 
-## Hallazgos iniciales
+- npm install: exit 0 y parche Metro aplicado.
+- npm run build: exit 0, paquetes/backend/bundles web de ambas apps.
+- npm run lint: exit 0, 0 errores y 163 advertencias.
+- npm run format:check: exit 0, todos los archivos cumplen Prettier.
+- npm run test: 8 suites, 69 tests correctos.
+- npm run test:unit: 34 tests correctos, incluidos dentro de los 69.
+- npm run test:integration: 35 tests correctos, 31 con MongoDB temporal real.
+- npm run test:e2e: 15 tests Chromium correctos en tres tamaños.
+- npm audit: 7 moderadas; 0 altas/críticas; exit 1.
 
-- Auth tenía búsquedas que devolvían `null`, refresh sin persistencia y logout sin revocación.
-- Users y Companies devolvían listas/objetos vacíos como éxito.
-- `packages/types/src/index.ts` exportaba una ruta inexistente.
-- TypeScript fallaba por imports, tipos ObjectId/string y validadores UUID.
-- La documentación declaraba aprobados módulos con placeholders.
-- `.gitignore` excluía `package-lock.json`; el `.env` versionado tenía una URI potencialmente sensible, sustituida por ejemplo seguro.
+Resultados de formato y evidencia detallada: [QA-VERIFICATION](QA-VERIFICATION.md). No se ejecutó conexión Atlas, migración productiva, APK/IPA ni cobertura global.
 
-## Núcleo implementado en esta fase
+## Criterio de promoción
 
-- `createApp()` no conecta base ni abre puerto; `server.ts` hace arranque y cierre.
-- Auth consulta MongoDB por repositorio, valida contraseña y estado, resuelve rol/empresa y almacena hash de refresh token en `sessions`.
-- El access token lleva `userId`, `companyId` y `roleId`; el middleware consulta el estado y los permisos actuales.
-- Users, Roles, Companies y Branches tienen rutas con permisos, validación ObjectId y consultas empresariales.
-- Las rutas de módulos heredados devuelven 501 autenticado hasta que se corrijan.
-
-## Verificación
-
-| Comprobación | Resultado |
-| --- | --- |
-| TypeScript backend | PASS: `tsc --noEmit`, 0 errores tras los cambios. |
-| Instalación | PASS: `npm install` desde el lockfile generado. |
-| Build raíz | PASS: paquetes compartidos y backend con `npm run build`; no incluye las apps. |
-| Lint | PASS: 0 errores y 235 advertencias heredadas con `npm run lint`. |
-| Tests | PASS: 4 suites, 27 pruebas, 0 fallidas con `npm run test -- --runInBand --silent`. Persistencia simulada. |
-| Web / Mobile TypeScript | FAIL: faltan pantallas, contexto, tema y ajustes de imports/rootDir. |
-| MongoDB | Configuración revisada. Conexión no verificada; no se usó una base productiva. |
-
-## Riesgos y trabajo pendiente
-
-1. Probar Auth/CRUD/índices/aislamiento con MongoDB de prueba. Los mocks no prueban persistencia ni índices.
-2. Migrar índices globales de email y documentos Role/Branch existentes sin `companyId` antes de desplegar.
-3. Revisar todos los modelos de catálogos y añadir `companyId`, validación e índices correctos.
-4. Sustituir controladores heredados con stubs por servicios y pruebas reales; mantener 501 hasta entonces.
-5. Validar web/mobile y configurar sus dependencias de ejecución.
-
-La próxima fase sigue siendo **CORE HARDENING** hasta cerrar las pruebas con MongoDB y migración. Después corresponde **MASTER DATA HARDENING**.
+IMPLEMENTED no equivale a VERIFIED ni a QA_APPROVED. La aprobación requiere requisitos completos, casos negativos, pruebas de tenant/RBAC, integridad, errores, build y documentación; no admite stubs/TODO funcionales pendientes. Un test de respuesta 501 acredita que el bloqueo es honesto, no que el módulo funcione.

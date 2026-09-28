@@ -1,12 +1,8 @@
-// ============================================
-// Punto de Entrada Web (index)
-// ============================================
-
 import React from 'react';
-import { hydrateRoot } from 'react-dom/client';
+import { createRoot } from 'react-dom/client';
+import { configureApiBaseURL } from '@erp/api-client';
 import App from './App';
-
-const rootElement = document.getElementById('root');
-if (rootElement) {
-  hydrateRoot(rootElement, <App />);
-}
+import './styles/base.css';
+configureApiBaseURL(import.meta.env.VITE_API_BASE_URL || '/api/v1');
+const element = document.getElementById('root');
+if (element) createRoot(element).render(<App />);

@@ -4,6 +4,7 @@
 
 import { StyleSheet } from 'react-native';
 import { colors, spacing, borderRadius, fontSize } from '../theme';
+export { colors } from '../theme';
 
 export const globalStyles = StyleSheet.create({
   container: {

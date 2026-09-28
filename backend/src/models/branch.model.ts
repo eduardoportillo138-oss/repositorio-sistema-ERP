@@ -49,7 +49,7 @@ const branchSchema = new Schema<IBranchDocument>(
       index: true,
     },
   },
-  { timestamps: true, collection: 'branches' }
+  { timestamps: true, collection: 'branches' },
 );
 
 branchSchema.index({ companyId: 1, code: 1 }, { unique: true });

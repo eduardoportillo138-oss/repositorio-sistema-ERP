@@ -101,7 +101,7 @@ const companySchema = new Schema<ICompanyDocument>(
   {
     timestamps: true,
     collection: 'companies',
-  }
+  },
 );
 
 // Índices

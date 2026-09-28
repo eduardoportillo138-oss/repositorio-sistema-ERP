@@ -4,6 +4,7 @@
 
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { config } from '../config/env';
 import { PERMISSIONS } from '../../../packages/types/dist';
 import type { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
@@ -20,6 +21,7 @@ export interface IUser extends BaseDocument {
   mfaEnabled?: boolean;
   mfaSecret?: string;
   permissions: string[];
+  isPlatformAdmin: boolean;
 }
 
 export interface IUserDocument extends IUser, Document {}
@@ -77,6 +79,7 @@ const userSchema = new Schema<IUserDocument>(
       type: Boolean,
       default: false,
     },
+    isPlatformAdmin: { type: Boolean, default: false, immutable: true },
     mfaSecret: {
       type: String,
       select: false,
@@ -101,7 +104,7 @@ const userSchema = new Schema<IUserDocument>(
     collection: 'users',
     toJSON: { virtuals: true },
     toObject: { virtuals: true },
-  }
+  },
 );
 
 // Índices compuestos
@@ -110,9 +113,7 @@ userSchema.index({ companyId: 1, status: 1 });
 userSchema.index({ companyId: 1, roleId: 1 });
 
 // Método para comparar contraseña
-userSchema.methods.comparePassword = async function (
-  candidatePassword: string
-): Promise<boolean> {
+userSchema.methods.comparePassword = async function (candidatePassword: string): Promise<boolean> {
   return bcrypt.compare(candidatePassword, this.passwordHash);
 };
 
@@ -123,7 +124,9 @@ userSchema.pre<IUserDocument>('save', async function (next) {
   }
 
   try {
-    const salt = await bcrypt.genSalt(12);
+    if (Buffer.byteLength(this.passwordHash, 'utf8') > 72)
+      throw new Error('Contraseña supera 72 bytes');
+    const salt = await bcrypt.genSalt(config.bcryptRounds);
     this.passwordHash = await bcrypt.hash(this.passwordHash, salt);
     next();
   } catch (error) {

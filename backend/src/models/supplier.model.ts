@@ -48,7 +48,7 @@ const supplierSchema = new Schema<ISupplierDocument>(
       index: true,
     },
   },
-  { timestamps: true, collection: 'suppliers' }
+  { timestamps: true, collection: 'suppliers' },
 );
 
 supplierSchema.index({ companyId: 1, name: 1 });

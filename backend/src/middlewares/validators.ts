@@ -8,7 +8,10 @@ import { isValidObjectId, isValidEmail } from '../utils/validation';
 
 // Tipo para el schema de validación
 interface ValidationSchema {
-  body?: Record<string, { type: string; required?: boolean; validate?: (value: any) => boolean; message?: string }>;
+  body?: Record<
+    string,
+    { type: string; required?: boolean; validate?: (value: any) => boolean; message?: string }
+  >;
   params?: Record<string, { type: string; validate?: (value: any) => boolean; message?: string }>;
   query?: Record<string, { type: string; validate?: (value: any) => boolean; message?: string }>;
 }
@@ -29,7 +32,10 @@ export function validate(schema: ValidationSchema) {
         }
 
         if (value !== undefined && value !== null && value !== '') {
-          if ((rules.type && typeof value !== rules.type) || (rules.validate && !rules.validate(value))) {
+          if (
+            (rules.type && typeof value !== rules.type) ||
+            (rules.validate && !rules.validate(value))
+          ) {
             errors.push(rules.message || `El campo "${field}" tiene un valor inválido`);
           }
         }
@@ -41,7 +47,10 @@ export function validate(schema: ValidationSchema) {
       for (const [field, rules] of Object.entries(schema.params)) {
         const value = req.params[field];
 
-        if ((rules.type && typeof value !== rules.type) || (rules.validate && !rules.validate(value))) {
+        if (
+          (rules.type && typeof value !== rules.type) ||
+          (rules.validate && !rules.validate(value))
+        ) {
           errors.push(rules.message || `El parámetro "${field}" tiene un valor inválido`);
         }
       }
@@ -53,7 +62,9 @@ export function validate(schema: ValidationSchema) {
         const value = req.query[field];
 
         if (rules.validate && !rules.validate(value)) {
-          errors.push(rules.message || `El parámetro de consulta "${field}" tiene un valor inválido`);
+          errors.push(
+            rules.message || `El parámetro de consulta "${field}" tiene un valor inválido`,
+          );
         }
       }
     }
@@ -74,5 +85,6 @@ export const paramValidators = {
   nonEmptyString: (value: string) => typeof value === 'string' && value.trim().length > 0,
   pageSize: (value: number) => Number.isInteger(value) && value >= 1 && value <= 100,
   page: (value: number) => Number.isInteger(value) && value >= 1,
-  status: (value: string) => ['active', 'inactive', 'cancelled', 'draft', 'pending', 'confirmed'].includes(value),
+  status: (value: string) =>
+    ['active', 'inactive', 'cancelled', 'draft', 'pending', 'confirmed'].includes(value),
 };

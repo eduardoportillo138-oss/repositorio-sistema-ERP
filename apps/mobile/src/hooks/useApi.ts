@@ -14,7 +14,7 @@ interface UseApiResult<T> {
 
 export function useApi<T>(url: string, options?: { immediate?: boolean }): UseApiResult<T> {
   const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(options?.immediate !== false);
   const [error, setError] = useState<string | null>(null);
 
   const fetchData = useCallback(async () => {
@@ -24,6 +24,7 @@ export function useApi<T>(url: string, options?: { immediate?: boolean }): UseAp
       setData(result);
       setError(null);
     } catch (err: any) {
+      setData(null);
       setError(err?.message || 'Error');
     } finally {
       setLoading(false);

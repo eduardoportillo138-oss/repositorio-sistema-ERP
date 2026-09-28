@@ -1,3 +1,4 @@
+import { colors } from '../tokens';
 // ============================================
 // Componente ErrorMessage
 // ============================================
@@ -44,11 +45,11 @@ const styles = StyleSheet.create({
   retryButton: {
     paddingVertical: 8,
     paddingHorizontal: 16,
-    backgroundColor: '#0066CC',
+    backgroundColor: colors.primary,
     borderRadius: 6,
   },
   retryText: {
-    color: '#FFFFFF',
+    color: colors.surface,
     fontSize: 14,
     fontWeight: '600',
   },

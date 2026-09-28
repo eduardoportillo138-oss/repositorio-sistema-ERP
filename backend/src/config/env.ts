@@ -25,15 +25,38 @@ export const config = {
 };
 
 export function validateConfig(): void {
+  if (config.jwtSecret && config.jwtSecret === config.jwtRefreshSecret)
+    throw new Error('JWT secrets deben ser distintos');
+  if (
+    !Number.isInteger(config.bcryptRounds) ||
+    config.bcryptRounds < 10 ||
+    config.bcryptRounds > 15
+  ) {
+    throw new Error('BCRYPT_ROUNDS debe estar entre 10 y 15');
+  }
+  if (![config.rateLimitMax, config.rateLimitWindowMs].every((n) => Number.isInteger(n) && n > 0)) {
+    throw new Error('Rate limit inválido');
+  }
   if (config.nodeEnv === 'production') {
     const missing = [
       ['MONGODB_URI', config.mongodbUri],
       ['JWT_SECRET', config.jwtSecret],
       ['JWT_REFRESH_SECRET', config.jwtRefreshSecret],
-    ].filter(([name, value]) => !value || value === 'change_me_in_local_env' ||
-      (name === 'MONGODB_URI' && value.includes('cluster.example.mongodb.net')) ||
-      (name !== 'MONGODB_URI' && value.length < 32)).map(([name]) => name);
+    ]
+      .filter(
+        ([name, value]) =>
+          !value ||
+          value === 'change_me_in_local_env' ||
+          (name === 'MONGODB_URI' && value.includes('cluster.example.mongodb.net')) ||
+          (name !== 'MONGODB_URI' && value.length < 32),
+      )
+      .map(([name]) => name);
     if (missing.length) throw new Error(`Variables de entorno requeridas: ${missing.join(', ')}`);
+    if (
+      /replace_with|change_me|provide_locally/i.test(config.jwtSecret + config.jwtRefreshSecret)
+    ) {
+      throw new Error('Reemplaza los secretos de ejemplo');
+    }
   }
   if (!Number.isInteger(config.port) || config.port < 1 || config.port > 65535) {
     throw new Error('PORT inválido');

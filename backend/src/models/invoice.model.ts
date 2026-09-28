@@ -43,13 +43,15 @@ const invoiceSchema = new Schema<IInvoiceDocument>(
       trim: true,
       index: true,
     },
-    items: [{
-      productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
-      name: { type: String, required: true },
-      quantity: { type: Number, required: true, min: 0 },
-      unitPrice: { type: Number, required: true, min: 0 },
-      total: { type: Number, required: true, min: 0 },
-    }],
+    items: [
+      {
+        productId: { type: Schema.Types.ObjectId, ref: 'Product', required: true },
+        name: { type: String, required: true },
+        quantity: { type: Number, required: true, min: 0 },
+        unitPrice: { type: Number, required: true, min: 0 },
+        total: { type: Number, required: true, min: 0 },
+      },
+    ],
     subtotal: { type: Number, required: true, min: 0 },
     taxRate: { type: Number, default: 0, min: 0, max: 100 },
     taxAmount: { type: Number, default: 0, min: 0 },
@@ -60,7 +62,7 @@ const invoiceSchema = new Schema<IInvoiceDocument>(
     dueDate: { type: Date },
     notes: { type: String, trim: true, maxlength: 1000 },
   },
-  { timestamps: true, collection: 'invoices' }
+  { timestamps: true, collection: 'invoices' },
 );
 
 invoiceSchema.index({ companyId: 1, invoiceNumber: 1 }, { unique: true });

@@ -1,75 +1,67 @@
-// ============================================
-// Componente Input
-// ============================================
-
-import React from 'react';
-import { Text, TextInput, StyleSheet, View } from 'react-native';
-
-export interface InputProps {
+import React, { useState } from 'react';
+import { Text, TextInput, TextInputProps, View, StyleSheet } from 'react-native';
+import { colors, radius } from '../tokens';
+export interface InputProps extends Omit<TextInputProps, 'onChange' | 'onChangeText'> {
   value: string;
   onChangeText: (text: string) => void;
-  placeholder?: string;
-  secureTextEntry?: boolean;
   disabled?: boolean;
   error?: string;
   label?: string;
   type?: 'text' | 'email' | 'password' | 'number' | 'date';
 }
-
-export const Input: React.FC<InputProps> = ({
-  value,
-  onChangeText,
-  placeholder = '',
-  secureTextEntry = false,
-  disabled = false,
-  error,
-  label,
-  type = 'text',
-}) => {
+export function Input({ label, error, disabled, type = 'text', style, ...props }: InputProps) {
+  const [focused, setFocused] = useState(false);
   return (
     <View style={styles.container}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
-        style={[styles.input, error ? styles.inputError : undefined]}
-        value={value}
-        onChangeText={onChangeText}
-        placeholder={placeholder}
-        secureTextEntry={secureTextEntry}
+        {...props}
+        onFocus={(event) => {
+          setFocused(true);
+          props.onFocus?.(event);
+        }}
+        onBlur={(event) => {
+          setFocused(false);
+          props.onBlur?.(event);
+        }}
         editable={!disabled}
-        keyboardType={type === 'number' ? 'numeric' : type === 'email' ? 'email-address' : 'default'}
-        accessibilityLabel={label || placeholder}
+        keyboardType={
+          props.keyboardType ||
+          (type === 'email' ? 'email-address' : type === 'number' ? 'numeric' : 'default')
+        }
+        secureTextEntry={props.secureTextEntry || type === 'password'}
+        accessibilityLabel={props.accessibilityLabel || label || props.placeholder}
+        accessibilityHint={error || props.accessibilityHint}
+        placeholderTextColor={colors.textSecondary}
+        style={[
+          styles.input,
+          focused && { borderColor: colors.primary },
+          !!error && { borderColor: colors.danger },
+          disabled && { opacity: 0.6 },
+          style,
+        ]}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && (
+        <Text accessibilityRole="alert" style={styles.error}>
+          {error}
+        </Text>
+      )}
     </View>
   );
-};
-
+}
 const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4,
-    color: '#333',
-  },
+  container: { marginBottom: 16, minWidth: 0 },
+  label: { fontSize: 13, fontWeight: '600', color: colors.textPrimary, marginBottom: 8 },
   input: {
     borderWidth: 1,
-    borderColor: '#CCCCCC',
-    borderRadius: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    fontSize: 16,
-    backgroundColor: '#FFFFFF',
-    minHeight: 44,
+    borderColor: colors.border,
+    borderRadius: radius.medium,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    color: colors.textPrimary,
+    backgroundColor: colors.surface,
+    fontSize: 15,
   },
-  inputError: {
-    borderColor: '#DC3545',
-  },
-  errorText: {
-    color: '#DC3545',
-    fontSize: 12,
-    marginTop: 4,
-  },
+  error: { color: colors.danger, fontSize: 13, marginTop: 6 },
 });

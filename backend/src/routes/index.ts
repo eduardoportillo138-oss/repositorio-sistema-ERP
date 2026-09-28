@@ -27,11 +27,31 @@ export function setupRoutes(app: Application): void {
   app.use('/api/v1/branches', branchRoutes);
   app.use('/api/v1/companies', companiesRouter);
   // Los módulos heredados aún contienen controladores placeholder. No se anuncia éxito ficticio.
-  app.use([
-    '/api/v1/customers', '/api/v1/suppliers', '/api/v1/products', '/api/v1/categories',
-    '/api/v1/inventory', '/api/v1/warehouses', '/api/v1/sales', '/api/v1/purchases',
-    '/api/v1/finance', '/api/v1/reports',
-  ], authenticateToken, (_req, res) => {
-    res.status(501).json({ success: false, error: { code: 'NOT_IMPLEMENTED', message: 'Módulo en corrección' } });
-  });
+  app.use(
+    [
+      '/api/v1/customers',
+      '/api/v1/suppliers',
+      '/api/v1/products',
+      '/api/v1/categories',
+      '/api/v1/inventory',
+      '/api/v1/warehouses',
+      '/api/v1/sales',
+      '/api/v1/purchases',
+      '/api/v1/finance',
+      '/api/v1/reports',
+      '/api/v1/units',
+      '/api/v1/hr',
+      '/api/v1/projects',
+      '/api/v1/crm',
+      '/api/v1/notifications',
+      '/api/v1/settings',
+    ],
+    authenticateToken,
+    (_req, res) => {
+      res.status(501).json({
+        success: false,
+        error: { code: 'NOT_IMPLEMENTED', message: 'Módulo en desarrollo' },
+      });
+    },
+  );
 }

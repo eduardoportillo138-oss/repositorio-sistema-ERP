@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import { authenticateToken, checkPermission } from '../middlewares/auth';
 import { asyncHandler } from '../utils/asyncHandler';
-import { listRoles, getRole, createRole, updateRole, deactivateRole } from '../controllers/role.controller';
+import {
+  listRoles,
+  getRole,
+  createRole,
+  updateRole,
+  deactivateRole,
+} from '../controllers/role.controller';
 
 const router = Router();
 router.use(authenticateToken);
