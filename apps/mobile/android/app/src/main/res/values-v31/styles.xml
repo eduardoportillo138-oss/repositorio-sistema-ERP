@@ -1,0 +1,12 @@
+<resources>
+    <style name="AppTheme" parent="Theme.AppCompat.DayNight.NoActionBar">
+        <item name="android:editTextBackground">@drawable/rn_edit_text_material</item>
+        <item name="android:windowBackground">@drawable/launch_screen</item>
+        <item name="android:windowSplashScreenBackground">@color/erp_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/erp_logo</item>
+        <item name="android:statusBarColor">@color/erp_background</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:navigationBarColor">@color/erp_background</item>
+        <item name="android:windowLightNavigationBar">true</item>
+    </style>
+</resources>

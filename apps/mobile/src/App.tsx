@@ -1,5 +1,11 @@
 import React from 'react';
-import { ERPApplication } from '@erp/ui';
+import { StatusBar } from 'react-native';
+import { ERPApplication, colors } from '@erp/ui';
 export default function App() {
-  return <ERPApplication />;
+  return (
+    <>
+      <StatusBar barStyle="dark-content" backgroundColor={colors.background} translucent={false} />
+      <ERPApplication />
+    </>
+  );
 }

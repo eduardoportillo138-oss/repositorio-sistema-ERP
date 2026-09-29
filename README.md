@@ -2,7 +2,7 @@
 
 Monorepo TypeScript con API Express/Mongoose y una interfaz compartida en React Native y React Native Web.
 
-**Estado al 2026-09-28:** CORE HARDENING. Login, sesiones, usuarios, roles, empresas y sucursales tienen operaciones reales y pruebas con MongoDB temporal. Los módulos empresariales pendientes devuelven HTTP 501. La nueva interfaz web y el preview móvil compilan; Android/iOS y Atlas no fueron verificados. Ningún módulo está QA_APPROVED.
+**Estado al 2026-09-29:** CORE HARDENING. Login, sesiones, usuarios, roles, empresas y sucursales tienen operaciones reales y pruebas con MongoDB temporal. Los módulos empresariales pendientes devuelven HTTP 501. La nueva interfaz web y el preview móvil compilan; el host Android está creado, pero APK/AVD no fueron verificados. iOS y Atlas tampoco fueron verificados. Ningún módulo está QA_APPROVED.
 
 El [ERP SOFTWARE AUDIT REPORT](docs/ERP-SOFTWARE-AUDIT-REPORT.md) contiene los hallazgos, correcciones, matriz de estados, evidencia y límites. Las credenciales MongoDB que estuvieron en el historial de Git deben rotarse antes de desplegar.
 
@@ -92,7 +92,24 @@ npm run test:integration -- --runInBand --silent
 npm run test:e2e
 ```
 
-El build raíz compila paquetes/backend y genera bundles web de ambas apps; no produce APK/IPA. El preview móvil se inicia con npm run mobile:web. Los scripts Android/iOS requieren proyectos nativos que aún no están disponibles.
+El build raíz compila paquetes/backend y genera bundles web de ambas apps; no produce APK/IPA. El preview móvil se inicia con npm run mobile:web. El host Android de React Native vive en apps/mobile/android; iOS aún no tiene proyecto nativo.
+
+## Android Studio / Android Emulator
+
+La app usa React Native 0.73.11 y la plantilla Android de esa versión: Gradle 8.3, AGP 8.1.1, Kotlin 1.8.0, compileSdk/targetSdk 34 y minSdk 21. Usa **JDK 17** para Gradle (selecciónalo en Android Studio > Settings > Build Tools > Gradle). Instala desde SDK Manager Android SDK Platform 34, Build Tools 34.0.0, NDK 25.1.8937393, Android SDK Platform Tools y Android Emulator.
+
+Abre `apps/mobile/android` en Android Studio y deja terminar Gradle Sync. En Tools > Device Manager crea un Pixel 7 u 8 con una imagen Android API 34 y arráncalo. Desde la raíz del repositorio, ejecuta en terminales separadas:
+
+```powershell
+npm install
+npm run backend:dev
+npm run mobile:start
+npm run mobile:android
+```
+
+Configura antes el `.env` local y una cuenta de desarrollo, según la sección de instalación. También puedes usar Run en Android Studio con Metro activo. El Android Emulator alcanza el backend del equipo en `http://10.0.2.2:3000/api/v1`; el preview web conserva su proxy `/api/v1`. HTTP local se permite únicamente en la variante debug. La variante release requiere una URL HTTPS real y firma privada antes de distribuirse.
+
+Para compilar directamente: `cd apps/mobile/android; .\gradlew.bat assembleDebug`. Si Metro no conecta, comprueba el puerto 8081; si la API no conecta, comprueba el backend en el puerto 3000 y `10.0.2.2`. Consulta la [guía Android](docs/mobile/ANDROID-SETUP.md) para arquitectura, Logcat, depuración y problemas frecuentes.
 
 Para preparar E2E la primera vez:
 

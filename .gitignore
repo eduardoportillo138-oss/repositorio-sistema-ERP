@@ -64,6 +64,13 @@ native/android/.gradle/
 native/android/local.properties
 native/android/gradle.properties
 
+# React Native Android host
+apps/mobile/android/.gradle/
+apps/mobile/android/local.properties
+apps/mobile/android/app/build/
+apps/mobile/android/build/
+apps/mobile/android/.cxx/
+
 # Package lock
 yarn.lock
 pnpm-lock.yaml
