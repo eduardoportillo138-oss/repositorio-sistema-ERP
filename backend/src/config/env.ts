@@ -9,12 +9,15 @@ export const config = {
   apiVersion: process.env.API_VERSION || 'v1',
   baseUrl: process.env.BASE_URL || 'http://localhost:3000',
   mongodbUri: process.env.MONGODB_URI || '',
-  mongodbDbName: process.env.MONGODB_DB_NAME || 'erp_dev',
+  mongodbDbName:
+    process.env.MONGODB_DB_NAME || (process.env.NODE_ENV === 'production' ? '' : 'erp_dev'),
   jwtSecret: process.env.JWT_SECRET || '',
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '15m',
   jwtRefreshSecret: process.env.JWT_REFRESH_SECRET || '',
   jwtRefreshExpiresIn: process.env.JWT_REFRESH_EXPIRES_IN || '7d',
-  corsOrigin: process.env.CORS_ORIGIN || 'http://localhost:3000',
+  corsOrigin:
+    process.env.CORS_ORIGIN ||
+    (process.env.NODE_ENV === 'production' ? '' : 'http://localhost:5173'),
   bcryptRounds: Number(process.env.BCRYPT_ROUNDS || 12),
   rateLimitMax: Number(process.env.RATE_LIMIT_MAX || 100),
   rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS || 900000),
@@ -40,18 +43,33 @@ export function validateConfig(): void {
   if (config.nodeEnv === 'production') {
     const missing = [
       ['MONGODB_URI', config.mongodbUri],
+      ['MONGODB_DB_NAME', config.mongodbDbName],
       ['JWT_SECRET', config.jwtSecret],
       ['JWT_REFRESH_SECRET', config.jwtRefreshSecret],
+      ['CORS_ORIGIN', config.corsOrigin],
     ]
       .filter(
         ([name, value]) =>
           !value ||
           value === 'change_me_in_local_env' ||
           (name === 'MONGODB_URI' && value.includes('cluster.example.mongodb.net')) ||
-          (name !== 'MONGODB_URI' && value.length < 32),
+          (name.startsWith('JWT_') && value.length < 32),
       )
       .map(([name]) => name);
     if (missing.length) throw new Error(`Variables de entorno requeridas: ${missing.join(', ')}`);
+    const origins = config.corsOrigin.split(',').map((origin) => origin.trim());
+    if (
+      origins.some((origin) => {
+        try {
+          const url = new URL(origin);
+          return url.protocol !== 'https:' || url.origin !== origin;
+        } catch {
+          return true;
+        }
+      })
+    ) {
+      throw new Error('CORS_ORIGIN debe contener orígenes HTTPS válidos');
+    }
     if (
       /replace_with|change_me|provide_locally/i.test(config.jwtSecret + config.jwtRefreshSecret)
     ) {

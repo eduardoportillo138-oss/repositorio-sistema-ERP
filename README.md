@@ -1,5 +1,13 @@
 # ERP Empresarial
 
+## Deployment con Render
+
+El Blueprint [render.yaml](render.yaml) publica primero el backend: **GitHub → Render → Express API → MongoDB Atlas**. El servicio se construye desde la raíz del monorepo con `npm ci && npm run build:packages && npm run backend:build`, arranca con `npm run backend:start` y expone `GET /health` sin autenticación. La API está bajo `/api/v1`; Render define el puerto dinámico. Node queda fijado en `.node-version`.
+
+Configura en el panel de Render `MONGODB_URI`, `MONGODB_DB_NAME`, `JWT_SECRET`, `JWT_REFRESH_SECRET` y `CORS_ORIGIN`. Los secretos deben ser nuevos y distintos. **La credencial de Atlas que figuró en el historial de Git debe rotarse y revocarse antes de desplegar**; corregir la plantilla no borra ese historial. Permite en Atlas los rangos de salida reales del servicio Render. `CORS_ORIGIN` debe contener el origen HTTPS exacto del frontend, nunca `*`.
+
+La web Vite se publica en una segunda etapa como sitio estático. Usa `VITE_API_BASE_URL=<URL real del backend>/api/v1` en el build web, configura `CORS_ORIGIN` con la URL real del sitio y verifica login y dashboard. Los módulos que devuelven 501 continúan en desarrollo. Consulta la [guía de despliegue, validación y rollback](docs/DEPLOYMENT-RENDER.md). No se ha declarado una URL de servicio hasta comprobar un despliegue real.
+
 Monorepo TypeScript con API Express/Mongoose y una interfaz compartida en React Native y React Native Web.
 
 **Estado al 2026-09-29:** CORE HARDENING. Login, sesiones, usuarios, roles, empresas y sucursales tienen operaciones reales y pruebas con MongoDB temporal. Los módulos empresariales pendientes devuelven HTTP 501. La nueva interfaz web y el preview móvil compilan; el host Android está creado, pero APK/AVD no fueron verificados. iOS y Atlas tampoco fueron verificados. Ningún módulo está QA_APPROVED.
