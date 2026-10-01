@@ -182,7 +182,7 @@ function ModuleScreen({ module }: { module: (typeof navigationModules)[number] }
     </View>
   );
 }
-function Workspace() {
+function Workspace({ developerSettings }: { developerSettings?: React.ReactNode }) {
   const { user, isAuthenticated, logout } = useAuth();
   const { width } = useWindowDimensions(),
     insets = useSafeAreaInsets();
@@ -217,7 +217,7 @@ function Workspace() {
   if (!isAuthenticated)
     return (
       <View style={{ flex: 1 }}>
-        <LoginScreen />
+        <LoginScreen developerSettings={developerSettings} />
         {logoutError && (
           <View style={{ padding: 16 }}>
             <ErrorState message={logoutError} />
@@ -413,11 +413,11 @@ function Workspace() {
     </View>
   );
 }
-export function ERPApplication() {
+export function ERPApplication({ developerSettings }: { developerSettings?: React.ReactNode }) {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <Workspace />
+        <Workspace developerSettings={developerSettings} />
       </AuthProvider>
     </SafeAreaProvider>
   );

@@ -19,7 +19,7 @@ El [ERP SOFTWARE AUDIT REPORT](docs/ERP-SOFTWARE-AUDIT-REPORT.md) contiene los h
 Requisitos: Node.js y npm compatibles con las dependencias del lockfile; ejecución verificada con Node 24.21.0. MongoDB de desarrollo para usar la API. Ejecuta desde la raíz de este repositorio:
 
 ```powershell
-npm install
+npm ci
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
 # Edita .env con tu base de desarrollo y dos secretos JWT aleatorios y distintos.
 npm run build
@@ -104,20 +104,24 @@ El build raíz compila paquetes/backend y genera bundles web de ambas apps; no p
 
 ## Android Studio / Android Emulator
 
-La app usa React Native 0.73.11 y la plantilla Android de esa versión: Gradle 8.3, AGP 8.1.1, Kotlin 1.8.0, compileSdk/targetSdk 34 y minSdk 21. Usa **JDK 17** para Gradle (selecciónalo en Android Studio > Settings > Build Tools > Gradle). Instala desde SDK Manager Android SDK Platform 34, Build Tools 34.0.0, NDK 25.1.8937393, Android SDK Platform Tools y Android Emulator.
+La app usa React Native 0.73.11 y la plantilla Android de esa versión: Gradle 8.3, AGP 8.1.1, Kotlin 1.8.0, compileSdk/targetSdk 34 y minSdk 21. Usa **JDK 17** para Gradle (Android Studio > Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK). Instala desde SDK Manager Android SDK Platform 34, Build Tools 34.0.0, NDK 25.1.8937393, Android SDK Platform Tools y Android Emulator.
 
 Abre `apps/mobile/android` en Android Studio y deja terminar Gradle Sync. En Tools > Device Manager crea un Pixel 7 u 8 con una imagen Android API 34 y arráncalo. Desde la raíz del repositorio, ejecuta en terminales separadas:
 
 ```powershell
-npm install
+npm ci
+npm run build:packages
+npm run backend:build
 npm run backend:dev
 npm run mobile:start
 npm run mobile:android
 ```
 
-Configura antes el `.env` local y una cuenta de desarrollo, según la sección de instalación. También puedes usar Run en Android Studio con Metro activo. El Android Emulator alcanza el backend del equipo en `http://10.0.2.2:3000/api/v1`; el preview web conserva su proxy `/api/v1`. HTTP local se permite únicamente en la variante debug. La variante release requiere una URL HTTPS real y firma privada antes de distribuirse.
+Configura antes el `.env` local con una base de desarrollo y secretos reales, y crea una cuenta de desarrollo según la sección de instalación. También puedes usar Run en Android Studio con Metro activo. El Android Emulator alcanza el backend del equipo en `http://10.0.2.2:3000/api/v1`; el preview web conserva su proxy `/api/v1`. En un teléfono físico, abre **Servidor de desarrollo** en el login debug y escribe `http://IP_LAN_DEL_PC:3000/api/v1`. El PC y el teléfono deben compartir red. HTTP local se permite únicamente en la variante debug. La variante release requiere una URL HTTPS real y firma privada antes de distribuirse.
 
-Para compilar directamente: `cd apps/mobile/android; .\gradlew.bat assembleDebug`. Si Metro no conecta, comprueba el puerto 8081; si la API no conecta, comprueba el backend en el puerto 3000 y `10.0.2.2`. Consulta la [guía Android](docs/mobile/ANDROID-SETUP.md) para arquitectura, Logcat, depuración y problemas frecuentes.
+Para compilar directamente: `cd apps/mobile/android; .\gradlew.bat assembleDebug`. El APK debug debe verificarse en `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` antes de instalarlo con `adb install -r`. Si Metro no conecta, comprueba el puerto 8081; si la API no conecta, comprueba el backend en el puerto 3000 y `10.0.2.2`. Consulta la [guía Android](docs/mobile/ANDROID-SETUP.md) para arquitectura, Logcat, dispositivo físico y problemas frecuentes.
+
+**Verificación local del 2026-10-01:** `npm ci`, paquetes, backend TypeScript, Metro y bundle Android pasaron. El APK y la ejecución en emulador siguen pendientes: el equipo expone Java 8 y JBR 25, no JDK 17; no hay componentes SDK ni AVD visibles, y el wrapper de Gradle no pudo descargar Gradle 8.3 por la restricción de red. Véase el [reporte Android local](docs/mobile/ANDROID-LOCAL-DEPLOYMENT-REPORT.md).
 
 Para preparar E2E la primera vez:
 

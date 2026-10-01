@@ -15,7 +15,7 @@ import { Button } from '../components/Button';
 import { ErrorState } from '../components/DataStates';
 import { colors, radius, typography } from '../tokens';
 
-export function LoginScreen() {
+export function LoginScreen({ developerSettings }: { developerSettings?: React.ReactNode }) {
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
@@ -79,6 +79,7 @@ export function LoginScreen() {
               Bienvenido de nuevo
             </Text>
             <Text style={styles.subtitle}>Ingresa para acceder a tu espacio de trabajo.</Text>
+            {developerSettings}
             <Input
               label="Correo electrónico"
               value={email}
