@@ -34,6 +34,8 @@
     "postinstall": "patch-package"
   },
   "devDependencies": {
+    "@react-native-community/cli": "12.3.7",
+    "@react-native-community/cli-platform-android": "12.3.7",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.11.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",

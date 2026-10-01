@@ -1,59 +1,60 @@
-# ANDROID LOCAL DEPLOYMENT REPORT
+# ANDROID LOCAL PHASE STATUS
 
-Fecha: 2026-10-01. Rama: `codex/android-local-deployment`. Repositorio: `eduardoportillo138-oss/repositorio-sistema-ERP`. Alcance: APK debug y pruebas locales; no se preparó release, AAB, firma de producción ni publicación.
+Fecha: 2026-10-01. Checkout verificado: `repositorio-sistema-ERP` en el Escritorio. Rama: `codex/android-local-deployment`. Alcance exclusivo: Android debug local.
 
-## Estado verificado
+| Phase | Status | Evidence | Blocking issue | Next action |
+| --- | --- | --- | --- | --- |
+| React Native CLI | COMPLETED | React Native 0.73.11 y CLI 12.3.7 fijada en `package.json` y `package-lock.json`; `npm.cmd ci` pasó. | Ninguno. | Conservar las versiones compatibles. |
+| Autolinking | COMPLETED | `native_modules.gradle` existe en `node_modules` raíz; `gradlew clean` y `assembleDebug` completaron `:app:generatePackageList`. | Ninguno. | No cambiar el mecanismo Gradle de RN 0.73. |
+| JDK | COMPLETED | `%USERPROFILE%\.jdks\jbr-17.0.14\bin\java.exe` informa Java 17.0.14; Gradle compiló con ese `JAVA_HOME`. | El `java` por defecto del PATH sigue siendo Java 8. | Seleccionar ese JDK 17 en Android Studio o establecer `JAVA_HOME` en cada terminal de build. |
+| Android SDK | COMPLETED | Gradle instaló Platform 34 y Build Tools 34.0.0; Platform Tools y Android Emulator ya existen. `local.properties` apunta al SDK real y Git lo ignora. | No hay imagen AVD API 34; NDK 25.1.8937393 no está instalado, pero `assembleDebug` no lo requirió. | Instalar imagen API 34 para crear AVD; instalar NDK solo si una tarea posterior lo exige. |
+| Gradle | COMPLETED | Gradle 8.3: `--stop` detuvo dos daemons, `clean` terminó `BUILD SUCCESSFUL` en 2m 49s y `assembleDebug` en 3m 55s. | Gradle Sync dentro de Android Studio no se probó. | Abrir `apps/mobile/android` en Android Studio y verificar Sync con JDK 17. |
+| APK | COMPLETED | `app-debug.apk` existe; 55,510,714 bytes; modificación 2026-10-01 15:07:33 -06:00. | No hay dispositivo para instalarlo. | Usar `adb install -r` cuando ADB muestre un dispositivo. |
+| MongoDB | BLOCKED_EXTERNAL | `npm.cmd run test:mongodb` pasó 31/31 pruebas con MongoDB temporal y consultas reales. | Este checkout no tiene `.env` ni URI de una base de desarrollo persistente; la prueba temporal no acredita esa conexión. | Configurar una URI de desarrollo; probarla con `npm.cmd run test:mongodb -w backend` y confirmar ping real. |
+| Backend | BLOCKED_EXTERNAL | `npm.cmd run backend:dev` registró error al iniciar; `GET http://127.0.0.1:3000/health` rechazó la conexión. | Faltan `.env`, `MONGODB_URI` y secretos de desarrollo. | Preparar `.env` ignorado con MongoDB de desarrollo y secretos JWT distintos; repetir `/health`. |
+| Metro | COMPLETED | `npm.cmd run mobile:start` inició Metro 0.80.12; `/status` respondió HTTP 200 con `packager-status:running`. El proceso se detuvo tras comprobarlo. | Ninguno. | Reiniciarlo antes de ejecutar el APK debug. |
+| ADB | COMPLETED | `adb.exe` 1.0.41 está instalado en Platform Tools y `adb devices` respondió. | Lista de dispositivos vacía. | Iniciar AVD o conectar y autorizar teléfono. |
+| Emulator | BLOCKED_EXTERNAL | `emulator.exe -list-avds` no devolvió ningún AVD; `adb devices` no mostró emulador. | Falta crear AVD e instalar su imagen API 34. | En Android Studio Device Manager, crear Pixel 7/8 API 34 y arrancarlo. |
+| Login | NOT_TESTED | No se ejecutó la app ni un login en Android. La prueba MongoDB temporal sí cubrió el endpoint a nivel backend. | Backend local y AVD no disponibles. | Probar login válido e inválido, dashboard y logout en el AVD. |
+| Physical Device | NOT_TESTED | `adb devices` no mostró teléfono. | No hay dispositivo conectado. | Opcional: autorizar USB Debugging, usar IP LAN del PC y probar el flujo. |
+| Android QA | NOT_TESTED | No hubo pantalla, Logcat ni instalación Android observada. | Falta AVD o teléfono y backend local. | Revisar logo, navegación, 360 × 800, errores de API y Logcat tras ejecutar la app. |
 
-| Área | Resultado |
-| --- | --- |
-| NODE | Node 24.21.0 y npm 11.19.0 disponibles. |
-| DEPENDENCIES | `npm ci --no-audit --no-fund --cache .\tmp\npm-cache` pasó; `patch-package` aplicó `metro@0.80.12`. El primer intento con la caché global falló con `EPERM`. |
-| PACKAGES | `npm run build:packages` pasó para los siete paquetes. `npm run backend:build` y `npm run typecheck -w apps/mobile` pasaron. ESLint sobre los tres archivos TypeScript modificados pasó. |
-| GRADLE | **No verificado.** `assembleDebug` no llegó a ejecutar tareas Gradle: el directorio heredado `C:\.gradle` no era escribible; con `tmp/gradle-home`, la descarga del wrapper 8.3 falló con `Permission denied: connect`. Gradle Sync no se ejecutó en Android Studio. |
-| ANDROID SDK | **No preparado en este equipo.** El directorio `C:\Users\eduar\AppData\Local\Android\Sdk` está vacío en el entorno visible; no se encontraron Platform 34, Build Tools 34.0.0, NDK 25.1.8937393 ni Platform Tools. `adb` no está en PATH. |
-| JDK | `java -version` devuelve Java 8; el JBR de Android Studio es 25. No se encontró JDK 17. |
-| METRO | `npm run mobile:start` levantó Metro 0.80.12; `/status` respondió HTTP 200. La CLI generó un bundle Android de 6,032,407 bytes y copió seis assets, incluido `__packages_ui_src_assets_logo_logo.png`. El bundle está en `tmp/` y no es un APK. |
-| BACKEND | `npm run backend:dev` no abrió el puerto 3000. `GET http://127.0.0.1:3000/health` rechazó la conexión. El `.env` local tiene valores de ejemplo para MongoDB/JWT; no se usaron credenciales reales ni se ejecutó seed. |
-| ANDROID APP | TypeScript y bundle JS verificados. **Ejecución nativa no verificada.** El manifest principal tiene `INTERNET`; la excepción HTTP está limitada al source set `debug`. |
-| LOGIN | La sesión llama a `POST /api/v1/auth/login`, exige tokens y usuario reales, y guarda tokens en memoria. No se probó login en Android por falta de backend, emulador y APK. |
-| APK | **APK_NOT_READY.** `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` no existe. |
-| EMULATOR | **EMULATOR_NOT_VERIFIED.** `mobile:android` no encontró AVD. |
-| PHYSICAL DEVICE | **DEVICE_NOT_VERIFIED.** No hay `adb` ni teléfono conectado verificado. |
+**APK_READY: COMPLETED.** No se declara `ANDROID_LOCAL_READY`, `EMULATOR_VERIFIED` ni `DEVICE_VERIFIED`. La existencia del APK no acredita ejecución de la app; la variante debug necesita Metro para cargar JavaScript.
 
-**Resultado global: ANDROID_LOCAL_READY no declarado. ANDROID_STUDIO_EXTERNAL_STEP pendiente.**
+## FILES MODIFIED
 
-## Cambios realizados
+- `package.json` y `package-lock.json`: CLI y CLI Android fijadas en 12.3.7, compatibles con React Native 0.73.11.
+- `README.md`, `docs/mobile/ANDROID-SETUP.md` y este reporte: evidencia actual, rutas y pasos pendientes.
 
-- Archivos: `.gitignore`, `README.md`, `apps/mobile/src/App.tsx`, `apps/mobile/android/app/src/debug/res/xml/debug_network_security_config.xml`, `packages/ui/src/ERPApplication.tsx`, `packages/ui/src/screens/LoginScreen.tsx`, `docs/mobile/ANDROID-SETUP.md` y este reporte.
-- El login de Android debug permite elegir una URL privada del PC en memoria. El emulador conserva `http://10.0.2.2:3000/api/v1`; el teléfono puede usar `http://IP_LAN_DEL_PC:3000/api/v1`. El cliente HTTP sigue centralizado en `@erp/api-client`. La web conserva `/api/v1` mediante proxy.
-- La configuración de seguridad `debug` permite HTTP local para IP privadas distintas del emulador. El manifest principal y release no recibieron esa excepción.
-- `.gitignore` excluye archivos `.jks`, `.keystore`, `.apk` y `.aab`, además de `.env`, `local.properties` y salidas de build ya excluidas.
-- README y `docs/mobile/ANDROID-SETUP.md` describen JDK, SDK, Android Studio, backend, Metro, emulador, teléfono, ADB, Gradle, APK, login y diagnóstico.
+## COMMANDS EXECUTED
 
-## Comandos y evidencia
+- `git status`, `git branch --show-current`, `git log -5 --oneline`.
+- `Test-Path node_modules/@react-native-community/cli-platform-android/native_modules.gradle` y `npm.cmd ls` de CLI, CLI Android, React Native y Gradle plugin.
+- `npm.cmd uninstall -D @react-native-community/cli @react-native-community/cli-platform-android` y `npm.cmd install -D @react-native-community/cli@12.3.7 @react-native-community/cli-platform-android@12.3.7 --save-exact`.
+- `npm.cmd ci --no-audit --no-fund`; `npm.cmd run build:packages`; `npm.cmd run test:mongodb`.
+- Con `JAVA_HOME=%USERPROFILE%\.jdks\jbr-17.0.14`: `.\gradlew.bat --stop`, `.\gradlew.bat clean --no-daemon`, `.\gradlew.bat assembleDebug --no-daemon`.
+- `adb version`, `adb devices`, `emulator -list-avds`, `npm.cmd run backend:dev`, `GET /health`, `npm.cmd run mobile:start`, `GET /status`.
 
-| Comando | Resultado |
-| --- | --- |
-| `git status`, `git branch --show-current`, `git log -5 --oneline` | Árbol inicialmente limpio en `main`, último commit `bc9365d`. |
-| `node -v`, `npm -v`, `java -version` | 24.21.0, 11.19.0 y Java 8. |
-| `npm ci --no-audit --no-fund` | Falló por `EPERM` al leer caché global. |
-| `npm ci --no-audit --no-fund --cache .\tmp\npm-cache` | Pasó; 1198 paquetes y parche Metro aplicado. |
-| `npm run build:packages`, `npm run backend:build` | Pasaron. |
-| `npm run typecheck -w apps/mobile`, `npx eslint ...` | Pasaron después de los cambios. |
-| `.\gradlew.bat assembleDebug --no-daemon` | Falló antes de compilar por falta de permiso en `C:\.gradle`. |
-| `assembleDebug` con `GRADLE_USER_HOME=tmp/gradle-home` | Falló al descargar Gradle 8.3: `Permission denied: connect`. |
-| `npm run backend:dev`, `GET /health` | No quedó servidor en 3000; conexión rechazada. |
-| `npm run mobile:start`, `GET /status` | Metro inició; HTTP 200. |
-| `react-native bundle --platform android --dev true` | Pasó; seis assets copiados. |
-| `npm run mobile:android` | Falló: `adb` ausente, ningún AVD y bloqueo Gradle. |
+## ERRORS FIXED
 
-## Próxima acción en Android Studio
+- La instalación manual de CLI 20.2.0 dejó `native_modules.gradle` ausente en `node_modules` raíz. La plantilla incluida con React Native 0.73.11 usa ese script; CLI 12.3.7 fijada lo restaura sin cambiar Gradle ni React Native.
+- La primera ejecución de `test:mongodb` falló porque `npm ci` retiró `packages/types/dist`; `npm.cmd run build:packages` reconstruyó los paquetes y la repetición pasó 31/31.
 
-1. Tener instalado JDK 17 y seleccionarlo en **Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK**. Confirmar `java -version` en la terminal usada para Gradle. No se descargó ni configuró JDK en esta ejecución.
-2. En **SDK Manager**, instalar solo lo requerido: Android SDK Platform 34, Build Tools 34.0.0, Platform Tools, Android Emulator y NDK 25.1.8937393 (declarado en el proyecto). Si Gradle no detecta el SDK, crear `apps/mobile/android/local.properties` con la ruta SDK real; no versionarlo.
-3. Permitir al wrapper obtener Gradle 8.3 desde `services.gradle.org` o disponer de esa distribución por un medio local autorizado. Ejecutar Gradle Sync y luego `cd apps/mobile/android; .\gradlew.bat assembleDebug`. Registrar el error exacto si aparece otro bloqueo.
-4. Configurar `.env` con una base de desarrollo y secretos JWT distintos; confirmar `GET http://127.0.0.1:3000/health`. Si se requiere usuario, ejecutar el seed solo contra desarrollo, sin colocar la contraseña en Git.
-5. Crear y arrancar un Pixel 7/8 API 34. Confirmar `adb devices`, iniciar Metro y ejecutar `npm run mobile:android`. Probar `http://10.0.2.2:3000/health` en el emulador, login real, dashboard, Usuarios si el permiso existe y logout. Capturar evidencia antes de declarar `EMULATOR_VERIFIED`.
-6. Tras `assembleDebug` exitoso, verificar el archivo real en `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` e instalar con `adb install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` desde la raíz. Para teléfono físico, usar la IPv4 LAN del PC en **Servidor de desarrollo**, autorizar depuración USB y probar el mismo flujo.
+## ERRORS PENDING
 
-No se puede afirmar visibilidad del logo en pantalla, funcionamiento de login, Gradle Sync ni existencia de APK hasta completar los pasos anteriores.
+- No hay `.env` de desarrollo ni MongoDB persistente configurada en este checkout. El backend no responde `/health`; no se ejecutó seed ni login Android.
+- No hay AVD ni dispositivo conectado. La imagen de sistema API 34 se debe instalar mediante Android Studio. No se probó instalación, interfaz ni Logcat.
+- `JAVA_HOME` no está establecido de forma permanente; el Java por defecto del PATH es 8. El JDK 17 instalado funcionó al establecerlo para Gradle.
+- Gradle emitió advertencias de deprecación y de `react-native-safe-area-context`; ninguna bloqueó `assembleDebug`.
+
+## APK PATH
+
+`apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` (ruta relativa a la raíz del repositorio; 55,510,714 bytes).
+
+El APK se mantiene ignorado por Git y no se subió a ninguna tienda ni servicio de distribución.
+
+## NEXT USER ACTIONS
+
+1. Configurar `.env` local con `MONGODB_URI`, `MONGODB_DB_NAME`, `JWT_SECRET`, `JWT_REFRESH_SECRET` y `CORS_ORIGIN` de desarrollo. No colocar secretos en Git. Probar la conexión real con `npm.cmd run test:mongodb -w backend`, iniciar `npm.cmd run backend:dev` y exigir HTTP 200 en `/health`.
+2. En Android Studio seleccionar `%USERPROFILE%\.jdks\jbr-17.0.14` como Gradle JDK. Instalar imagen de sistema API 34 y crear un Pixel 7/8 en Device Manager. Confirmar `adb devices` con estado `device`.
+3. Con backend, AVD y Metro activos, ejecutar `npm.cmd run mobile:android` o instalar el APK existente con `adb install -r apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk`. Comprobar logo, login real, dashboard, logout y Logcat antes de declarar `ANDROID_LOCAL_READY`.
