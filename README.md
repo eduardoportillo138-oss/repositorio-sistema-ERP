@@ -121,7 +121,7 @@ Configura antes el `.env` local con una base de desarrollo y secretos reales, y 
 
 Para compilar directamente: `cd apps/mobile/android; .\gradlew.bat assembleDebug`. El APK debug debe verificarse en `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` antes de instalarlo con `adb install -r`. Si Metro no conecta, comprueba el puerto 8081; si la API no conecta, comprueba el backend en el puerto 3000 y `10.0.2.2`. Consulta la [guía Android](docs/mobile/ANDROID-SETUP.md) para arquitectura, Logcat, dispositivo físico y problemas frecuentes.
 
-**Android:** el [reporte local del 2026-10-01](docs/mobile/ANDROID-LOCAL-DEPLOYMENT-REPORT.md) verifica CLI y CLI Android 12.3.7, `gradlew clean`, `assembleDebug`, APK debug de 55,510,714 bytes y Metro con JDK 17/SDK. Este checkout no conserva el APK y no se repitió la compilación nativa aquí. AVD, login/logout y Logcat siguen `NOT_TESTED / BLOCKED_EXTERNAL`; release `NOT_READY`.
+**Android:** el [reporte local del 2026-10-01](docs/mobile/ANDROID-LOCAL-DEPLOYMENT-REPORT.md) verifica CLI y CLI Android 12.3.7, APK debug y Metro. El [reporte del 2026-10-02](docs/mobile/ANDROID-STUDIO-GRADLE-SYNC-REPORT.md) confirma otra instalación con `npm ci`, `gradlew clean`, `assembleDebug` y APK debug de 55,510,714 bytes en el clon del Escritorio. Android Studio Sync queda pendiente de verificación manual con JDK 17. AVD, login/logout y Logcat siguen `NOT_TESTED / BLOCKED_EXTERNAL`; release `NOT_READY`.
 
 Para preparar E2E la primera vez:
 
