@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Branch } from '../models/branch.model';
 import { User } from '../models/user.model';
-import { auditService } from '../services/audit.service';
+import { auditedMutation } from '../services/auditedMutation';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/AppError';
 import { isValidEmail, isValidObjectId, pagination } from '../utils/validation';
 
@@ -60,22 +60,32 @@ export async function getBranch(req: Request, res: Response) {
 export async function createBranch(req: Request, res: Response) {
   const body = fields(req.body, true);
   try {
-    const branch = await Branch.create({
-      ...body,
-      companyId: req.user!.companyId,
-      status: 'active',
-    });
-    await auditService.log({
-      userId: req.user!.userId,
-      companyId: req.user!.companyId,
-      module: 'branches',
-      action: 'create',
-      entity: 'branch',
-      entityId: String(branch._id),
-      newValue: { name: branch.name, code: branch.code },
-      ip: String(req.ip || ''),
-      device: req.get('user-agent') || '',
-    });
+    const branch = await auditedMutation(
+      async (session) =>
+        (
+          await Branch.create(
+            [
+              {
+                ...body,
+                companyId: req.user!.companyId,
+                status: 'active',
+              },
+            ],
+            { session },
+          )
+        )[0],
+      (branch) => ({
+        userId: req.user!.userId,
+        companyId: req.user!.companyId,
+        module: 'branches',
+        action: 'create',
+        entity: 'branch',
+        entityId: String(branch._id),
+        newValue: { name: branch.name, code: branch.code },
+        ip: String(req.ip || ''),
+        device: req.get('user-agent') || '',
+      }),
+    );
     res.status(201).json({ success: true, data: branch });
   } catch (error) {
     if ((error as { code?: number }).code === 11000)
@@ -87,52 +97,68 @@ export async function createBranch(req: Request, res: Response) {
 export async function updateBranch(req: Request, res: Response) {
   if (!isValidObjectId(req.params.id!)) throw new ValidationError('ID inválido');
   const body = fields(req.body);
-  const branch = await Branch.findOne({
-    _id: req.params.id!,
-    companyId: req.user!.companyId,
-    status: { $ne: 'cancelled' },
-  }).exec();
-  if (!branch) throw new NotFoundError('Sucursal');
-  const oldValue = { name: branch.name, code: branch.code };
-  Object.assign(branch, body);
-  await branch.save();
-  await auditService.log({
-    userId: req.user!.userId,
-    companyId: req.user!.companyId,
-    module: 'branches',
-    action: 'update',
-    entity: 'branch',
-    entityId: req.params.id!,
-    oldValue,
-    newValue: { name: branch.name, code: branch.code },
-    ip: String(req.ip || ''),
-    device: req.get('user-agent') || '',
-  });
+  let oldValue: { name: string; code: string };
+  const branch = await auditedMutation(
+    async (session) => {
+      const branch = await Branch.findOne({
+        _id: req.params.id!,
+        companyId: req.user!.companyId,
+        status: { $ne: 'cancelled' },
+      })
+        .session(session)
+        .exec();
+      if (!branch) throw new NotFoundError('Sucursal');
+      oldValue = { name: branch.name, code: branch.code };
+      Object.assign(branch, body);
+      await branch.save({ session });
+      return branch;
+    },
+    (branch) => ({
+      userId: req.user!.userId,
+      companyId: req.user!.companyId,
+      module: 'branches',
+      action: 'update',
+      entity: 'branch',
+      entityId: req.params.id!,
+      oldValue,
+      newValue: { name: branch.name, code: branch.code },
+      ip: String(req.ip || ''),
+      device: req.get('user-agent') || '',
+    }),
+  );
   res.json({ success: true, data: branch });
 }
 
 export async function deactivateBranch(req: Request, res: Response) {
   if (!isValidObjectId(req.params.id!)) throw new ValidationError('ID inválido');
   const filter = { _id: req.params.id!, companyId: req.user!.companyId, status: 'active' };
-  const branch = await Branch.findOne(filter).exec();
-  if (!branch) throw new NotFoundError('Sucursal');
-  if (
-    await User.exists({ branchId: branch._id, companyId: req.user!.companyId, status: 'active' })
-  ) {
-    throw new ConflictError('La sucursal tiene usuarios activos');
-  }
-  branch.status = 'inactive';
-  await branch.save();
-  await auditService.log({
-    userId: req.user!.userId,
-    companyId: req.user!.companyId,
-    module: 'branches',
-    action: 'deactivate',
-    entity: 'branch',
-    entityId: req.params.id!,
-    newValue: { status: 'inactive' },
-    ip: String(req.ip || ''),
-    device: req.get('user-agent') || '',
-  });
+  const branch = await auditedMutation(
+    async (session) => {
+      const branch = await Branch.findOne(filter).session(session).exec();
+      if (!branch) throw new NotFoundError('Sucursal');
+      if (
+        await User.exists({
+          branchId: branch._id,
+          companyId: req.user!.companyId,
+          status: 'active',
+        }).session(session)
+      )
+        throw new ConflictError('La sucursal tiene usuarios activos');
+      branch.status = 'inactive';
+      await branch.save({ session });
+      return branch;
+    },
+    (branch) => ({
+      userId: req.user!.userId,
+      companyId: req.user!.companyId,
+      module: 'branches',
+      action: 'deactivate',
+      entity: 'branch',
+      entityId: req.params.id!,
+      newValue: { status: 'inactive' },
+      ip: String(req.ip || ''),
+      device: req.get('user-agent') || '',
+    }),
+  );
   res.json({ success: true, data: branch });
 }

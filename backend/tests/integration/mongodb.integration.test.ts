@@ -2,8 +2,9 @@ import path from 'node:path';
 import crypto from 'node:crypto';
 import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 import request from 'supertest';
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 import { createApp } from '../../src/app';
 import { config } from '../../src/config/env';
 import {
@@ -19,9 +20,11 @@ import { Session } from '../../src/models/session.model';
 import { AuditLog } from '../../src/models/auditLog.model';
 import { PERMISSIONS } from '../../../packages/types/dist';
 import { auditService } from '../../src/services/audit.service';
+import { bootstrapAdmin, BootstrapInput } from '../../src/utils/bootstrap-admin';
+import { migrateCore } from '../../src/utils/core-migrations';
 
 const password = 'TestPassword123!';
-let mongo: MongoMemoryServer, app: ReturnType<typeof createApp>;
+let mongo: MongoMemoryReplSet, app: ReturnType<typeof createApp>;
 let companyA: string,
   companyB: string,
   adminA: string,
@@ -44,9 +47,9 @@ beforeAll(async () => {
     jwtRefreshSecret: 'test-refresh-secret-independent-32-characters',
     rateLimitMax: 10000,
   });
-  mongo = await MongoMemoryServer.create({
+  mongo = await MongoMemoryReplSet.create({
     binary: { version: '7.0.24', downloadDir: cache },
-    instance: { ip: '127.0.0.1' },
+    replSet: { count: 1, storageEngine: 'wiredTiger', ip: '127.0.0.1' },
   });
   config.mongodbUri = mongo.getUri();
   config.mongodbDbName = 'erp_core_audit_test';
@@ -59,6 +62,7 @@ beforeAll(async () => {
     Session.init(),
     AuditLog.init(),
   ]);
+  await mongoose.connection.createCollection('bootstrapStates');
   app = createApp();
 }, 120000);
 
@@ -75,6 +79,7 @@ beforeEach(async () => {
     Session.deleteMany({}),
     AuditLog.deleteMany({}),
   ]);
+  await mongoose.connection.collection('bootstrapStates').deleteMany({});
   const a = await Company.create({
     name: 'Empresa de prueba A',
     legalName: 'A',
@@ -123,6 +128,116 @@ beforeEach(async () => {
 });
 
 describe('Core HTTP con MongoDB real y temporal', () => {
+  test('readiness refleja la conexión sin revelar datos internos', async () => {
+    expect((await request(app).get('/ready')).body.data).toEqual({
+      status: 'ready',
+      database: 'connected',
+    });
+    const original = Object.getOwnPropertyDescriptor(mongoose.connection, 'readyState');
+    Object.defineProperty(mongoose.connection, 'readyState', { configurable: true, value: 0 });
+    try {
+      const response = await request(app).get('/ready');
+      expect(response.status).toBe(503);
+      expect(JSON.stringify(response.body)).not.toContain('mongodb://');
+    } finally {
+      if (original) Object.defineProperty(mongoose.connection, 'readyState', original);
+      else delete (mongoose.connection as { readyState?: number }).readyState;
+    }
+  });
+
+  test('una falla de auditoría revierte la escritura y permite retry sin duplicación', async () => {
+    const pair = (await login()).body.data;
+    const create = () =>
+      request(app)
+        .post('/api/v1/roles')
+        .set(auth(pair.accessToken))
+        .send({ name: 'RetryRole', permissions: ['users.view'] });
+    const spy = jest
+      .spyOn(AuditLog, 'create')
+      .mockRejectedValueOnce(new Error('audit unavailable'));
+    expect((await create()).status).toBe(500);
+    spy.mockRestore();
+    expect(await Role.countDocuments({ companyId: companyA, name: 'RetryRole' })).toBe(0);
+    expect((await create()).status).toBe(201);
+    expect(await Role.countDocuments({ companyId: companyA, name: 'RetryRole' })).toBe(1);
+    expect(
+      await AuditLog.countDocuments({ companyId: companyA, entity: 'role', action: 'create' }),
+    ).toBe(1);
+  });
+
+  test('bootstrap inicial crea Core en una transacción y rechaza segunda ejecución', async () => {
+    await Promise.all([
+      Company.deleteMany({}),
+      Branch.deleteMany({}),
+      Role.deleteMany({}),
+      User.deleteMany({}),
+    ]);
+    const input: BootstrapInput = {
+      email: 'bootstrap@example.test',
+      password: 'ValidBootstrap123!',
+      companyName: 'Nueva Empresa',
+      companyTaxId: 'NEW-001',
+      companyCountry: 'MX',
+      branchName: 'Principal',
+      branchAddress: 'Calle 1',
+      branchCity: 'Ciudad de México',
+    };
+    const companyId = await bootstrapAdmin(input);
+    const user = await User.findOne({ companyId }).select('+passwordHash').exec();
+    expect(user?.isPlatformAdmin).toBe(false);
+    expect(user).not.toHaveProperty('permissions');
+    expect(await bcrypt.compare(input.password, user!.passwordHash)).toBe(true);
+    const role = await Role.findById(user!.roleId);
+    expect(role?.permissions.some((permission) => permission.startsWith('platform.'))).toBe(false);
+    expect(await AuditLog.countDocuments({ companyId, module: 'bootstrap' })).toBe(1);
+    await expect(bootstrapAdmin(input)).rejects.toThrow('Bootstrap rechazado');
+    expect(await User.countDocuments()).toBe(1);
+  });
+
+  test('bootstrap revierte todo cuando falla auditoría', async () => {
+    await Promise.all([
+      Company.deleteMany({}),
+      Branch.deleteMany({}),
+      Role.deleteMany({}),
+      User.deleteMany({}),
+    ]);
+    const input: BootstrapInput = {
+      email: 'bootstrap@example.test',
+      password: 'ValidBootstrap123!',
+      companyName: 'Nueva Empresa',
+      companyTaxId: 'NEW-002',
+      companyCountry: 'MX',
+      branchName: 'Principal',
+      branchAddress: 'Calle 1',
+      branchCity: 'Ciudad de México',
+    };
+    const spy = jest
+      .spyOn(auditService, 'log')
+      .mockRejectedValueOnce(new Error('audit unavailable'));
+    await expect(bootstrapAdmin(input)).rejects.toThrow('audit unavailable');
+    spy.mockRestore();
+    expect(await Company.countDocuments()).toBe(0);
+    expect(await Branch.countDocuments()).toBe(0);
+    expect(await Role.countDocuments()).toBe(0);
+    expect(await User.countDocuments()).toBe(0);
+    expect(await mongoose.connection.collection('bootstrapStates').countDocuments()).toBe(0);
+  });
+
+  test('migración dry-run no modifica User.permissions y apply es idempotente', async () => {
+    await User.collection.updateOne(
+      { _id: new mongoose.Types.ObjectId(adminA) },
+      { $set: { permissions: ['users.view'] } },
+    );
+    const dry = await migrateCore(false);
+    expect(
+      dry.findings.find((finding) => finding.check === 'User.permissions heredado')?.count,
+    ).toBe(1);
+    expect(
+      (await User.collection.findOne({ _id: new mongoose.Types.ObjectId(adminA) }))?.permissions,
+    ).toEqual(['users.view']);
+    expect((await migrateCore(true)).applied?.userPermissionsUnset).toBe(1);
+    expect((await migrateCore(true)).applied?.userPermissionsUnset).toBe(0);
+  });
   test('conecta y verifica índices únicos por empresa y TTL de sesiones', async () => {
     expect(isDatabaseConnected()).toBe(true);
     const indexes = await User.collection.indexes();
@@ -374,6 +489,10 @@ describe('Core HTTP con MongoDB real y temporal', () => {
   });
   test('RBAC usa permisos vigentes, no el JWT histórico', async () => {
     const pair = (await login()).body.data;
+    await User.collection.updateOne(
+      { _id: new mongoose.Types.ObjectId(adminA) },
+      { $set: { permissions: ['users.view'] } },
+    );
     await Role.updateOne({ _id: roleA, companyId: companyA }, { permissions: [] });
     expect((await request(app).get('/api/v1/users').set(auth(pair.accessToken))).status).toBe(403);
   });
@@ -551,6 +670,20 @@ describe('Core HTTP con MongoDB real y temporal', () => {
     const entry = await AuditLog.findOne({ module: 'test' }).lean();
     expect(JSON.stringify(entry)).not.toMatch(/never-store/);
     expect(entry?.newValue?.nested[0].valid).toBe('ok');
+    await expect(
+      auditService.log({
+        eventId: entry!.eventId,
+        userId: adminA,
+        companyId: companyA,
+        module: 'test',
+        action: 'update',
+        entity: 'user',
+        entityId: adminA,
+        ip: 'test',
+        device: 'test',
+      }),
+    ).rejects.toMatchObject({ code: 11000 });
+    expect(await AuditLog.countDocuments({ eventId: entry!.eventId })).toBe(1);
     await expect(auditService.getLogs({ companyId: '' })).rejects.toMatchObject({
       statusCode: 400,
     });

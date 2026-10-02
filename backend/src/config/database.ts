@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { config } from './env';
 import { logger } from '../utils/logger';
+import { AuditLog } from '../models/auditLog.model';
 
 let eventsRegistered = false;
 
@@ -25,6 +26,11 @@ export async function connectDatabase(): Promise<void> {
       connectTimeoutMS: 10000,
       autoIndex: config.nodeEnv !== 'production',
     });
+    // Production disables Mongoose autoIndex; this index is required for audit idempotency.
+    await AuditLog.collection.createIndex(
+      { eventId: 1 },
+      { unique: true, partialFilterExpression: { eventId: { $type: 'string' } } },
+    );
   } catch (error) {
     logger.error('No se pudo conectar a MongoDB', { name: (error as Error).name });
     throw new Error('No se pudo conectar a MongoDB');

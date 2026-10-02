@@ -5,7 +5,6 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import bcrypt from 'bcryptjs';
 import { config } from '../config/env';
-import { PERMISSIONS } from '../../../packages/types/dist';
 import type { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IUser extends BaseDocument {
@@ -20,7 +19,6 @@ export interface IUser extends BaseDocument {
   lastLoginAt?: Date;
   mfaEnabled?: boolean;
   mfaSecret?: string;
-  permissions: string[];
   isPlatformAdmin: boolean;
 }
 
@@ -84,12 +82,6 @@ const userSchema = new Schema<IUserDocument>(
       type: String,
       select: false,
     },
-    permissions: [
-      {
-        type: String,
-        enum: [...PERMISSIONS],
-      },
-    ],
     createdBy: {
       type: Schema.Types.ObjectId,
       ref: 'User',

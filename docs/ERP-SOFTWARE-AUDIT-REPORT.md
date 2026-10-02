@@ -1,5 +1,7 @@
 # ERP SOFTWARE AUDIT REPORT
 
+**HISTORICAL RESULT (2026-09-28).** Este informe conserva la evidencia de aquella ejecución. Para estado y comandos actuales ver [DEVELOPMENT-STATUS](DEVELOPMENT-STATUS.md), [QA-VERIFICATION](QA-VERIFICATION.md) y [operación Core](CORE-HARDENING-OPERATIONS.md). La evidencia posterior aportada reporta Android build/APK/Metro verificados; este informe anterior no evalúa ese resultado.
+
 Fecha: 2026-09-28. Repositorio inspeccionado: [repositorio-sistema-ERP](https://github.com/eduardoportillo138-oss/repositorio-sistema-ERP). Base inicial local: b7a8264. Las correcciones están en el checkout local; este informe no acredita publicación ni despliegue.
 
 ## 1. Estado general
@@ -116,11 +118,11 @@ La app móvil usa la misma identidad, AuthProvider, componentes, login, dashboar
 
 Se añadió entrada React Native registrada como ERP y configuración API para Android emulator. Una máquina/dispositivo físico requiere URL de backend alcanzable; el loopback del dispositivo no es el servidor del ordenador. La sesión en memoria exige un nuevo login al reiniciar.
 
-**No se generó ni ejecutó APK/IPA.** No existen proyectos nativos completos Android/iOS, firma, splash/icono nativo instalado, integración de Keychain/Keystore ni pruebas en dispositivo. El scaffold Kotlin existente no demuestra esos flujos. El favicon corresponde al navegador.
+En esta ejecución histórica no se generó APK/IPA. Posteriormente se reportó `assembleDebug` y APK debug verificados. Android AVD/login/logout, firma release, integración de Keychain/Keystore y pruebas en dispositivo siguen pendientes. iOS carece de proyecto nativo completo.
 
 ## 12. Testing
 
-Resultados ejecutados, después de las correcciones. Los comandos unit/integration son subconjuntos de Jest y no se suman al total de 69.
+**HISTORICAL RESULT 2026-09-28:** resultados ejecutados entonces, después de aquellas correcciones. Los comandos unit/integration son subconjuntos de Jest y no se suman al total de 69. No representan la QA actual.
 
 | Comando                                          | Resultado observado   | Alcance                                                   |
 | ------------------------------------------------ | --------------------- | --------------------------------------------------------- |
@@ -162,28 +164,28 @@ La severidad describe el impacto sobre un ERP productivo. “Contenido” signif
 
 ## Matriz de estado
 
-| Área                | Estado              | Evidencia                                               | Acción                                                |
-| ------------------- | ------------------- | ------------------------------------------------------- | ----------------------------------------------------- |
-| Architecture        | IN_PROGRESS         | Workspaces/build completo; capas parcialmente aplicadas | Consolidar servicios/repositorios                     |
-| MongoDB             | IN_TESTING          | 31 tests con Mongo 7.0.24 e índices reales              | Migrar históricos y verificar entorno objetivo        |
-| Auth                | IN_TESTING          | Login, CAS, sesión activa y revocación probados         | Resolver garantías ante fallos y despliegue           |
-| Users               | IN_TESTING          | CRUD HTTP/Mongo y UI real                               | Completar escenarios productivos y migración          |
-| RBAC                | IN_TESTING          | Permisos vigentes/tenant/plataforma negativos           | Formalizar provisioning de plataforma                 |
-| Companies           | IN_TESTING          | Scope, creación protegida y desactivación probados      | Migración/operación productiva                        |
-| Branches            | IN_TESTING          | Scope, referencias y guardas probadas                   | Política de alcance por sucursal                      |
-| Audit               | CORRECTION_REQUIRED | Eventos/redacción probados; persistencia best effort    | Outbox/transacción durable                            |
-| Master Data         | CORRECTION_REQUIRED | Schemas incompletos, endpoints 501                      | Endurecer seis catálogos en orden                     |
-| Inventory           | CORRECTION_REQUIRED | Flujo no habilitado                                     | Movimientos después de Products/Warehouses            |
-| Sales               | CORRECTION_REQUIRED | Endpoints 501                                           | Flujo documental tras Inventory                       |
-| Purchases           | CORRECTION_REQUIRED | Endpoints 501                                           | Flujo de compras tras catálogos/Inventory             |
-| Finance             | CORRECTION_REQUIRED | Endpoints 501                                           | Consistencia AR/AP/pagos y dinero                     |
-| Reports             | PLANNED             | Dashboard sin datos muestra indisponibilidad            | Agregaciones aisladas sobre datos fiables             |
-| HR / Projects / CRM | PLANNED             | Sin flujo verificado, 501                               | Definir modelos/tenant y requisitos                   |
-| Web                 | IN_TESTING          | Bundle + E2E 3 tamaños + capturas                       | Completar accesibilidad y flujos al habilitar negocio |
-| Mobile preview      | IN_TESTING          | Bundle compartido y E2E navegador                       | Continuar preview coherente                           |
-| Mobile native       | IN_PROGRESS         | Sin harness/proyectos completos ni dispositivo probado  | Configurar plataforma, SDK, firma y prueba real       |
-| Testing             | IN_PROGRESS         | 69 Jest, 15 E2E                                         | Fallos audit/migración/native/CI y cobertura          |
-| Security            | CORRECTION_REQUIRED | Guardas/logs probados; historial vulnerable             | Rotación, revisión de acceso y dependencias           |
+| Área                | Estado              | Evidencia                                                         | Acción                                                |
+| ------------------- | ------------------- | ----------------------------------------------------------------- | ----------------------------------------------------- |
+| Architecture        | IN_PROGRESS         | Workspaces/build completo; capas parcialmente aplicadas           | Consolidar servicios/repositorios                     |
+| MongoDB             | IN_TESTING          | 31 tests con Mongo 7.0.24 e índices reales                        | Migrar históricos y verificar entorno objetivo        |
+| Auth                | IN_TESTING          | Login, CAS, sesión activa y revocación probados                   | Resolver garantías ante fallos y despliegue           |
+| Users               | IN_TESTING          | CRUD HTTP/Mongo y UI real                                         | Completar escenarios productivos y migración          |
+| RBAC                | IN_TESTING          | Permisos vigentes/tenant/plataforma negativos                     | Formalizar provisioning de plataforma                 |
+| Companies           | IN_TESTING          | Scope, creación protegida y desactivación probados                | Migración/operación productiva                        |
+| Branches            | IN_TESTING          | Scope, referencias y guardas probadas                             | Política de alcance por sucursal                      |
+| Audit               | CORRECTION_REQUIRED | Eventos/redacción probados; persistencia best effort              | Outbox/transacción durable                            |
+| Master Data         | CORRECTION_REQUIRED | Schemas incompletos, endpoints 501                                | Endurecer seis catálogos en orden                     |
+| Inventory           | CORRECTION_REQUIRED | Flujo no habilitado                                               | Movimientos después de Products/Warehouses            |
+| Sales               | CORRECTION_REQUIRED | Endpoints 501                                                     | Flujo documental tras Inventory                       |
+| Purchases           | CORRECTION_REQUIRED | Endpoints 501                                                     | Flujo de compras tras catálogos/Inventory             |
+| Finance             | CORRECTION_REQUIRED | Endpoints 501                                                     | Consistencia AR/AP/pagos y dinero                     |
+| Reports             | PLANNED             | Dashboard sin datos muestra indisponibilidad                      | Agregaciones aisladas sobre datos fiables             |
+| HR / Projects / CRM | PLANNED             | Sin flujo verificado, 501                                         | Definir modelos/tenant y requisitos                   |
+| Web                 | IN_TESTING          | Bundle + E2E 3 tamaños + capturas                                 | Completar accesibilidad y flujos al habilitar negocio |
+| Mobile preview      | IN_TESTING          | Bundle compartido y E2E navegador                                 | Continuar preview coherente                           |
+| Mobile native       | HISTORICAL RESULT   | En 2026-09-28 no había APK; evidencia posterior reporta APK debug | AVD, login/logout, Logcat y release pendientes        |
+| Testing             | IN_PROGRESS         | 69 Jest, 15 E2E                                                   | Fallos audit/migración/native/CI y cobertura          |
+| Security            | CORRECTION_REQUIRED | Guardas/logs probados; historial vulnerable                       | Rotación, revisión de acceso y dependencias           |
 
 Ningún módulo aparece QA_APPROVED. Las pruebas del Core permiten continuar su cierre; las pruebas de bloqueo de negocio no justifican adelantar fases.
 

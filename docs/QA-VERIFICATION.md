@@ -1,34 +1,24 @@
-# Verificación ejecutada
+# Verificación QA actual
 
-Fecha: 2026-09-28. Checkout basado en b7a8264, Node 24.21.0, Windows. Esta página reemplaza los resultados antiguos de 27 pruebas con mocks y apps que no compilaban.
+**Verified at:** 2026-10-02 10:34 America/Mexico_City. **Commit:** `868518619e030976d4f6fe4131eb6df28ccf5b45` (base; las pruebas se ejecutaron sobre los cambios del working tree de esta fase). **Environment:** Windows/OneDrive, Node 24.21.0, npm 11.19.0, MongoDB 7.0.24 temporal en replica set, Chromium de Playwright. Ninguna prueba usa Atlas ni la URI del `.env` local.
 
-| Comando ejecutado                                | Resultado    | Evidencia / límite                                      |
-| ------------------------------------------------ | ------------ | ------------------------------------------------------- |
-| npm install                                      | PASS, exit 0 | Lockfile actualizado, postinstall patch-package exitoso |
-| npm run build                                    | PASS, exit 0 | Paquetes/backend + TypeScript y Vite web/mobile         |
-| npm run lint                                     | PASS, exit 0 | 0 errores, 163 warnings                                 |
-| npm run format:check                             | PASS, exit 0 | Todos los archivos coinciden con Prettier               |
-| npm run test -- --runInBand --silent             | PASS         | 8 suites / 69 tests                                     |
-| npm run test:unit -- --runInBand --silent        | PASS         | 5 suites / 34 tests                                     |
-| npm run test:integration -- --runInBand --silent | PASS         | 3 suites / 35 tests, 31 MongoDB real                    |
-| npm run test:e2e                                 | PASS         | 15 tests, Chromium, tres viewports                      |
-| npm audit --json                                 | EXIT 1       | 7 moderadas; 0 altas/críticas                           |
+| Comando / verificación                                               |     Exit code | Resultado actual                                                                                                                                   |
+| -------------------------------------------------------------------- | ------------: | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `npm run build`                                                      |             0 | Siete paquetes, backend, web y preview móvil compilaron. No genera APK.                                                                            |
+| `npm run lint`                                                       |             0 | 0 errores, 175 advertencias.                                                                                                                       |
+| `npm run format:check`                                               |             0 | Todos los archivos cubiertos por Prettier cumplen formato.                                                                                         |
+| `npm run test -- --runInBand --silent`                               |             0 | 9 suites, 77 tests.                                                                                                                                |
+| `npm run test:unit -- --runInBand --silent`                          |             0 | 6 suites, 37 tests; subconjunto del total.                                                                                                         |
+| `npm run test:integration -- --runInBand --silent`                   |             0 | 3 suites, 40 tests; subconjunto del total.                                                                                                         |
+| `npm run test:e2e`                                                   |             0 | 15 pruebas Chromium: escritorio, tableta y móvil; login, usuarios, logout y preview.                                                               |
+| Web build con `VITE_API_BASE_URL=https://api.example.invalid/api/v1` |             0 | La URL ficticia apareció en el bundle Vite.                                                                                                        |
+| `git check-ignore .env` / `git ls-files .env`                        |             0 | `.env` ignorado y sin tracking.                                                                                                                    |
+| `npm audit`                                                          | 1 / rechazado | Endpoint inaccesible en sandbox; la revisión automática rechazó la consulta externa por divulgación de metadatos. Conteos actuales no verificados. |
 
-El total Jest es 69; unit/integration no son tests adicionales. Los 15 E2E son independientes. npm audit con vulnerabilidades abiertas no se reporta como PASS.
+El total Jest es **77**: no sumar los 37 unitarios y 40 de integración. MongoDB temporal confirmó rollback de negocio si falla auditoría, retry sin duplicación, `eventId` único, aislamiento por tenant, bootstrap inicial/transacción/segunda ejecución, migración dry-run/apply idempotente, RBAC desde Role y rutas 501. `/ready` respondió 200 conectado y 503 desconectado. E2E usa bundles de producción y backend temporal aislado; el harness detiene los procesos de QA al salir.
 
-## Entornos y observaciones
+**Dependency audit:** critical **no verificado**, high **no verificado**, moderate **no verificado**, low **no verificado**. La cifra de siete moderadas del [informe anterior](qa/DEPENDENCY-AUDIT.md) es `HISTORICAL RESULT (2026-09-28)`. No se ejecutó `npm audit fix --force` ni se actualizó React Native 0.73.11.
 
-- MongoDB real 7.0.24 temporal en loopback, sin Atlas ni datos de usuario.
-- E2E usa fixtures explícitos, secretos de prueba generados y HTTP real; prueba CRUD y revocación en el servidor.
-- Build mobile genera browser preview, no APK/IPA.
-- Vite avisa por directivas “use client” en React Native Web; bundles generados.
-- Prettier inicialmente detectó deuda en archivos heredados; se normalizó y se verificó de nuevo al terminar.
-- No se ejecutó cobertura ni validación completa de accesibilidad, TLS, carga, datos históricos o release nativo.
+**Límites:** no hubo conexión, backup ni migración en Atlas; no se desplegó Render ni se observó el workflow GitHub Actions aún. La evidencia reciente aportada reporta APK debug/Metro verificados, pero este checkout no conserva el APK y aquí no se ejecutó Gradle/AVD/login Android. Release e iOS siguen sin verificar. `npm ci --include=dev` está configurado en Render y CI; esta ejecución local usó las dependencias ya instaladas y no repitió una instalación limpia.
 
-## Evidencia durable
-
-Suites: backend/tests/integration/mongodb.integration.test.ts, backend/tests/unit/{core,security,api-client,asset-compat}.test.ts y apps/web/tests/e2e/workspace.spec.ts.
-
-[Capturas responsive](qa/screenshots/README.md). [Dependencias](qa/DEPENDENCY-AUDIT.md). [Informe completo](ERP-SOFTWARE-AUDIT-REPORT.md).
-
-Los logs locales final-build.log, final-lint.log, final-test.log, final-unit.log, final-integration.log y final-e2e.log están bajo logs/ ignorado. No se versionan dumps de entorno ni credenciales. Los estados globales siguen en [DEVELOPMENT-STATUS](DEVELOPMENT-STATUS.md).
+Los resultados de 2026-09-28/29 en el [informe histórico](ERP-SOFTWARE-AUDIT-REPORT.md) no sustituyen esta ejecución. Los primeros intentos de esta fase fallaron por falta de binario MongoDB/Chromium y por la carga de configuración de Vite en OneDrive; tras preparar el entorno y corregir el harness, los comandos finales de la tabla concluyeron con los exit codes indicados.

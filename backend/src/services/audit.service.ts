@@ -2,36 +2,46 @@
 // Servicio de Auditoría
 // ============================================
 
+import crypto from 'node:crypto';
+import mongoose from 'mongoose';
 import { AuditLog } from '../models/auditLog.model';
-import { logger, sanitizeLogData } from '../utils/logger';
+import { sanitizeLogData } from '../utils/logger';
 import { ValidationError } from '../errors/AppError';
 import { isValidObjectId } from '../utils/validation';
 
 export const auditService = {
-  async log(entry: {
-    userId: string;
-    companyId: string;
-    module: string;
-    action: string;
-    entity: string;
-    entityId: string;
-    oldValue?: Record<string, any>;
-    newValue?: Record<string, any>;
-    ip: string;
-    device: string;
-  }): Promise<void> {
-    try {
-      await AuditLog.create({
-        ...entry,
-        ip: entry.ip || 'unknown',
-        device: entry.device || 'unknown',
-        oldValue: redact(entry.oldValue),
-        newValue: redact(entry.newValue),
-        timestamp: new Date(),
-      });
-    } catch (error) {
-      logger.error('Error creando audit log', { name: (error as Error).name });
-    }
+  async log(
+    entry: {
+      eventId?: string;
+      userId: string;
+      companyId: string;
+      module: string;
+      action: string;
+      entity: string;
+      entityId: string;
+      oldValue?: Record<string, any>;
+      newValue?: Record<string, any>;
+      ip: string;
+      device: string;
+    },
+    session?: mongoose.ClientSession,
+  ): Promise<void> {
+    if (!isValidObjectId(entry.companyId))
+      throw new ValidationError('Empresa obligatoria para auditoría');
+    await AuditLog.create(
+      [
+        {
+          ...entry,
+          eventId: entry.eventId || crypto.randomUUID(),
+          ip: entry.ip || 'unknown',
+          device: entry.device || 'unknown',
+          oldValue: redact(entry.oldValue),
+          newValue: redact(entry.newValue),
+          timestamp: new Date(),
+        },
+      ],
+      session ? { session } : {},
+    );
   },
 
   async getLogs(filters: {

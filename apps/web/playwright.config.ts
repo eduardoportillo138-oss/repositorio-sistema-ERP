@@ -23,24 +23,26 @@ export default defineConfig({
       use: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true },
     },
   ],
-  webServer: [
-    {
-      command: 'node ../../backend/scripts/serve-qa.cjs',
-      url: 'http://127.0.0.1:3081/health',
-      reuseExistingServer: false,
-      timeout: 120000,
-    },
-    {
-      command: 'npm run dev -- --port 4173 --strictPort',
-      url: 'http://127.0.0.1:4173',
-      env: { ERP_API_TARGET: 'http://127.0.0.1:3081' },
-      reuseExistingServer: false,
-    },
-    {
-      command: 'npm run dev -w ../mobile -- --port 4174 --strictPort',
-      url: 'http://127.0.0.1:4174',
-      env: { ERP_API_TARGET: 'http://127.0.0.1:3081' },
-      reuseExistingServer: false,
-    },
-  ],
+  webServer: process.env.ERP_E2E_EXTERNAL_SERVERS
+    ? []
+    : [
+        {
+          command: 'node ../../backend/scripts/serve-qa.cjs',
+          url: 'http://127.0.0.1:3081/health',
+          reuseExistingServer: false,
+          timeout: 120000,
+        },
+        {
+          command:
+            'node ../../node_modules/vite/bin/vite.js preview --configLoader runner --host 127.0.0.1 --port 4173 --strictPort',
+          url: 'http://127.0.0.1:4173',
+          reuseExistingServer: false,
+        },
+        {
+          command:
+            'node ../../node_modules/vite/bin/vite.js preview ../mobile --configLoader runner --host 127.0.0.1 --port 4174 --strictPort',
+          url: 'http://127.0.0.1:4174',
+          reuseExistingServer: false,
+        },
+      ],
 });

@@ -10,7 +10,7 @@ Se necesita acceso al repositorio GitHub, al proyecto Atlas y al workspace de Re
 
 ## 2. Arquitectura
 
-`GitHub (main) → Render (Node/Express) → MongoDB Atlas`. La API vive bajo `/api/v1`. `GET /health` devuelve el estado del proceso HTTP y no comprueba Atlas en cada petición; el proceso solo empieza a escuchar después de conectar a la base.
+`GitHub (main) → Render (Node/Express) → MongoDB Atlas`. La API vive bajo `/api/v1`. `GET /health` devuelve liveness del proceso; `GET /ready` devuelve 200 solo cuando Mongoose está conectado y 503 si se desconecta. El proceso solo empieza a escuchar después de conectar a la base. Las escrituras Core requieren transacciones MongoDB.
 
 ## 3. Variables
 
@@ -37,33 +37,33 @@ Render solicita al crear el Blueprint los valores marcados `sync: false` en `ren
 
 ## 5. Render: primer despliegue
 
-1. Publica la rama revisada en GitHub y fusiónala en `main` después de rotar la credencial histórica.
+1. Publica la revisión en `main` según el flujo del proyecto. Antes de activar un despliegue con acceso a Atlas, rota y revoca la credencial histórica.
 2. En Render, crea **New → Blueprint**, conecta el repositorio `eduardoportillo138-oss/repositorio-sistema-ERP` y usa `render.yaml` de la raíz. Si ya existe un servicio conectado, comprueba si vas a importar o vincularlo para evitar un duplicado.
 3. Proporciona las cinco variables solicitadas. Si aún no existe el sitio web, usa temporalmente un origen HTTPS propio y actualiza `CORS_ORIGIN` al crear el sitio. No uses `*` con credenciales.
-4. Confirma el servicio y revisa su log. El comando de build es `npm ci && npm run build:packages && npm run backend:build`; el inicio es `npm run backend:start`. La raíz de trabajo es el repositorio, no `backend/`.
+4. Confirma el servicio y revisa su log. El comando de build es `npm ci --include=dev && npm run build:packages && npm run backend:build`; el inicio es `npm run backend:start`. La raíz de trabajo es el repositorio, no `backend/`. `--include=dev` instala `patch-package`, TypeScript y herramientas de build incluso con `NODE_ENV=production`.
 5. Render debe informar estado saludable mediante `/health`. El arranque fallará si falta una variable requerida o si Atlas no está accesible; eso evita publicar una API sin base.
 
 ## 6. Validación
 
-Con la URL **real** que muestre Render, solicita `GET <URL>/health` y confirma HTTP 200 con `success: true` y `data.status: ok`. Después comprueba `POST <URL>/api/v1/auth/login` con una cuenta de prueba válida, sin guardar la contraseña en el repositorio. Valida la respuesta con un origen permitido y uno no permitido; consulta los logs para confirmar conexión a MongoDB sin revelar la URI.
+Con la URL **real** que muestre Render, solicita `GET <URL>/health` y confirma HTTP 200 con `success: true` y `data.status: ok`. Solicita también `GET <URL>/ready` y confirma 200 y `data.database: connected`. Después comprueba `POST <URL>/api/v1/auth/login` con una cuenta válida, sin guardar la contraseña en el repositorio. Una instalación vacía requiere el [bootstrap explícito](CORE-HARDENING-OPERATIONS.md) antes del login. Valida la respuesta con un origen permitido y uno no permitido; consulta los logs para confirmar conexión a MongoDB sin revelar la URI.
 
 `/health` por sí solo no prueba que login, RBAC, CORS o Atlas sigan sanos. Un 501 en módulos empresariales pendientes es esperado; no significa que el core esté caído.
 
 ## 7. Sitio web, segunda etapa
 
-La app web usa React Native Web y Vite. Después de confirmar el backend, crea un **Static Site** desde el mismo repositorio, con raíz del repositorio, build `npm ci && npm run build:packages && npm run web:build` y publish path `apps/web/dist`. Define `VITE_API_BASE_URL` como la URL HTTPS **real** del backend seguida de `/api/v1`; Vite la incorpora en el build. Configura un rewrite `/* → /index.html` si usas rutas de navegador. Anota la URL real del sitio, actualiza `CORS_ORIGIN` en el backend y vuelve a desplegar ambos servicios. Comprueba login, refresh de sesión, dashboard y diseño en desktop, tablet y móvil. El dashboard indica módulos sin endpoint real como pendientes; no ofrece métricas ficticias.
+La app web usa React Native Web y Vite. Después de confirmar el backend, crea un **Static Site** desde el mismo repositorio, con raíz del repositorio, build `npm ci --include=dev && npm run build:packages && npm run web:build` y publish path `apps/web/dist`. Define `VITE_API_BASE_URL` como la URL HTTPS **real** del backend seguida de `/api/v1`; Vite la incorpora en el build. Configura un rewrite `/* → /index.html` si usas rutas de navegador. Anota la URL real del sitio, actualiza `CORS_ORIGIN` en el backend y vuelve a desplegar ambos servicios. Comprueba login, refresh de sesión, dashboard y diseño en desktop, tablet y móvil. El dashboard indica módulos sin endpoint real como pendientes; no ofrece métricas ficticias.
 
 ## 8. Diagnóstico
 
-| Síntoma            | Comprobación                                                                                                                                                                                      |
-| ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| INSTALL            | Ejecuta `npm ci` desde la raíz; comprueba la versión de Node y el lockfile. En Windows/OneDrive, usa una caché npm local si hay `EPERM`; en Render examina el error exacto de red o dependencias. |
-| BUILD              | Ejecuta `npm run build:packages` y `npm run backend:build` desde la raíz. No establezcas `rootDir: backend`.                                                                                      |
-| START / ENV        | Comprueba variables obligatorias, que los dos secretos JWT sean distintos y que el log no revele valores.                                                                                         |
-| PORT / HEALTHCHECK | Render aporta `PORT`; usa `/health` sin JWT. La conexión Atlas se realiza antes de escuchar.                                                                                                      |
-| MONGODB            | Comprueba usuario nuevo, URI, nombre de base, estado del cluster y CIDR de salida de Render en Atlas.                                                                                             |
-| CORS               | Comprueba el esquema HTTPS y el origen exacto del sitio, sin ruta ni barra final.                                                                                                                 |
-| RUNTIME            | `.node-version` fija Node 24.21.0; revisa que Render lo esté usando.                                                                                                                              |
+| Síntoma            | Comprobación                                                                                                                                                                                                    |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| INSTALL            | Ejecuta `npm ci --include=dev` desde la raíz; comprueba la versión de Node y el lockfile. En Windows/OneDrive, usa una caché npm local si hay `EPERM`; en Render examina el error exacto de red o dependencias. |
+| BUILD              | Ejecuta `npm run build:packages` y `npm run backend:build` desde la raíz. No establezcas `rootDir: backend`.                                                                                                    |
+| START / ENV        | Comprueba variables obligatorias, que los dos secretos JWT sean distintos y que el log no revele valores.                                                                                                       |
+| PORT / HEALTHCHECK | Render aporta `PORT`; usa `/health` sin JWT. La conexión Atlas se realiza antes de escuchar.                                                                                                                    |
+| MONGODB            | Comprueba usuario nuevo, URI, nombre de base, estado del cluster y CIDR de salida de Render en Atlas.                                                                                                           |
+| CORS               | Comprueba el esquema HTTPS y el origen exacto del sitio, sin ruta ni barra final.                                                                                                                               |
+| RUNTIME            | `.node-version` fija Node 24.21.0; revisa que Render lo esté usando.                                                                                                                                            |
 
 ## 9. Rollback y redeploy
 

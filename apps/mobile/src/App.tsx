@@ -84,7 +84,9 @@ export default function App() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} translucent={false} />
       <ERPApplication
-        developerSettings={__DEV__ && Platform.OS === 'android' ? <DeveloperApiSettings /> : undefined}
+        developerSettings={
+          __DEV__ && Platform.OS === 'android' ? <DeveloperApiSettings /> : undefined
+        }
       />
     </>
   );

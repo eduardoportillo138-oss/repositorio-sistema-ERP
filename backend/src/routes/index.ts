@@ -9,6 +9,7 @@ import { roleRoutes } from './role.routes';
 import { branchRoutes } from './branch.routes';
 import { companiesRouter } from '../modules/companies/company.module';
 import { authenticateToken } from '../middlewares/auth';
+import { isDatabaseConnected } from '../config/database';
 
 export function setupRoutes(app: Application): void {
   // Health Check
@@ -17,6 +18,17 @@ export function setupRoutes(app: Application): void {
       success: true,
       data: { status: 'ok', timestamp: new Date().toISOString() },
       message: 'ERP Backend está operativo',
+    });
+  });
+
+  app.get('/ready', (_req, res) => {
+    const ready = isDatabaseConnected();
+    res.status(ready ? 200 : 503).json({
+      success: ready,
+      data: {
+        status: ready ? 'ready' : 'unavailable',
+        database: ready ? 'connected' : 'disconnected',
+      },
     });
   });
 

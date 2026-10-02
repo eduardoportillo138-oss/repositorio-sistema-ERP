@@ -1,5 +1,7 @@
 # Auditoría de dependencias
 
+**HISTORICAL RESULT (2026-09-28).** Los conteos siguientes pertenecen a aquella ejecución. El 2026-10-02, `npm audit` no pudo completar la consulta al registro desde el sandbox y la revisión automática rechazó el acceso externo por divulgación de metadatos de dependencias. Conteos actuales: **no verificados**. No se ejecutó `npm audit fix --force` ni se modificó React Native 0.73.11. Ver [QA actual](../QA-VERIFICATION.md).
+
 Fecha: 2026-09-28. Resultado de npm install seguido de npm audit --json sobre el lockfile actualizado.
 
 | Severidad npm | Cantidad final |

@@ -2,7 +2,7 @@
 
 ## Deployment con Render
 
-El Blueprint [render.yaml](render.yaml) publica primero el backend: **GitHub → Render → Express API → MongoDB Atlas**. El servicio se construye desde la raíz del monorepo con `npm ci && npm run build:packages && npm run backend:build`, arranca con `npm run backend:start` y expone `GET /health` sin autenticación. La API está bajo `/api/v1`; Render define el puerto dinámico. Node queda fijado en `.node-version`.
+El Blueprint [render.yaml](render.yaml) publica primero el backend: **GitHub → Render → Express API → MongoDB Atlas**. El servicio se construye desde la raíz del monorepo con `npm ci --include=dev && npm run build:packages && npm run backend:build`, arranca con `npm run backend:start` y expone `GET /health` sin autenticación. `GET /ready` comprueba la conexión MongoDB. La API está bajo `/api/v1`; Render define el puerto dinámico. Node queda fijado en `.node-version`.
 
 Configura en el panel de Render `MONGODB_URI`, `MONGODB_DB_NAME`, `JWT_SECRET`, `JWT_REFRESH_SECRET` y `CORS_ORIGIN`. Los secretos deben ser nuevos y distintos. **La credencial de Atlas que figuró en el historial de Git debe rotarse y revocarse antes de desplegar**; corregir la plantilla no borra ese historial. Permite en Atlas los rangos de salida reales del servicio Render. `CORS_ORIGIN` debe contener el origen HTTPS exacto del frontend, nunca `*`.
 
@@ -10,16 +10,16 @@ La web Vite se publica en una segunda etapa como sitio estático. Usa `VITE_API_
 
 Monorepo TypeScript con API Express/Mongoose y una interfaz compartida en React Native y React Native Web.
 
-**Estado al 2026-09-29:** CORE HARDENING. Login, sesiones, usuarios, roles, empresas y sucursales tienen operaciones reales y pruebas con MongoDB temporal. Los módulos empresariales pendientes devuelven HTTP 501. La nueva interfaz web y el preview móvil compilan; el host Android está creado, pero APK/AVD no fueron verificados. iOS y Atlas tampoco fueron verificados. Ningún módulo está QA_APPROVED.
+**Estado al 2026-10-02:** CURRENT PHASE: CORE HARDENING. Core incorpora bootstrap explícito, auditoría transaccional, herramienta de migración y CI; 77 pruebas Jest y 15 E2E pasaron en esta fase. Web compila; Render/Atlas siguen sin validación productiva. Android build y APK debug figuran como verificados por la evidencia reciente aportada para esta fase; AVD, login/logout, Logcat, dispositivo físico y release permanecen sin probar. Master Data, Inventory, Sales, Purchases y Finance siguen en HTTP 501. Bloqueos externos: rotación de la credencial Atlas histórica, backup/migración real, validación Render y Android AVD. Consultar [QA actual](docs/QA-VERIFICATION.md). Ningún módulo nuevo está QA_APPROVED.
 
-El [ERP SOFTWARE AUDIT REPORT](docs/ERP-SOFTWARE-AUDIT-REPORT.md) contiene los hallazgos, correcciones, matriz de estados, evidencia y límites. Las credenciales MongoDB que estuvieron en el historial de Git deben rotarse antes de desplegar.
+La [operación Core](docs/CORE-HARDENING-OPERATIONS.md), [matriz de modelos heredados](docs/MASTER-DATA-MODEL-MATRIX.md) y [QA actual](docs/QA-VERIFICATION.md) contienen los pasos, evidencia y límites vigentes. El [informe de auditoría anterior](docs/ERP-SOFTWARE-AUDIT-REPORT.md) es histórico. La credencial MongoDB que estuvo en el historial de Git debe rotarse antes de desplegar.
 
 ## Instalación y desarrollo
 
 Requisitos: Node.js y npm compatibles con las dependencias del lockfile; ejecución verificada con Node 24.21.0. MongoDB de desarrollo para usar la API. Ejecuta desde la raíz de este repositorio:
 
 ```powershell
-npm ci
+npm ci --include=dev
 if (!(Test-Path .env)) { Copy-Item .env.example .env }
 # Edita .env con tu base de desarrollo y dos secretos JWT aleatorios y distintos.
 npm run build
@@ -121,7 +121,7 @@ Configura antes el `.env` local con una base de desarrollo y secretos reales, y 
 
 Para compilar directamente: `cd apps/mobile/android; .\gradlew.bat assembleDebug`. El APK debug debe verificarse en `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` antes de instalarlo con `adb install -r`. Si Metro no conecta, comprueba el puerto 8081; si la API no conecta, comprueba el backend en el puerto 3000 y `10.0.2.2`. Consulta la [guía Android](docs/mobile/ANDROID-SETUP.md) para arquitectura, Logcat, dispositivo físico y problemas frecuentes.
 
-**Verificación local del 2026-10-01 en el checkout del Escritorio:** CLI y CLI Android 12.3.7 corrigieron el autolinking. `npm.cmd ci`, `gradlew clean` y `gradlew assembleDebug` pasaron con JDK 17; existe un APK debug de 55,510,714 bytes. Metro respondió HTTP 200 y 31 pruebas MongoDB temporales pasaron. Aún faltan `.env`/backend de desarrollo, un AVD o teléfono y la prueba de login real. Véase el [reporte Android local](docs/mobile/ANDROID-LOCAL-DEPLOYMENT-REPORT.md).
+**Android:** el [reporte local del 2026-10-01](docs/mobile/ANDROID-LOCAL-DEPLOYMENT-REPORT.md) verifica CLI y CLI Android 12.3.7, `gradlew clean`, `assembleDebug`, APK debug de 55,510,714 bytes y Metro con JDK 17/SDK. Este checkout no conserva el APK y no se repitió la compilación nativa aquí. AVD, login/logout y Logcat siguen `NOT_TESTED / BLOCKED_EXTERNAL`; release `NOT_READY`.
 
 Para preparar E2E la primera vez:
 
@@ -139,4 +139,4 @@ Resultados y límites: [verificación](docs/QA-VERIFICATION.md), [estrategia QA]
 
 ## Continuación
 
-[Estado por módulo](docs/DEVELOPMENT-STATUS.md) y [siguiente fase](docs/NEXT-STEPS.md). Antes de MASTER DATA HARDENING deben cerrarse rotación de secretos históricos, migraciones e integridad de auditoría. Después: Categories → Units → Customers → Suppliers → Warehouses → Products.
+[Estado por módulo](docs/DEVELOPMENT-STATUS.md) y [siguiente fase](docs/NEXT-STEPS.md). El código de Master Data permanece bloqueado hasta completar QA Core y gates externos. Después: Categories → Units → Customers → Suppliers → Warehouses → Products.

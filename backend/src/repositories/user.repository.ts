@@ -15,8 +15,15 @@ export const userRepository = {
     return matches.length === 1 ? matches[0] : null;
   },
 
-  findById(userId: string, companyId: string, withPassword = false): Promise<IUserDocument | null> {
-    const query = User.findOne({ _id: userId, companyId, ...activeFilter });
+  findById(
+    userId: string,
+    companyId: string,
+    withPassword = false,
+    session?: mongoose.ClientSession,
+  ): Promise<IUserDocument | null> {
+    const query = User.findOne({ _id: userId, companyId, ...activeFilter }).session(
+      session || null,
+    );
     return (withPassword ? query.select('+passwordHash') : query).exec();
   },
 
@@ -33,15 +40,18 @@ export const userRepository = {
     return { data, total };
   },
 
-  create(input: {
-    email: string;
-    name: string;
-    password: string;
-    roleId: string;
-    companyId: string;
-    branchId?: string;
-    actorId: string;
-  }) {
+  create(
+    input: {
+      email: string;
+      name: string;
+      password: string;
+      roleId: string;
+      companyId: string;
+      branchId?: string;
+      actorId: string;
+    },
+    session?: mongoose.ClientSession,
+  ) {
     return new User({
       email: input.email.trim().toLowerCase(),
       name: input.name.trim(),
@@ -49,32 +59,36 @@ export const userRepository = {
       roleId: new mongoose.Types.ObjectId(input.roleId),
       companyId: new mongoose.Types.ObjectId(input.companyId),
       ...(input.branchId ? { branchId: new mongoose.Types.ObjectId(input.branchId) } : {}),
-      permissions: [],
       createdBy: new mongoose.Types.ObjectId(input.actorId),
-    }).save();
+    }).save({ session });
   },
 
   update(
     userId: string,
     companyId: string,
     patch: Partial<Pick<IUserDocument, 'name' | 'phone' | 'roleId' | 'branchId' | 'status'>>,
+    session?: mongoose.ClientSession,
   ) {
     return User.findOneAndUpdate(
       { _id: userId, companyId, ...activeFilter },
       { $set: patch },
-      { new: true, runValidators: true },
+      { new: true, runValidators: true, session },
     ).exec();
   },
 
-  deactivate(userId: string, companyId: string) {
+  deactivate(userId: string, companyId: string, session?: mongoose.ClientSession) {
     return User.findOneAndUpdate(
       { _id: userId, companyId, isPlatformAdmin: { $ne: true }, ...activeFilter },
       { $set: { status: 'inactive' } },
-      { new: true },
+      { new: true, session },
     ).exec();
   },
 
-  updateLastLogin(userId: string, companyId: string) {
-    return User.updateOne({ _id: userId, companyId }, { $set: { lastLoginAt: new Date() } }).exec();
+  updateLastLogin(userId: string, companyId: string, session?: mongoose.ClientSession) {
+    return User.updateOne(
+      { _id: userId, companyId },
+      { $set: { lastLoginAt: new Date() } },
+      { session },
+    ).exec();
   },
 };

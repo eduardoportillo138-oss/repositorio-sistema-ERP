@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 export default defineConfig({
   optimizeDeps: { exclude: ['react-native-safe-area-context'] },
   resolve: {
@@ -18,7 +18,7 @@ export default defineConfig({
     dedupe: ['react', 'react-dom', 'react-native-web'],
   },
   server: {
-    fs: { allow: [path.resolve(__dirname, '../..')] },
+    fs: { allow: [fileURLToPath(new URL('../..', import.meta.url))] },
     proxy: { '/api': process.env.ERP_API_TARGET || 'http://127.0.0.1:3000' },
   },
   build: { outDir: 'dist' },

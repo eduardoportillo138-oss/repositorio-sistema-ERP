@@ -84,7 +84,6 @@ async function seed(): Promise<void> {
         roleId: adminRole._id,
         companyId: company._id,
         branchId: branch._id,
-        permissions: adminRole.permissions,
         status: 'active',
       });
       console.log('[SEED] Usuario admin creado');

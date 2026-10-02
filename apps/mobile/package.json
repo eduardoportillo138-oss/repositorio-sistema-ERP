@@ -5,14 +5,15 @@
   "scripts": {
     "android": "react-native run-android",
     "ios": "react-native run-ios",
-    "web": "vite --host 127.0.0.1",
+    "web": "vite --configLoader runner --host 127.0.0.1",
     "start": "react-native start",
     "test": "jest",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "build:web": "tsc --noEmit && vite build",
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
+    "build:web": "tsc --noEmit && vite build --configLoader runner",
+    "dev": "vite --configLoader runner --host 127.0.0.1",
+    "preview": "vite preview --configLoader runner --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build --configLoader runner",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {

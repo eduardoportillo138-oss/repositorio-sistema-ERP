@@ -1,11 +1,12 @@
 // Disposable local QA server. Never uses the configured Atlas URI or production data.
 const path = require('node:path');
 const crypto = require('node:crypto');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { MongoMemoryReplSet } = require('mongodb-memory-server');
 process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = crypto.randomBytes(32).toString('hex');
 process.env.JWT_REFRESH_SECRET = crypto.randomBytes(32).toString('hex');
 process.env.RATE_LIMIT_MAX = '10000';
+process.env.CORS_ORIGIN = 'http://127.0.0.1:4173,http://127.0.0.1:4174';
 const { config } = require('../dist/config/env');
 const { connectDatabase, disconnectDatabase } = require('../dist/config/database');
 const { createApp } = require('../dist/app');
@@ -15,12 +16,12 @@ const { User } = require('../dist/models/user.model');
 const { PERMISSIONS } = require('../../packages/types/dist');
 let mongo, http;
 (async () => {
-  mongo = await MongoMemoryServer.create({
+  mongo = await MongoMemoryReplSet.create({
     binary: {
       version: '7.0.24',
       downloadDir: path.resolve(__dirname, '../../node_modules/.cache/mongodb-memory-server'),
     },
-    instance: { ip: '127.0.0.1' },
+    replSet: { count: 1, storageEngine: 'wiredTiger', ip: '127.0.0.1' },
   });
   Object.assign(config, {
     mongodbUri: mongo.getUri(),
@@ -56,9 +57,15 @@ let mongo, http;
   process.exit(1);
 });
 async function stop() {
-  if (http) await new Promise((resolve) => http.close(resolve));
+  const deadline = setTimeout(() => process.exit(1), 10000);
+  deadline.unref();
+  if (http) {
+    http.closeAllConnections();
+    await new Promise((resolve) => http.close(resolve));
+  }
   await disconnectDatabase();
   if (mongo) await mongo.stop();
+  clearTimeout(deadline);
   process.exit(0);
 }
 process.once('SIGTERM', stop);

@@ -4,7 +4,7 @@ import { Session } from '../models/session.model';
 import { IUserDocument } from '../models/user.model';
 import { userRepository } from '../repositories/user.repository';
 import { isValidEmail, isValidObjectId, isValidPassword, pagination } from '../utils/validation';
-import { auditService } from './audit.service';
+import { auditedMutation } from './auditedMutation';
 import {
   AuthorizationError,
   ConflictError,
@@ -104,26 +104,32 @@ export const userService = {
     await validRole(roleId, actor.companyId);
     await validBranch(branchId, actor.companyId);
     try {
-      const user = await userRepository.create({
-        email,
-        name,
-        password,
-        roleId: roleId as string,
-        companyId: actor.companyId,
-        branchId: branchId as string | undefined,
-        actorId: actor.userId,
-      });
-      await auditService.log({
-        userId: actor.userId,
-        companyId: actor.companyId,
-        module: 'users',
-        action: 'create',
-        entity: 'user',
-        entityId: String(user._id),
-        newValue: { email: user.email, roleId: String(user.roleId), status: user.status },
-        ip,
-        device,
-      });
+      const user = await auditedMutation(
+        async (session) =>
+          userRepository.create(
+            {
+              email,
+              name,
+              password,
+              roleId: roleId as string,
+              companyId: actor.companyId,
+              branchId: branchId as string | undefined,
+              actorId: actor.userId,
+            },
+            session,
+          ),
+        (user) => ({
+          userId: actor.userId,
+          companyId: actor.companyId,
+          module: 'users',
+          action: 'create',
+          entity: 'user',
+          entityId: String(user._id),
+          newValue: { email: user.email, roleId: String(user.roleId), status: user.status },
+          ip,
+          device,
+        }),
+      );
       return publicUser(user);
     } catch (error) {
       if ((error as { code?: number }).code === 11000)
@@ -152,52 +158,66 @@ export const userService = {
       throw new ValidationError('Estado inválido');
     if (body.roleId !== undefined) await validRole(body.roleId, actor.companyId);
     if (body.branchId !== undefined) await validBranch(body.branchId, actor.companyId);
-    const before = await userRepository.findById(id, actor.companyId);
-    if (!before) throw new NotFoundError('Usuario');
-    if (before.isPlatformAdmin) throw new AuthorizationError('Cuenta de plataforma reservada');
-    const user = await userRepository.update(id, actor.companyId, body as any);
-    if (!user) throw new NotFoundError('Usuario');
-    if (body.roleId !== undefined || body.status === 'inactive') {
-      await Session.updateMany(
-        { userId: id, companyId: actor.companyId, revokedAt: { $exists: false } },
-        { $set: { revokedAt: new Date() } },
-      ).exec();
-    }
-    await auditService.log({
-      userId: actor.userId,
-      companyId: actor.companyId,
-      module: 'users',
-      action: 'update',
-      entity: 'user',
-      entityId: id,
-      oldValue: { roleId: String(before.roleId), status: before.status },
-      newValue: { roleId: String(user.roleId), status: user.status },
-      ip,
-      device,
-    });
+    let oldValue: { roleId: string; status: string };
+    const user = await auditedMutation(
+      async (session) => {
+        const before = await userRepository.findById(id, actor.companyId, false, session);
+        if (!before) throw new NotFoundError('Usuario');
+        if (before.isPlatformAdmin) throw new AuthorizationError('Cuenta de plataforma reservada');
+        oldValue = { roleId: String(before.roleId), status: before.status };
+        const user = await userRepository.update(id, actor.companyId, body as any, session);
+        if (!user) throw new NotFoundError('Usuario');
+        if (body.roleId !== undefined || body.status === 'inactive') {
+          await Session.updateMany(
+            { userId: id, companyId: actor.companyId, revokedAt: { $exists: false } },
+            { $set: { revokedAt: new Date() } },
+            { session },
+          ).exec();
+        }
+        return user;
+      },
+      (user) => ({
+        userId: actor.userId,
+        companyId: actor.companyId,
+        module: 'users',
+        action: 'update',
+        entity: 'user',
+        entityId: id,
+        oldValue,
+        newValue: { roleId: String(user.roleId), status: user.status },
+        ip,
+        device,
+      }),
+    );
     return publicUser(user);
   },
 
   async deactivate(actor: Actor, id: string, ip: string, device: string) {
     if (!isValidObjectId(id)) throw new ValidationError('ID inválido');
     if (id === actor.userId) throw new ValidationError('No puedes desactivar tu propia cuenta');
-    const user = await userRepository.deactivate(id, actor.companyId);
-    if (!user) throw new NotFoundError('Usuario');
-    await Session.updateMany(
-      { userId: id, companyId: actor.companyId, revokedAt: { $exists: false } },
-      { $set: { revokedAt: new Date() } },
-    ).exec();
-    await auditService.log({
-      userId: actor.userId,
-      companyId: actor.companyId,
-      module: 'users',
-      action: 'deactivate',
-      entity: 'user',
-      entityId: id,
-      newValue: { status: 'inactive' },
-      ip,
-      device,
-    });
+    const user = await auditedMutation(
+      async (session) => {
+        const user = await userRepository.deactivate(id, actor.companyId, session);
+        if (!user) throw new NotFoundError('Usuario');
+        await Session.updateMany(
+          { userId: id, companyId: actor.companyId, revokedAt: { $exists: false } },
+          { $set: { revokedAt: new Date() } },
+          { session },
+        ).exec();
+        return user;
+      },
+      (user) => ({
+        userId: actor.userId,
+        companyId: actor.companyId,
+        module: 'users',
+        action: 'deactivate',
+        entity: 'user',
+        entityId: id,
+        newValue: { status: 'inactive' },
+        ip,
+        device,
+      }),
+    );
     return publicUser(user);
   },
 };

@@ -1,6 +1,6 @@
 # Próximos pasos
 
-Actualizado: 2026-09-28. **CURRENT PHASE: CORE HARDENING. NEXT PHASE: MASTER DATA HARDENING.**
+Actualizado: 2026-10-02. **CURRENT PHASE: CORE HARDENING. NEXT PHASE: MASTER DATA HARDENING, aún bloqueada.** La [QA actual](QA-VERIFICATION.md) sustituye las cifras históricas.
 
 ## 1. Cerrar CORE HARDENING
 
@@ -14,13 +14,13 @@ Actualizado: 2026-09-28. **CURRENT PHASE: CORE HARDENING. NEXT PHASE: MASTER DAT
 - [x] Sustituir éxitos ficticios por 501.
 - [x] Integrar logo, design system, login, layout, dashboard y QA responsive.
 - [ ] Rotar credenciales expuestas en el historial y revisar accesos a Atlas. Coordinar limpieza histórica después de rotar; no tratarla como revocación.
-- [ ] Inventario de datos antiguos, backup, dry run, migración idempotente y rollback. Revisar email global, Roles/Branches sin empresa, duplicados y referencias cruzadas.
-- [ ] Garantizar evento de auditoría junto con cambio de negocio mediante transacción/outbox. Probar fallo de DB, recuperación y reintentos sin duplicación.
+- [x] Preparar herramienta idempotente de migración con dry-run y revisión manual para email global, Roles/Branches sin empresa, duplicados y referencias cruzadas. Falta backup y ejecución real sobre Atlas.
+- [x] Implementar transacción negocio + auditoría con evento único y fallo cerrado. Falta ejecutar la suite MongoDB temporal en un entorno que permita descargar el binario.
 - [ ] Verificar índices/configuración/TLS/backups y cierre en el entorno objetivo, sin publicar secretos.
 - [ ] Migrar dependencias nativas para resolver la cadena fast-xml-parser con pruebas de compatibilidad.
-- [ ] Automatizar CI y revisar cobertura; resolver deuda de 163 advertencias.
+- [x] Crear Core CI. Falta observar ejecución remota, revisar cobertura y resolver deuda de advertencias.
 
-La promoción se mantiene bloqueada por secretos históricos, migración y auditoría durable. Las pruebas de MongoDB y aislamiento sobre una base limpia ya no son un pendiente.
+El código Core superó 77 pruebas Jest y 15 E2E actuales. El cierre productivo sigue bloqueado por rotación de la credencial Atlas histórica, backup/migración real y validación Render/Atlas; la auditoría npm actual requiere autorización de consulta externa. Los resultados MongoDB de 2026-09-28 son históricos.
 
 ## 2. MASTER DATA HARDENING
 
@@ -60,4 +60,4 @@ Primero requisitos, estados y pertenencia empresarial. Evitar habilitar modelos 
 
 ## 9. MOBILE & NATIVE INTEGRATIONS
 
-Mantener paridad visual/funcional del preview. Crear proyectos Android/iOS y pipeline, almacenamiento seguro de tokens, URL por entorno, splash/icono y pruebas en dispositivo. Integraciones nativas requieren SDK, permisos y firma definidos. No utilizar el éxito del browser preview como evidencia de release nativo.
+Mantener paridad visual/funcional del preview. Android ya tiene proyecto nativo y, según la evidencia reciente aportada, Gradle clean, assembleDebug, APK debug y Metro verificados con JDK 17/SDK. Falta AVD, login/logout real, Logcat, almacenamiento seguro de tokens y release. iOS sigue sin proyecto nativo. No utilizar APK o browser preview como evidencia de release.

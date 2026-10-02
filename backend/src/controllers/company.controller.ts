@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { Company } from '../models/company.model';
 import { Session } from '../models/session.model';
-import { auditService } from '../services/audit.service';
+import { auditedMutation } from '../services/auditedMutation';
 import { ConflictError, NotFoundError, ValidationError } from '../errors/AppError';
 import { isValidEmail, isValidObjectId, pagination } from '../utils/validation';
 
@@ -68,18 +68,20 @@ export async function getCompanyById(req: Request, res: Response) {
 export async function createCompany(req: Request, res: Response) {
   const body = fields(req.body, true);
   try {
-    const company = await Company.create({ ...body, status: 'active' });
-    await auditService.log({
-      userId: req.user!.userId,
-      companyId: req.user!.companyId,
-      module: 'companies',
-      action: 'create',
-      entity: 'company',
-      entityId: String(company._id),
-      newValue: { name: company.name, taxId: company.taxId },
-      ip: String(req.ip || ''),
-      device: req.get('user-agent') || '',
-    });
+    const company = await auditedMutation(
+      async (session) => (await Company.create([{ ...body, status: 'active' }], { session }))[0],
+      (company) => ({
+        userId: req.user!.userId,
+        companyId: String(company._id),
+        module: 'companies',
+        action: 'create',
+        entity: 'company',
+        entityId: String(company._id),
+        newValue: { name: company.name, taxId: company.taxId },
+        ip: String(req.ip || ''),
+        device: req.get('user-agent') || '',
+      }),
+    );
     res.status(201).json({ success: true, data: company });
   } catch (error) {
     if ((error as { code?: number }).code === 11000) throw new ConflictError('Empresa duplicada');
@@ -91,55 +93,71 @@ export async function updateCompany(req: Request, res: Response) {
   if (!isValidObjectId(req.params.id!)) throw new ValidationError('ID inválido');
   if (req.params.id! !== req.user!.companyId) throw new NotFoundError('Empresa');
   const patch = fields(req.body);
-  const before = await Company.findOne({
-    _id: req.params.id!,
-    status: { $ne: 'cancelled' },
-  }).exec();
-  if (!before || String(before._id) !== req.user!.companyId) throw new NotFoundError('Empresa');
-  const company = await Company.findOneAndUpdate(
-    { _id: req.params.id! },
-    { $set: patch },
-    { new: true, runValidators: true },
-  ).exec();
-  if (!company) throw new NotFoundError('Empresa');
-  await auditService.log({
-    userId: req.user!.userId,
-    companyId: req.user!.companyId,
-    module: 'companies',
-    action: 'update',
-    entity: 'company',
-    entityId: req.params.id!,
-    oldValue: { name: before.name, taxId: before.taxId },
-    newValue: { name: company.name, taxId: company.taxId },
-    ip: String(req.ip || ''),
-    device: req.get('user-agent') || '',
-  });
+  let oldValue: { name: string; taxId: string };
+  const company = await auditedMutation(
+    async (session) => {
+      const before = await Company.findOne({
+        _id: req.params.id!,
+        status: { $ne: 'cancelled' },
+      })
+        .session(session)
+        .exec();
+      if (!before || String(before._id) !== req.user!.companyId) throw new NotFoundError('Empresa');
+      oldValue = { name: before.name, taxId: before.taxId };
+      const company = await Company.findOneAndUpdate(
+        { _id: req.params.id! },
+        { $set: patch },
+        { new: true, runValidators: true, session },
+      ).exec();
+      if (!company) throw new NotFoundError('Empresa');
+      return company;
+    },
+    (company) => ({
+      userId: req.user!.userId,
+      companyId: req.user!.companyId,
+      module: 'companies',
+      action: 'update',
+      entity: 'company',
+      entityId: req.params.id!,
+      oldValue,
+      newValue: { name: company.name, taxId: company.taxId },
+      ip: String(req.ip || ''),
+      device: req.get('user-agent') || '',
+    }),
+  );
   res.json({ success: true, data: company });
 }
 
 export async function deactivateCompany(req: Request, res: Response) {
   if (!isValidObjectId(req.params.id!)) throw new ValidationError('ID inválido');
   if (req.params.id! !== req.user!.companyId) throw new NotFoundError('Empresa');
-  const company = await Company.findOneAndUpdate(
-    { _id: req.params.id!, status: 'active' },
-    { $set: { status: 'inactive' } },
-    { new: true },
-  ).exec();
-  if (!company || String(company._id) !== req.user!.companyId) throw new NotFoundError('Empresa');
-  await Session.updateMany(
-    { companyId: req.user!.companyId, revokedAt: { $exists: false } },
-    { $set: { revokedAt: new Date() } },
-  ).exec();
-  await auditService.log({
-    userId: req.user!.userId,
-    companyId: req.user!.companyId,
-    module: 'companies',
-    action: 'deactivate',
-    entity: 'company',
-    entityId: req.params.id!,
-    newValue: { status: 'inactive' },
-    ip: String(req.ip || ''),
-    device: req.get('user-agent') || '',
-  });
+  const company = await auditedMutation(
+    async (session) => {
+      const company = await Company.findOneAndUpdate(
+        { _id: req.params.id!, status: 'active' },
+        { $set: { status: 'inactive' } },
+        { new: true, session },
+      ).exec();
+      if (!company || String(company._id) !== req.user!.companyId)
+        throw new NotFoundError('Empresa');
+      await Session.updateMany(
+        { companyId: req.user!.companyId, revokedAt: { $exists: false } },
+        { $set: { revokedAt: new Date() } },
+        { session },
+      ).exec();
+      return company;
+    },
+    (company) => ({
+      userId: req.user!.userId,
+      companyId: req.user!.companyId,
+      module: 'companies',
+      action: 'deactivate',
+      entity: 'company',
+      entityId: req.params.id!,
+      newValue: { status: 'inactive' },
+      ip: String(req.ip || ''),
+      device: req.get('user-agent') || '',
+    }),
+  );
   res.json({ success: true, data: company });
 }

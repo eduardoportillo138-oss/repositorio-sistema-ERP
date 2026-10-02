@@ -1,4 +1,5 @@
 import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
 import jwt from 'jsonwebtoken';
 import { config } from '../../src/config/env';
 import { authService } from '../../src/services/auth.service';
@@ -23,13 +24,25 @@ const userId = '507f1f77bcf86cd799439013';
 const roleId = '507f1f77bcf86cd799439014';
 const actor: Actor = { userId, companyId: companyA, roleId, permissions: ['users.view'] };
 
-const query = (value: unknown) => ({ exec: jest.fn().mockResolvedValue(value) }) as any;
+const query = (value: unknown) =>
+  ({
+    exec: jest.fn().mockResolvedValue(value),
+    session() {
+      return this;
+    },
+  }) as any;
 
 beforeAll(() => {
   (config as any).jwtSecret = 'test-access-secret-at-least-32-characters';
   (config as any).jwtRefreshSecret = 'test-refresh-secret-at-least-32-characters';
 });
 afterEach(() => jest.restoreAllMocks());
+beforeEach(() => {
+  jest.spyOn(mongoose, 'startSession').mockResolvedValue({
+    withTransaction: async (callback: () => Promise<void>) => callback(),
+    endSession: async () => undefined,
+  } as any);
+});
 
 function mockLoginUser(passwordHash: string, status = 'active') {
   const user = {
@@ -60,7 +73,6 @@ describe('Auth', () => {
       passwordHash: 'ValidPass123',
       roleId,
       companyId: companyA,
-      permissions: [],
       status: 'active',
     });
     jest
@@ -83,9 +95,14 @@ describe('Auth', () => {
     expect(result.user).not.toHaveProperty('passwordHash');
     expect(jwt.decode(result.accessToken)).not.toHaveProperty('email');
     expect(Session.create).toHaveBeenCalledWith(
-      expect.objectContaining({ tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/) }),
+      [expect.objectContaining({ tokenHash: expect.stringMatching(/^[a-f0-9]{64}$/) })],
+      expect.objectContaining({ session: expect.anything() }),
     );
-    expect(userRepository.updateLastLogin).toHaveBeenCalledWith(userId, companyA);
+    expect(userRepository.updateLastLogin).toHaveBeenCalledWith(
+      userId,
+      companyA,
+      expect.anything(),
+    );
   });
 
   test('rechaza contraseña incorrecta', async () => {
@@ -183,9 +200,11 @@ describe('Aislamiento de empresa', () => {
     expect(created.companyId).toBe(companyA);
     expect(userRepository.create).toHaveBeenCalledWith(
       expect.objectContaining({ companyId: companyA, actorId: userId }),
+      expect.anything(),
     );
     expect(auditService.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'create', companyId: companyA }),
+      expect.anything(),
     );
   });
 
@@ -204,8 +223,13 @@ describe('Aislamiento de empresa', () => {
     jest.spyOn(auditService, 'log').mockResolvedValue();
     await userService.update(actor, companyB, { name: 'Nuevo' }, '', '');
     await userService.deactivate(actor, companyB, '', '');
-    expect(userRepository.update).toHaveBeenCalledWith(companyB, companyA, { name: 'Nuevo' });
-    expect(userRepository.deactivate).toHaveBeenCalledWith(companyB, companyA);
+    expect(userRepository.update).toHaveBeenCalledWith(
+      companyB,
+      companyA,
+      { name: 'Nuevo' },
+      expect.anything(),
+    );
+    expect(userRepository.deactivate).toHaveBeenCalledWith(companyB, companyA, expect.anything());
   });
 
   test('middleware deniega permiso ausente', () => {
@@ -267,6 +291,7 @@ describe('Aislamiento de empresa', () => {
     expect(role.permissions).toEqual(['users.view', 'users.create']);
     expect(auditService.log).toHaveBeenCalledWith(
       expect.objectContaining({ action: 'update', companyId: companyA }),
+      expect.anything(),
     );
   });
 
@@ -290,7 +315,7 @@ describe('Aislamiento de empresa', () => {
 
   test('Branches crea usando la empresa del actor', async () => {
     const branch = { _id: companyB, companyId: companyA, name: 'Centro', code: 'CTR' };
-    jest.spyOn(Branch, 'create').mockResolvedValue(branch as any);
+    jest.spyOn(Branch, 'create').mockResolvedValue([branch] as any);
     jest.spyOn(auditService, 'log').mockResolvedValue();
     const json = jest.fn();
     const status = jest.fn().mockReturnValue({ json });
@@ -303,7 +328,10 @@ describe('Aislamiento de empresa', () => {
       } as any,
       { status } as any,
     );
-    expect(Branch.create).toHaveBeenCalledWith(expect.objectContaining({ companyId: companyA }));
+    expect(Branch.create).toHaveBeenCalledWith(
+      [expect.objectContaining({ companyId: companyA })],
+      expect.objectContaining({ session: expect.anything() }),
+    );
     expect(status).toHaveBeenCalledWith(201);
   });
 });

@@ -14,7 +14,11 @@ export async function login(req: Request, res: Response): Promise<void> {
 }
 
 export async function refreshToken(req: Request, res: Response): Promise<void> {
-  const data = await authService.refreshToken(req.body.refreshToken);
+  const data = await authService.refreshToken(
+    req.body.refreshToken,
+    req.ip,
+    req.get('user-agent') || '',
+  );
   res.status(200).json({ success: true, data });
 }
 

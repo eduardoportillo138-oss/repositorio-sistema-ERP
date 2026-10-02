@@ -6,6 +6,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IAuditLog extends BaseDocument {
+  eventId: string;
   userId: string;
   companyId: string;
   module: string;
@@ -23,6 +24,7 @@ export interface IAuditLogDocument extends IAuditLog, Document {}
 
 const auditLogSchema = new Schema<IAuditLogDocument>(
   {
+    eventId: { type: String, required: true, immutable: true },
     userId: {
       type: String,
       required: [true, 'El userId es obligatorio'],
@@ -83,6 +85,11 @@ const auditLogSchema = new Schema<IAuditLogDocument>(
 );
 
 // Índices compuestos para consultas eficientes
+// Legacy audit records may lack eventId; the unique constraint applies to new events.
+auditLogSchema.index(
+  { eventId: 1 },
+  { unique: true, partialFilterExpression: { eventId: { $type: 'string' } } },
+);
 auditLogSchema.index({ companyId: 1, module: 1, timestamp: -1 });
 auditLogSchema.index({ userId: 1, timestamp: -1 });
 auditLogSchema.index({ entity: 1, entityId: 1, timestamp: -1 });

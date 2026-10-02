@@ -3,15 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "vite --host 127.0.0.1",
-    "build": "tsc --noEmit && vite build",
-    "start": "vite --host 127.0.0.1",
+    "dev": "vite --configLoader runner --host 127.0.0.1",
+    "build": "tsc --noEmit && vite build --configLoader runner",
+    "start": "vite --configLoader runner --host 127.0.0.1",
+    "preview": "vite preview --configLoader runner --host 127.0.0.1",
     "test": "jest",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "test:e2e": "node ../../scripts/run-e2e.cjs",
     "typecheck": "tsc --noEmit",
-    "build:web": "tsc --noEmit && vite build"
+    "build:web": "tsc --noEmit && vite build --configLoader runner"
   },
   "dependencies": {
     "react": "18.2.0",

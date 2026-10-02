@@ -9,7 +9,7 @@ import { Role } from '../models/role.model';
 import { Session } from '../models/session.model';
 import { IUserDocument } from '../models/user.model';
 import { userRepository } from '../repositories/user.repository';
-import { auditService } from './audit.service';
+import { auditedMutation } from './auditedMutation';
 import { isValidObjectId } from '../utils/validation';
 
 type TokenClaims = jwt.JwtPayload & {
@@ -120,28 +120,38 @@ export const authService = {
     const identity = await resolveIdentity(user);
     const sid = new mongoose.Types.ObjectId();
     const { accessToken, refreshToken, expiresAt } = tokenPair(user, String(sid));
-    await Session.create({
-      _id: sid,
-      tokenHash: tokenHash(refreshToken),
-      userId: user._id,
-      companyId: user.companyId,
-      expiresAt,
-    });
-    await userRepository.updateLastLogin(String(user._id), String(user.companyId));
-    await auditService.log({
-      userId: String(user._id),
-      companyId: String(user.companyId),
-      module: 'auth',
-      action: 'login',
-      entity: 'session',
-      entityId: String(sid),
-      ip: ip || 'unknown',
-      device: device || 'unknown',
-    });
+    await auditedMutation(
+      async (session) => {
+        await Session.create(
+          [
+            {
+              _id: sid,
+              tokenHash: tokenHash(refreshToken),
+              userId: user._id,
+              companyId: user.companyId,
+              expiresAt,
+            },
+          ],
+          { session },
+        );
+        await userRepository.updateLastLogin(String(user._id), String(user.companyId), session);
+        return sid;
+      },
+      () => ({
+        userId: String(user._id),
+        companyId: String(user.companyId),
+        module: 'auth',
+        action: 'login',
+        entity: 'session',
+        entityId: String(sid),
+        ip: ip || 'unknown',
+        device: device || 'unknown',
+      }),
+    );
     return { accessToken, refreshToken, user: publicIdentity(user, identity) };
   },
 
-  async refreshToken(token: string) {
+  async refreshToken(token: string, ip = '', device = '') {
     if (typeof token !== 'string' || !token) throw new ValidationError('Refresh token obligatorio');
     const claims = verifyRefresh(token);
     const user = await userRepository.findById(claims.userId, claims.companyId);
@@ -150,19 +160,34 @@ export const authService = {
     const identity = await resolveIdentity(user);
     const pair = tokenPair(user, claims.sid);
     // Compare-and-swap on one document: only one concurrent refresh can consume the old hash.
-    const session = await Session.findOneAndUpdate(
-      {
-        _id: claims.sid,
-        tokenHash: tokenHash(token),
+    await auditedMutation(
+      async (session) => {
+        const updated = await Session.findOneAndUpdate(
+          {
+            _id: claims.sid,
+            tokenHash: tokenHash(token),
+            userId: claims.userId,
+            companyId: claims.companyId,
+            revokedAt: { $exists: false },
+            expiresAt: { $gt: new Date() },
+          },
+          { $set: { tokenHash: tokenHash(pair.refreshToken), expiresAt: pair.expiresAt } },
+          { new: true, session },
+        ).exec();
+        if (!updated) throw new AuthenticationError('Sesión revocada o expirada');
+        return updated;
+      },
+      (updated) => ({
         userId: claims.userId,
         companyId: claims.companyId,
-        revokedAt: { $exists: false },
-        expiresAt: { $gt: new Date() },
-      },
-      { $set: { tokenHash: tokenHash(pair.refreshToken), expiresAt: pair.expiresAt } },
-      { new: true },
-    ).exec();
-    if (!session) throw new AuthenticationError('Sesión revocada o expirada');
+        module: 'auth',
+        action: 'refresh',
+        entity: 'session',
+        entityId: String(updated._id),
+        ip: ip || 'unknown',
+        device: device || 'unknown',
+      }),
+    );
     return {
       accessToken: pair.accessToken,
       refreshToken: pair.refreshToken,
@@ -178,26 +203,31 @@ export const authService = {
     device = '',
   ) {
     if (typeof token !== 'string' || !token) throw new ValidationError('Refresh token obligatorio');
-    const result = await Session.findOneAndUpdate(
-      {
-        tokenHash: tokenHash(token),
+    await auditedMutation(
+      async (session) => {
+        const result = await Session.findOneAndUpdate(
+          {
+            tokenHash: tokenHash(token),
+            userId,
+            companyId,
+            revokedAt: { $exists: false },
+          },
+          { $set: { revokedAt: new Date() } },
+          { new: true, session },
+        ).exec();
+        if (!result) throw new AuthenticationError('Sesión no encontrada');
+        return result;
+      },
+      (result) => ({
         userId,
         companyId,
-        revokedAt: { $exists: false },
-      },
-      { $set: { revokedAt: new Date() } },
-      { new: true },
-    ).exec();
-    if (!result) throw new AuthenticationError('Sesión no encontrada');
-    await auditService.log({
-      userId,
-      companyId,
-      module: 'auth',
-      action: 'logout',
-      entity: 'session',
-      entityId: String(result._id),
-      ip: ip || 'unknown',
-      device: device || 'unknown',
-    });
+        module: 'auth',
+        action: 'logout',
+        entity: 'session',
+        entityId: String(result._id),
+        ip: ip || 'unknown',
+        device: device || 'unknown',
+      }),
+    );
   },
 };
