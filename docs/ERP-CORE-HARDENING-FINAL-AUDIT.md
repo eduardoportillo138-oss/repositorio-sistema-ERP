@@ -13,7 +13,7 @@ Fecha: 2026-10-02. Base inspeccionada: `868518619e030976d4f6fe4131eb6df28ccf5b45
 | Audit         | Error de AuditLog se silenciaba                        | Fallo cerrado, evento UUID único, transacción            | Rollback, retry, no duplicado y tenant                    | CODE_COMPLETE              |
 | Migrations    | Sin herramienta de inspección                          | Dry-run/apply seguro para permisos heredados             | Test dry-run/apply; Atlas no tocado                       | PREPARED                   |
 | Web           | Build local sensible a OneDrive                        | Vite runner y URL por entorno                            | Build, sentinel Vite, 15 E2E                              | VERIFIED_LOCAL             |
-| Android       | Documentos mezclaban estados                           | Estado reciente reportado separado de AVD                | RN/CLI/Gradle/SDK inspeccionados; APK no recompilado aquí | BUILD_REPORTED_VERIFIED    |
+| Android       | Documentos mezclaban estados                           | Estado reciente reportado separado de AVD                | RN/CLI/Gradle/SDK inspeccionados; APK no recompilado aquí | BUILD_VERIFIED             |
 | CI            | Sin workflow                                           | Core CI con Node de `.node-version`                      | Archivo presente; ejecución remota pendiente              | CONFIGURED                 |
 | Security      | `.env` histórico expuesto                              | Ignorado, sin tracking; secretos redactados en auditoría | Comprobación Git y búsqueda por nombre de archivo         | EXTERNAL_ROTATION_REQUIRED |
 | QA            | Fechas/resultados contradictorios                      | Evidencia única 2026-10-02                               | 77 Jest, 15 E2E, build/lint/formato exit 0                | PASS_LOCAL                 |
@@ -22,7 +22,7 @@ Fecha: 2026-10-02. Base inspeccionada: `868518619e030976d4f6fe4131eb6df28ccf5b45
 
 ## FILES MODIFIED
 
-- Configuración y CI: `.env.example`, `render.yaml`, `.github/workflows/ci.yml`, `apps/web/package.json`, `apps/mobile/package.json`, ambos `vite.config.ts`, `apps/web/playwright.config.ts` y `scripts/run-e2e.cjs`.
+- Configuración y CI: `.env.example`, `.gitattributes`, `.env` retirado del tracking sin borrarlo localmente, `render.yaml`, `.github/workflows/ci.yml`, `apps/web/package.json`, `apps/mobile/package.json`, ambos `vite.config.ts`, `apps/web/playwright.config.ts` y `scripts/run-e2e.cjs`.
 - Backend Core: `backend/package.json`, `backend/scripts/serve-qa.cjs`, `backend/src/config/database.ts`, controladores Auth/Branch/Company/Role, modelos AuditLog/User, repositorio User, rutas, servicios Audit/Auth/User, `backend/src/services/auditedMutation.ts`, seed, bootstrap y migraciones.
 - Tests: `backend/tests/integration/mongodb.integration.test.ts`, `backend/tests/unit/core.test.ts`, `backend/tests/unit/hardening-config.test.ts`.
 - Documentos: `README.md`, `docs/DEPLOYMENT-RENDER.md`, `docs/DEVELOPMENT-STATUS.md`, `docs/ERP-SOFTWARE-AUDIT-REPORT.md`, `docs/NEXT-STEPS.md`, `docs/QA-VERIFICATION.md`, `docs/qa/DEPENDENCY-AUDIT.md`, `docs/mobile/ANDROID-LOCAL-DEPLOYMENT-REPORT.md`, esta auditoría, [guía de operación](CORE-HARDENING-OPERATIONS.md) y [matriz](MASTER-DATA-MODEL-MATRIX.md).
@@ -52,7 +52,7 @@ Fecha: 2026-10-02. Base inspeccionada: `868518619e030976d4f6fe4131eb6df28ccf5b45
 
 ## SECURITY FINDINGS
 
-`.env` continúa presente localmente, ignorado y fuera de Git; no se leyó ni eliminó. `.jks`, `.keystore`, `.apk`, `.aab` y `local.properties` están ignorados. La búsqueda de patrones de URI entre archivos del proyecto señaló solo la plantilla y tests con valores ficticios. El historial Git no fue reescrito. La rotación Atlas no puede declararse resuelta. Conteos actuales de `npm audit` (critical/high/moderate/low): **no verificados**; el reporte de siete moderadas es histórico. React Native 0.73.11 y CLI 12.3.7 se conservaron.
+`.env` continúa presente localmente, ignorado y fuera del índice Git; no se leyó ni eliminó. Al integrar los dos commits nuevos de `origin/main`, se detectó que uno volvió a versionar `.env`; se retiró del tracking sin cambiar el archivo local. `.gitattributes` lo marca binario para no reproducir sus líneas en el diff de eliminación. El historial Git no fue reescrito: la credencial Atlas requiere rotación/revocación. `.jks`, `.keystore`, `.apk`, `.aab` y `local.properties` están ignorados. La búsqueda de patrones de URI entre archivos del proyecto señaló solo la plantilla y tests ficticios. Conteos actuales de `npm audit` (critical/high/moderate/low): **no verificados**; siete moderadas es histórico. React Native 0.73.11 y CLI 12.3.7 se conservaron.
 
 ## MIGRATION STATUS
 
@@ -60,7 +60,7 @@ Fecha: 2026-10-02. Base inspeccionada: `868518619e030976d4f6fe4131eb6df28ccf5b45
 
 ## ANDROID STATUS
 
-La evidencia reciente aportada al encargo reporta React Native CLI 12.3.7, autolinking, JDK 17, SDK, Gradle clean, `assembleDebug`, APK debug y Metro completados. Este checkout no tiene el APK generado y no se repitió la compilación nativa. AVD, ejecución real, login/logout, Logcat y teléfono físico: `NOT_TESTED / BLOCKED_EXTERNAL`; release: `NOT_READY`. No se declara `ANDROID_LOCAL_READY`.
+El [reporte Android del 2026-10-01](mobile/ANDROID-LOCAL-DEPLOYMENT-REPORT.md) acredita React Native CLI 12.3.7, autolinking, JDK 17, SDK, Gradle clean, `assembleDebug`, APK debug y Metro: **VERIFIED** en ese checkout. Este checkout no tiene el APK generado y no se repitió la compilación nativa. AVD, ejecución real, login/logout, Logcat y teléfono físico: `NOT_TESTED / BLOCKED_EXTERNAL`; release: `NOT_READY`. No se declara `ANDROID_LOCAL_READY`.
 
 ## NEXT PHASE DECISION
 
