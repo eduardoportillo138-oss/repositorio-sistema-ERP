@@ -20,13 +20,16 @@ buildscript {
 
 apply plugin: "com.facebook.react.rootproject"
 
-// OneDrive can mark hydrated codegen inputs as reparse points. Gradle 9 refuses
-// to snapshot those files; opt out of incremental tracking only for this local
-// build workaround, which forces codegen to run on every build.
+// OneDrive can mark hydrated JS inputs as reparse points. Gradle 9 refuses to
+// snapshot those files; opt out of incremental tracking only for this local
+// build workaround, which forces codegen and JS bundling on every build.
 if (System.getenv("ERP_ANDROID_CXX_STAGE")) {
     subprojects {
-        tasks.matching { it.name == "generateCodegenSchemaFromJavaScript" }.configureEach {
-            doNotTrackState("OneDrive codegen inputs may be reparse points on Windows")
+        tasks.matching {
+            it.name == "generateCodegenSchemaFromJavaScript" ||
+                (it.name.startsWith("createBundle") && it.name.endsWith("JsAndAssets"))
+        }.configureEach {
+            doNotTrackState("OneDrive JS inputs may be reparse points on Windows")
         }
     }
 }
