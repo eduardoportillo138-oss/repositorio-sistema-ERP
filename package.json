@@ -24,6 +24,7 @@
     "backend:build": "npm run build -w backend",
     "backend:start": "npm run start -w backend",
     "mobile:android": "npm run android -w apps/mobile",
+    "mobile:android:local": "cd apps/mobile/android && gradlew.bat assembleLocal --no-daemon",
     "mobile:start": "npm run start -w apps/mobile",
     "mobile:ios": "npm run ios -w apps/mobile",
     "web:dev": "npm run dev -w apps/web",

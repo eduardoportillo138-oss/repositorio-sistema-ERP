@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Platform, Pressable, StatusBar, Text, TextInput, View } from 'react-native';
+import { NativeModules, Platform, Pressable, StatusBar, Text, TextInput, View } from 'react-native';
 import { ERPApplication, colors } from '@erp/ui';
 import { configureApiBaseURL } from '@erp/api-client';
 import { getMobileApiBaseURL } from './config/api';
@@ -20,8 +20,9 @@ function DeveloperApiSettings() {
       (octets[0] === 10 ||
         (octets[0] === 192 && octets[1] === 168) ||
         (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31));
-    if (!isPrivate) {
-      setError('Usa la IP local del PC: http://IP:3000/api/v1');
+    const isHttps = /^https:\/\/[a-z0-9.-]+(?::\d{2,5})?\/api\/v1$/i.test(candidate);
+    if (!isPrivate && !isHttps) {
+      setError('Usa una IP privada local o una URL HTTPS terminada en /api/v1');
       return;
     }
     configureApiBaseURL(candidate);
@@ -44,7 +45,7 @@ function DeveloperApiSettings() {
       {expanded && (
         <View style={{ marginTop: 10, gap: 8 }}>
           <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-            Emulador: 10.0.2.2 · Teléfono: IP LAN del PC
+            Emulador: 10.0.2.2 · Teléfono: IP LAN del PC · Remoto: HTTPS
           </Text>
           <TextInput
             accessibilityLabel="URL de la API local"
@@ -85,7 +86,9 @@ export default function App() {
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} translucent={false} />
       <ERPApplication
         developerSettings={
-          __DEV__ && Platform.OS === 'android' ? <DeveloperApiSettings /> : undefined
+          (__DEV__ || NativeModules.ERPBuildMode?.isLocal === true) && Platform.OS === 'android' ? (
+            <DeveloperApiSettings />
+          ) : undefined
         }
       />
     </>

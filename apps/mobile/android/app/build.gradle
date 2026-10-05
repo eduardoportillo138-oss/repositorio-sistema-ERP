@@ -11,6 +11,14 @@ react {
     reactNativeDir = file("../../../../node_modules/react-native")
     codegenDir = file("../../../../node_modules/@react-native/codegen")
     cliFile = file("../../../../node_modules/react-native/cli.js")
+    // The RN 0.73 plugin searches under react.root; Hermes lives in the monorepo node_modules.
+    def hostOS = System.getProperty("os.name").toLowerCase()
+    def hermesFolder = hostOS.contains("windows") ? "win64-bin" : (hostOS.contains("mac") ? "osx-bin" : "linux64-bin")
+    def hermesBinary = hostOS.contains("windows") ? "hermesc.exe" : "hermesc"
+    def monorepoHermesc = file("../../../../node_modules/react-native/sdks/hermesc/${hermesFolder}/${hermesBinary}")
+    if (monorepoHermesc.exists()) {
+        hermesCommand = monorepoHermesc.absolutePath
+    }
     /* Folders */
     //   The root of your project, i.e. where "package.json" lives. Default is '..'
     // root = file("../")
@@ -93,6 +101,14 @@ android {
             // Supply a private release signing configuration before distribution.
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+        local {
+            initWith release
+            signingConfig signingConfigs.debug
+            applicationIdSuffix ".local"
+            versionNameSuffix "-local"
+            minifyEnabled false
+            matchingFallbacks = ['release']
         }
     }
 }
