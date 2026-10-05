@@ -5,6 +5,7 @@ module.exports = {
   },
   testEnvironment: 'node',
   rootDir: '.',
+  modulePathIgnorePatterns: ['<rootDir>/tmp/'],
   testMatch: [
     '**/tests/**/*.test.ts',
     '**/backend/tests/**/*.test.ts',

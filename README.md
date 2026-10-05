@@ -1,5 +1,9 @@
 # ERP Empresarial
 
+## Android local (2026-10-04)
+
+La app Android usa React Native 0.86.3. `npm.cmd run mobile:android:local` genera un APK con JavaScript y assets en `apps/mobile/android/app/build/outputs/apk/local/app-local.apk`; debug sigue requiriendo Metro. La inspección ELF/ZIP pasó para las bibliotecas de 64 bits y el APK llegó al login sin Metro en emuladores de 16 KB y 4 KB. Teléfono físico, API real y autenticación siguen pendientes. No se ha publicado en Play. Consulta la [guía Android](docs/mobile/ANDROID-SETUP.md) y el [informe de migración](docs/mobile/ANDROID-STANDALONE-16KB-MIGRATION-REPORT.md). `.env` permanece local e ignorado.
+
 ## Deployment con Render
 
 El Blueprint [render.yaml](render.yaml) publica primero el backend: **GitHub → Render → Express API → MongoDB Atlas**. El servicio se construye desde la raíz del monorepo con `npm ci --include=dev && npm run build:packages && npm run backend:build`, arranca con `npm run backend:start` y expone `GET /health` sin autenticación. `GET /ready` comprueba la conexión MongoDB. La API está bajo `/api/v1`; Render define el puerto dinámico. Node queda fijado en `.node-version`.
@@ -56,7 +60,7 @@ packages/session/      AuthProvider compartido
 packages/ui/           tokens, logo, layout, pantallas y componentes
 packages/types/        tipos y catálogo de permisos
 docs/                  auditoría, estado, arquitectura, seguridad y QA
-patches/               compatibilidad Metro / image-size
+scripts/               utilidades de build y operación
 ```
 
 Frontend → REST /api/v1 → Express → controladores → servicios/repositorios → Mongoose → MongoDB. Auth/Users siguen esas capas; Roles/Companies/Branches aún consultan modelos desde controladores. Consulta [arquitectura real](docs/architecture/ARCHITECTURE.md).

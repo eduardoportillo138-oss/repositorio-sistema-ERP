@@ -1,5 +1,13 @@
 # ANDROID LOCAL PHASE STATUS
 
+## Actualización 2026-10-04
+
+React Native 0.86.3, React 19.2.3, Gradle 9.3.1, AGP 8.12.0, Kotlin 2.1.20, NDK 27.1 y SDK 36 sustituyen los valores RN 0.73 de la auditoría histórica más abajo. `npm.cmd run mobile:android:local` compiló `app-local.apk` con JavaScript y un asset incluidos. `assembleDebug` compiló `app-debug.apk` sin bundle y sigue requiriendo Metro. El APK local pasó `zipalign -c -P 16 -v 4`; todas las 11 bibliotecas arm64 y las 11 x86_64 tienen ELF compatible con 16 KB. Backend, web y preview móvil compilan; Jest pasó 77/77 y lint terminó con 0 errores.
+
+Después se arrancaron `Medium_Phone` (16 KB) y `Pixel_8` (4 KB). Ambos instalaron el APK local y llegaron al login sin Metro ni `adb reverse`; [captura 16 KB](screenshots/local-login-16kb.png) y [captura 4 KB](screenshots/local-login-4kb.png). `STANDALONE_LOCAL_APK_READY` quedó verificado en emuladores. Teléfono físico, API real, login con credenciales y logout siguen pendientes; no se declara `ANDROID_LOCAL_READY`. Véase el [informe completo](ANDROID-STANDALONE-16KB-MIGRATION-REPORT.md) y la [guía actual](ANDROID-SETUP.md).
+
+## Registro histórico de 2026-10-01
+
 Fecha: 2026-10-01. Checkout verificado: `repositorio-sistema-ERP` en el Escritorio. Rama: `codex/android-local-deployment`. Alcance exclusivo: Android debug local.
 
 | Phase            | Status           | Evidence                                                                                                                                              | Blocking issue                                                                                                           | Next action                                                                                                 |

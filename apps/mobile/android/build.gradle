@@ -1,11 +1,11 @@
 buildscript {
     ext {
-        buildToolsVersion = "34.0.0"
-        minSdkVersion = 21
-        compileSdkVersion = 34
-        targetSdkVersion = 34
-        ndkVersion = "25.1.8937393"
-        kotlinVersion = "1.8.0"
+        buildToolsVersion = "36.0.0"
+        minSdkVersion = 24
+        compileSdkVersion = 36
+        targetSdkVersion = 36
+        ndkVersion = "27.1.12297006"
+        kotlinVersion = "2.1.20"
     }
     repositories {
         google()
@@ -19,3 +19,14 @@ buildscript {
 }
 
 apply plugin: "com.facebook.react.rootproject"
+
+// OneDrive can mark hydrated codegen inputs as reparse points. Gradle 9 refuses
+// to snapshot those files; opt out of incremental tracking only for this local
+// build workaround, which forces codegen to run on every build.
+if (System.getenv("ERP_ANDROID_CXX_STAGE")) {
+    subprojects {
+        tasks.matching { it.name == "generateCodegenSchemaFromJavaScript" }.configureEach {
+            doNotTrackState("OneDrive codegen inputs may be reparse points on Windows")
+        }
+    }
+}

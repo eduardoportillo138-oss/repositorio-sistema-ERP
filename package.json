@@ -24,7 +24,7 @@
     "backend:build": "npm run build -w backend",
     "backend:start": "npm run start -w backend",
     "mobile:android": "npm run android -w apps/mobile",
-    "mobile:android:local": "cd apps/mobile/android && gradlew.bat assembleLocal --no-daemon",
+    "mobile:android:local": "node scripts/build-mobile-local.cjs",
     "mobile:start": "npm run start -w apps/mobile",
     "mobile:ios": "npm run ios -w apps/mobile",
     "web:dev": "npm run dev -w apps/web",
@@ -35,10 +35,13 @@
     "postinstall": "patch-package"
   },
   "devDependencies": {
-    "@react-native-community/cli": "12.3.7",
-    "@react-native-community/cli-platform-android": "12.3.7",
+    "@react-native-community/cli": "20.1.0",
+    "@react-native-community/cli-platform-android": "20.1.0",
+    "@react-native/jest-preset": "0.86.3",
     "@types/jest": "^29.5.0",
     "@types/node": "^20.11.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
     "@typescript-eslint/eslint-plugin": "^7.0.0",
     "@typescript-eslint/parser": "^7.0.0",
     "axios-mock-adapter": "^2.1.0",
@@ -52,13 +55,18 @@
     "mongodb-memory-server": "^10.4.3",
     "patch-package": "^8.0.0",
     "prettier": "^3.2.4",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native": "0.86.3",
+    "react-native-safe-area-context": "5.10.1",
+    "react-native-web": "0.21.3",
     "supertest": "^7.0.0",
     "ts-jest": "^29.1.2",
     "typescript": "^5.3.3",
     "vite": "^6.4.3"
   },
   "engines": {
-    "node": ">=18.0.0",
+    "node": ">=22.13.0",
     "npm": ">=9.0.0"
   },
   "overrides": {
