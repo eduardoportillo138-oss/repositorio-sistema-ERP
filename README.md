@@ -108,12 +108,12 @@ El build raíz compila paquetes/backend y genera bundles web de ambas apps; no p
 
 ## Android Studio / Android Emulator
 
-La app usa React Native 0.73.11 y la plantilla Android de esa versión: Gradle 8.3, AGP 8.1.1, Kotlin 1.8.0, compileSdk/targetSdk 34 y minSdk 21. Usa **JDK 17** para Gradle (Android Studio > Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK). En este equipo funcionó `%USERPROFILE%\.jdks\jbr-17.0.14`. Android SDK Platform 34, Build Tools 34.0.0, Platform Tools y Emulator están instalados. El NDK 25.1.8937393 está declarado, pero el build debug no lo requirió.
+La app usa React Native 0.86.3 y React 19.2.3, con Gradle 9.3.1, AGP 8.12.0, Kotlin 2.1.20, compileSdk/targetSdk 36, minSdk 24 y NDK 27.1.12297006. Usa **JDK 17** para Gradle (Android Studio > Settings > Build, Execution, Deployment > Build Tools > Gradle > Gradle JDK). En este equipo está en `%USERPROFILE%\.jdks\jbr-17.0.14`; el `java` predeterminado del PATH es Java 8 y no sirve para este build. Consulta la [guía Android](docs/mobile/ANDROID-SETUP.md) para los componentes SDK requeridos.
 
-Abre `apps/mobile/android` en Android Studio y deja terminar Gradle Sync. En Tools > Device Manager crea un Pixel 7 u 8 con una imagen Android API 34 y arráncalo. Desde la raíz del repositorio, ejecuta en terminales separadas:
+Desde la raíz del repositorio ejecuta primero `npm ci --include=dev` y confirma que existe `node_modules/@react-native/gradle-plugin`. Luego abre `apps/mobile/android` en Android Studio y sincroniza con JDK 17. `settings.gradle` busca el plugin en el `node_modules` de la raíz del monorepo; instalar únicamente `apps/mobile` deja esa ruta sin resolver. En Tools > Device Manager crea y arranca un emulador compatible. Para desarrollar, ejecuta la siguiente secuencia desde la raíz, con Metro y el backend en terminales separadas:
 
 ```powershell
-npm ci
+npm ci --include=dev
 npm run build:packages
 npm run backend:build
 npm run backend:dev
@@ -121,11 +121,11 @@ npm run mobile:start
 npm run mobile:android
 ```
 
-Configura antes el `.env` local con una base de desarrollo y secretos reales, y crea una cuenta de desarrollo según la sección de instalación. También puedes usar Run en Android Studio con Metro activo. El Android Emulator alcanza el backend del equipo en `http://10.0.2.2:3000/api/v1`; el preview web conserva su proxy `/api/v1`. En un teléfono físico, abre **Servidor de desarrollo** en el login debug y escribe `http://IP_LAN_DEL_PC:3000/api/v1`. El PC y el teléfono deben compartir red. HTTP local se permite únicamente en la variante debug. La variante release requiere una URL HTTPS real y firma privada antes de distribuirse.
+Configura antes el `.env` local con una base de desarrollo y secretos reales, y crea una cuenta de desarrollo según la sección de instalación. También puedes usar Run en Android Studio con Metro activo. El Android Emulator alcanza el backend del equipo en `http://10.0.2.2:3000/api/v1`; el preview web conserva su proxy `/api/v1`. En un teléfono físico, abre **Servidor de desarrollo** en el login debug y escribe `http://IP_LAN_DEL_PC:3000/api/v1`. El PC y el teléfono deben compartir red. HTTP local se permite en las variantes debug y local. La variante release requiere una URL HTTPS real y firma privada antes de distribuirse.
 
 Para compilar directamente: `cd apps/mobile/android; .\gradlew.bat assembleDebug`. El APK debug debe verificarse en `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` antes de instalarlo con `adb install -r`. Si Metro no conecta, comprueba el puerto 8081; si la API no conecta, comprueba el backend en el puerto 3000 y `10.0.2.2`. Consulta la [guía Android](docs/mobile/ANDROID-SETUP.md) para arquitectura, Logcat, dispositivo físico y problemas frecuentes.
 
-**Android:** el [reporte local del 2026-10-01](docs/mobile/ANDROID-LOCAL-DEPLOYMENT-REPORT.md) verifica CLI y CLI Android 12.3.7, APK debug y Metro. El [reporte del 2026-10-02](docs/mobile/ANDROID-STUDIO-GRADLE-SYNC-REPORT.md) confirma otra instalación con `npm ci`, `gradlew clean`, `assembleDebug` y APK debug de 55,510,714 bytes en el clon del Escritorio. Android Studio Sync queda pendiente de verificación manual con JDK 17. AVD, login/logout y Logcat siguen `NOT_TESTED / BLOCKED_EXTERNAL`; release `NOT_READY`.
+**Android:** el [informe de migración a RN 0.86.3](docs/mobile/ANDROID-STANDALONE-16KB-MIGRATION-REPORT.md) registra el APK local con bundle y la prueba en emuladores de 4 y 16 KB. El [reporte de recuperación del plugin](docs/mobile/ANDROID-GRADLE-PLUGIN-RECOVERY-REPORT.md) documenta la reinstalación del clon del Escritorio. Android Studio Sync sigue pendiente de verificación visual; teléfono físico, API real y autenticación también están pendientes.
 
 Para preparar E2E la primera vez:
 

@@ -1,6 +1,6 @@
 # Android: instalación y APK local
 
-Estado al 2026-10-04. Véase el [informe de migración y evidencia](ANDROID-STANDALONE-16KB-MIGRATION-REPORT.md).
+Estado al 2026-10-05. Véanse el [informe de migración y evidencia](ANDROID-STANDALONE-16KB-MIGRATION-REPORT.md) y el [reporte de recuperación del plugin](ANDROID-GRADLE-PLUGIN-RECOVERY-REPORT.md).
 
 ## Requisitos
 
@@ -14,11 +14,13 @@ Desde la raíz del repositorio:
 
 ```powershell
 npm.cmd ci --include=dev
+Test-Path node_modules/@react-native/gradle-plugin
+npm.cmd ls @react-native/gradle-plugin
 npm.cmd run build:packages
 npm.cmd run typecheck -w apps/mobile
 ```
 
-Conserva `.env` local para el backend. No pongas credenciales MongoDB, JWT ni secretos dentro del APK. El backend sigue la cadena Android → REST API → Express → MongoDB.
+Ejecuta la instalación desde la raíz del monorepo antes de abrir el proyecto Android en Studio. `settings.gradle` incluye `../../../node_modules/@react-native/gradle-plugin`; si esa carpeta falta, el Sync falla antes de autolinking. React Native 0.86.3 ya declara el plugin 0.86.3 y el lockfile lo fija; no necesita una dependencia duplicada. Conserva `.env` local para el backend. No pongas credenciales MongoDB, JWT ni secretos dentro del APK. El backend sigue la cadena Android → REST API → Express → MongoDB.
 
 ## Debug con Metro
 
