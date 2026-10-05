@@ -11,7 +11,9 @@ const physicalWorkspaceRoot = path.resolve(
 const workspacePackages = ['api-client', 'config', 'constants', 'session', 'types', 'ui', 'validation'];
 
 module.exports = mergeConfig(getDefaultConfig(__dirname), {
-  watchFolders: [...new Set([workspaceRoot, physicalWorkspaceRoot])],
+  // OneDrive can expose node_modules as a reparse directory that Metro skips.
+  // Listing it as a root makes the file crawler scan its contents.
+  watchFolders: [...new Set([workspaceRoot, physicalWorkspaceRoot, rootNodeModules])],
   resolver: {
     nodeModulesPaths: [...new Set([rootNodeModules, path.join(physicalWorkspaceRoot, 'node_modules'), path.join(__dirname, 'node_modules')])],
     extraNodeModules: {
