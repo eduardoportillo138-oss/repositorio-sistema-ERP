@@ -82,10 +82,20 @@ def enableProguardInReleaseBuilds = false
 def jscFlavor = 'org.webkit:android-jsc:+'
 
 android {
-    if (System.getenv("ERP_ANDROID_CXX_STAGE")) {
+    def nativeStage = System.getenv("ERP_ANDROID_CXX_STAGE")
+    if (!nativeStage && System.getProperty("os.name").toLowerCase().contains("windows")) {
+        // Keep CMake/Ninja paths short even when this checkout lives under OneDrive.
+        // The checkout hash keeps native outputs from different clones separate.
+        def checkoutPath = rootProject.projectDir.canonicalPath.toLowerCase(java.util.Locale.ROOT)
+        def checkoutId = java.security.MessageDigest.getInstance("SHA-256")
+            .digest(checkoutPath.getBytes("UTF-8")).encodeHex().toString().substring(0, 12)
+        def stageRoot = System.getenv("LOCALAPPDATA") ?: System.getProperty("java.io.tmpdir")
+        nativeStage = new File(stageRoot, "erp-native-cxx/${checkoutId}").absolutePath
+    }
+    if (nativeStage) {
         externalNativeBuild {
             cmake {
-                buildStagingDirectory file(System.getenv("ERP_ANDROID_CXX_STAGE"))
+                buildStagingDirectory file(nativeStage)
             }
         }
     }
@@ -100,6 +110,13 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
+            externalNativeBuild {
+                cmake {
+                    arguments "-DCMAKE_OBJECT_PATH_MAX=240"
+                }
+            }
+        }
     }
     buildTypes {
         debug {

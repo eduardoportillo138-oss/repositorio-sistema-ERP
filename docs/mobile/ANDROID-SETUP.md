@@ -1,12 +1,12 @@
 # Android: instalación y APK local
 
-Estado al 2026-10-05. Véanse el [informe de migración y evidencia](ANDROID-STANDALONE-16KB-MIGRATION-REPORT.md), el [reporte de recuperación del plugin](ANDROID-GRADLE-PLUGIN-RECOVERY-REPORT.md) y la [verificación de rutas CMake en Windows](WINDOWS-ANDROID-CMAKE-PATH-RECOVERY-REPORT.md).
+Estado al 2026-10-05. Véanse el [reporte CLI actual](ANDROID-CLI-BUILD-AND-DEVICE-REPORT.md), el [informe de migración y evidencia](ANDROID-STANDALONE-16KB-MIGRATION-REPORT.md), el [reporte de recuperación del plugin](ANDROID-GRADLE-PLUGIN-RECOVERY-REPORT.md) y la [verificación histórica de rutas CMake en Windows](WINDOWS-ANDROID-CMAKE-PATH-RECOVERY-REPORT.md).
 
 ## Requisitos
 
 Node 22.13+ (este checkout usa 24.21), JDK 17, Android SDK Platform 36, Build Tools 36, NDK 27.1.12297006, Gradle wrapper 9.3.1 y una instalación Android Studio compatible con AGP 8.12.0. RN 0.86.3 usa React 19.2.3, CLI 20.1.0 y New Architecture. El mínimo de Android es API 24. El identificador es `com.erp.empresarial`; la variante local instala `com.erp.empresarial.local` y no reemplaza debug.
 
-En este equipo el JDK 17 está en `%USERPROFILE%\.jdks\jbr-17.0.14`; el script de build local lo detecta si `JAVA_HOME` no está definido. `apps/mobile/android/local.properties` apunta al SDK y está ignorado por Git. Android Studio debe abrir `apps/mobile/android` y seleccionar JDK 17 para Gradle Sync. La comprobación visual del Sync sigue pendiente a cargo del usuario.
+En este equipo el JDK 17 está en `%USERPROFILE%\.jdks\jbr-17.0.14`; el script de build local lo detecta si `JAVA_HOME` no está definido. Para ejecutar `gradlew.bat` directamente, establece `JAVA_HOME` al JDK 17 en la terminal. `apps/mobile/android/local.properties` apunta al SDK y está ignorado por Git. Para una futura sesión de Android Studio, abre `apps/mobile/android` del checkout del Escritorio y selecciona JDK 17 para Gradle Sync. La comprobación visual del Sync sigue pendiente a cargo del usuario.
 
 ## Preparación
 
@@ -40,7 +40,7 @@ npm.cmd run mobile:android:local
 adb install -r apps/mobile/android/app/build/outputs/apk/local/app-local.apk
 ```
 
-`assembleLocal` genera `app-local.apk`, firmado con la clave debug estándar exclusivamente para pruebas, con bundle Hermes y assets. Llegó al login sin Metro en emuladores de 4 y 16 KB y en un teléfono SM_A266M de 4 KB (Android API 36). La autenticación con backend real sigue pendiente. El comando crea una letra temporal para los archivos C++ de CMake cuando se ejecuta en Windows y la libera al terminar; los APK permanecen ignorados por Git. Si ya existe una letra de unidad ocupada, busca otra entre R y Z. En macOS/Linux usa el wrapper Gradle directamente.
+`assembleLocal` genera `app-local.apk`, firmado con la clave debug estándar exclusivamente para pruebas, con bundle Hermes y assets. Llegó al login sin Metro en emuladores de 4 y 16 KB y en un teléfono SM_A266M de 4 KB (Android API 36) en pruebas anteriores. La autenticación con backend real sigue pendiente. El script usa el directorio nativo corto que configura Gradle en Windows, sin crear una letra de unidad. Los APK permanecen ignorados por Git. En macOS/Linux usa el wrapper Gradle directamente.
 
 Para probar independencia de Metro: detén Metro, confirma que 8081 no escucha, elimina cualquier `adb reverse`, instala el APK local, abre la app y verifica que llegue a login sin `Unable to load script`. Esto pasó en ambos AVD y la pantalla de login se observó también en el teléfono físico. Después prueba login válido e inválido, dashboard, logout y Logcat con backend real; esa fase sigue pendiente.
 
@@ -52,12 +52,10 @@ La URL inicial en Android local/debug es `http://10.0.2.2:3000/api/v1` para emul
 
 El APK local RN 0.86.3 fue inspeccionado: 11/11 `.so` arm64 y 11/11 x86_64 tienen ELF de 16 KB o superior, y `zipalign -c -P 16 -v 4` pasó. Se conservaron las cuatro ABI. El AVD 16 KB devolvió `PAGE_SIZE=16384` y el Pixel_8 estándar `4096`; ambos instalaron y abrieron el APK sin advertencia ni `FATAL EXCEPTION` observada. Aún faltan Android Studio APK Analyzer y una prueba en teléfono físico de 16 KB; el teléfono probado aquí usa páginas de 4 KB.
 
-En Windows/OneDrive, Gradle puede fallar por rutas C++ >260 caracteres o por archivos codegen marcados como reparse. `mobile:android:local` usa una ruta temporal corta para CMake y fuerza codegen solo en esa ejecución. Para `assembleDebug` manual, usa un checkout con ruta corta o establece `ERP_ANDROID_CXX_STAGE` a una unidad temporal mapeada al mismo repositorio. No borres `.env`, no copies keystores ni subas APK al repositorio.
+En Windows/OneDrive, Gradle puede fallar por rutas C++ >260 caracteres o por archivos codegen marcados como reparse. La configuración actual usa `CMAKE_OBJECT_PATH_MAX=240` y un directorio nativo corto en `%LOCALAPPDATA%\erp-native-cxx\<hash-del-checkout>` para `assembleDebug` y `assembleLocal`. El hash separa los artefactos de distintos clones y evita rutas absolutas personales en archivos versionados. `ERP_ANDROID_CXX_STAGE` sigue disponible como override opcional. No borres `.env`, no copies keystores ni subas APK al repositorio.
 
-## Checkout corto para CMake/Ninja en Windows
+## Ruta CMake y build desde el Escritorio
 
-El checkout de OneDrive en `C:\Users\eduar\OneDrive\Desktop\repositorio-sistema-ERP` genera un objeto C++ de `react_codegen_safeareacontext` con ruta de 372 caracteres. El clon independiente `C:\ERP` redujo la ruta generada a 245 caracteres; `assembleDebug` y `assembleLocal` terminaron con `BUILD SUCCESSFUL` sin `ERP_ANDROID_CXX_STAGE`. Se mantiene `newArchEnabled=true` y no se cambian dependencias ni archivos de CMake.
+El checkout de OneDrive generaba un objeto de `react_codegen_safeareacontext` con ruta de 372 caracteres. `CMAKE_OBJECT_PATH_MAX=240` por sí solo no corrigió el fallo: CMake advirtió que el directorio del objeto ya medía 190 caracteres y Ninja volvió a rechazar el nombre. Con el directorio nativo corto calculado por Gradle, el objeto mide 224 caracteres y los tasks `buildCMakeDebug[arm64-v8a]`, `assembleDebug` y `assembleLocal` terminaron con `BUILD SUCCESSFUL` desde el checkout del Escritorio. Se mantiene `newArchEnabled=true`, Hermes y las dependencias actuales. No se necesita mover el repositorio.
 
-En este equipo `C:\ERP` ya existe. Para preparar otro checkout corto, clona el repositorio fuera de OneDrive, ejecuta `npm.cmd ci --include=dev` desde la raíz y crea un `apps/mobile/android/local.properties` local que apunte al Android SDK. No transfieras `node_modules`, `.gradle`, `.cxx` ni directorios `build`. Revisa los archivos locales de entorno que necesite tu instalación sin incorporarlos a Git.
-
-Usa JDK 17 para Gradle. En Android Studio abre `C:\ERP\apps\mobile\android`, selecciona `C:\Users\eduar\.jdks\jbr-17.0.14` como Gradle JDK y ejecuta **Sync Project with Gradle Files**. El build CLI ya pasó; el Sync y Run desde Studio siguen pendientes de observación. La advertencia de funciones de Gradle obsoletas es deuda técnica separada del fallo de longitud de ruta.
+El clon `C:\ERP` fue una verificación anterior y queda como fallback si otro equipo presenta una limitación distinta del tooling. El reporte CLI actual registra los comandos y resultados observados. La advertencia de funciones de Gradle obsoletas es deuda técnica separada del fallo de longitud de ruta.
