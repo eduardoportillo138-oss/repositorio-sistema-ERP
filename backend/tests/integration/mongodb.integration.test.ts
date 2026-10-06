@@ -416,7 +416,7 @@ describe('Core HTTP con MongoDB real y temporal', () => {
           .set(auth(pair.accessToken))
           .send({ roleId: roleB })
       ).status,
-    ).toBe(400);
+    ).toBe(404);
     expect(
       (
         await request(app)
@@ -433,6 +433,196 @@ describe('Core HTTP con MongoDB real y temporal', () => {
       ).body.data.status,
     ).toBe('inactive');
     expect(await AuditLog.countDocuments({ companyId: companyA, entityId: id })).toBe(3);
+  });
+  test('alta normal valida tenant y permisos, hashea contraseña, audita y permite login', async () => {
+    const admin = (await login()).body.data;
+    const payload = {
+      email: '  NEW.USER@Example.test  ',
+      name: ' Nuevo Usuario ',
+      password,
+      roleId: roleA,
+    };
+    expect((await request(app).post('/api/v1/users').send(payload)).status).toBe(401);
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .send({ ...payload, companyId: companyA })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .send({ ...payload, password: 'weak' })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .send({ ...payload, email: 'invalid-email' })
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .set('Content-Type', 'application/json')
+          .send('null')
+      ).status,
+    ).toBe(400);
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .send({ ...payload, roleId: new mongoose.Types.ObjectId().toString() })
+      ).status,
+    ).toBe(404);
+
+    const crossTenantRole = await request(app)
+      .post('/api/v1/users')
+      .set(auth(admin.accessToken))
+      .send({ ...payload, roleId: roleB });
+    expect(crossTenantRole.status).toBe(404);
+    const foreignBranch = await Branch.create({
+      companyId: companyB,
+      name: 'Foreign',
+      code: 'F-1',
+      address: 'Street',
+      city: 'City',
+      country: 'MX',
+    });
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .send({ ...payload, branchId: String(foreignBranch._id) })
+      ).status,
+    ).toBe(404);
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .send({ ...payload, branchId: new mongoose.Types.ObjectId().toString() })
+      ).status,
+    ).toBe(404);
+    const inactiveBranch = await Branch.create({
+      companyId: companyA,
+      name: 'Inactive',
+      code: 'I-1',
+      address: 'Street',
+      city: 'City',
+      country: 'MX',
+      status: 'inactive',
+    });
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .send({ ...payload, branchId: String(inactiveBranch._id) })
+      ).status,
+    ).toBe(400);
+    const inactiveRole = await Role.create({
+      name: 'Inactive',
+      companyId: companyA,
+      status: 'inactive',
+      permissions: [],
+    });
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .send({ ...payload, roleId: String(inactiveRole._id) })
+      ).status,
+    ).toBe(400);
+
+    const branch = await Branch.create({
+      companyId: companyA,
+      name: 'Local',
+      code: 'L-1',
+      address: 'Street',
+      city: 'City',
+      country: 'MX',
+    });
+    const created = await request(app)
+      .post('/api/v1/users')
+      .set(auth(admin.accessToken))
+      .send({ ...payload, branchId: String(branch._id) });
+    expect(created.status).toBe(201);
+    expect(created.body.data).toMatchObject({
+      email: 'new.user@example.test',
+      name: 'Nuevo Usuario',
+      companyId: companyA,
+      roleId: roleA,
+      branchId: String(branch._id),
+      status: 'active',
+    });
+    expect(created.body.data).not.toHaveProperty('passwordHash');
+    expect(created.body.data).not.toHaveProperty('password');
+    const user = await User.findById(created.body.data.id).select('+passwordHash').exec();
+    expect(user?.passwordHash).not.toBe(password);
+    expect(await bcrypt.compare(password, user!.passwordHash)).toBe(true);
+    const audit = await AuditLog.findOne({ entityId: created.body.data.id, action: 'create' }).lean();
+    expect(audit).toMatchObject({
+      userId: admin.user.id,
+      companyId: companyA,
+      module: 'users',
+      entity: 'user',
+    });
+    expect(JSON.stringify(audit)).not.toContain(password);
+
+    expect(
+      (
+        await request(app)
+          .post('/api/v1/users')
+          .set(auth(admin.accessToken))
+          .send({ ...payload, email: 'new.user@example.test' })
+      ).status,
+    ).toBe(409);
+    const signedIn = await request(app)
+      .post('/api/v1/auth/login')
+      .send({ email: 'new.user@example.test', password, companyId: companyA });
+    expect(signedIn.status).toBe(200);
+    expect(signedIn.body.data).toMatchObject({
+      accessToken: expect.any(String),
+      refreshToken: expect.any(String),
+      user: {
+        id: created.body.data.id,
+        email: 'new.user@example.test',
+        companyId: companyA,
+        roleId: roleA,
+        permissions: expect.arrayContaining(['users.create']),
+      },
+    });
+    const claims = jwt.decode(signedIn.body.data.accessToken) as jwt.JwtPayload;
+    const session = await Session.findById(claims.sid).lean();
+    expect(session).toMatchObject({
+      userId: new mongoose.Types.ObjectId(created.body.data.id),
+      companyId: new mongoose.Types.ObjectId(companyA),
+      tokenHash: hash(signedIn.body.data.refreshToken),
+    });
+    expect(session!.expiresAt.getTime()).toBeGreaterThan(Date.now());
+    expect(session).not.toHaveProperty('revokedAt');
+  });
+  test('el alta requiere users.create vigente', async () => {
+    const admin = (await login()).body.data;
+    await Role.updateOne({ _id: roleA }, { permissions: ['users.view'] });
+    const response = await request(app)
+      .post('/api/v1/users')
+      .set(auth(admin.accessToken))
+      .send({ email: 'no-permission@example.test', name: 'No permission', password, roleId: roleA });
+    expect(response.status).toBe(403);
+    expect(await User.countDocuments({ email: 'no-permission@example.test' })).toBe(0);
   });
   test('no reanima sesiones de un usuario desactivado después de reactivar la cuenta', async () => {
     await User.create({
@@ -594,7 +784,7 @@ describe('Core HTTP con MongoDB real y temporal', () => {
           .set(auth(pair.accessToken))
           .send({ branchId: String(other._id) })
       ).status,
-    ).toBe(400);
+    ).toBe(404);
     await User.updateOne({ _id: adminA }, { branchId: id });
     expect(
       (

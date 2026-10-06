@@ -17,6 +17,7 @@ export interface Actor {
   companyId: string;
   roleId: string;
   permissions: string[];
+  isPlatformAdmin?: boolean;
 }
 
 export function publicUser(user: IUserDocument) {
@@ -35,19 +36,21 @@ export function publicUser(user: IUserDocument) {
   };
 }
 
-async function validRole(roleId: unknown, companyId: string) {
+async function validRole(roleId: unknown, companyId: string, allowPlatformRole = false) {
   if (!isValidObjectId(roleId)) throw new ValidationError('roleId inválido');
-  const role = await Role.findOne({ _id: roleId, companyId, status: 'active' }).exec();
-  if (!role) throw new ValidationError('Rol no pertenece a la empresa');
-  if (role.permissions?.some((p) => p.startsWith('platform.')))
+  const role = await Role.findOne({ _id: roleId, companyId }).exec();
+  if (!role) throw new NotFoundError('Rol');
+  if (role.status !== 'active') throw new ValidationError('Rol inactivo');
+  if (!allowPlatformRole && role.permissions?.some((p) => p.startsWith('platform.')))
     throw new AuthorizationError('Rol de plataforma reservado');
 }
 
 async function validBranch(branchId: unknown, companyId: string) {
   if (branchId === undefined || branchId === null) return;
   if (!isValidObjectId(branchId)) throw new ValidationError('branchId inválido');
-  const branch = await Branch.findOne({ _id: branchId, companyId, status: 'active' }).exec();
-  if (!branch) throw new ValidationError('Sucursal no pertenece a la empresa');
+  const branch = await Branch.findOne({ _id: branchId, companyId }).exec();
+  if (!branch) throw new NotFoundError('Sucursal');
+  if (branch.status !== 'active') throw new ValidationError('Sucursal inactiva');
 }
 
 export const userService = {
@@ -82,35 +85,37 @@ export const userService = {
   },
 
   async create(actor: Actor, body: Record<string, unknown>, ip: string, device: string) {
+    if (!body || typeof body !== 'object' || Array.isArray(body)) {
+      throw new ValidationError('Campos de creación inválidos');
+    }
     if (
       Object.keys(body).some(
-        (key) => !['email', 'name', 'password', 'roleId', 'branchId', 'companyId'].includes(key),
+        (key) => !['email', 'name', 'password', 'roleId', 'branchId'].includes(key),
       )
     ) {
       throw new ValidationError('Campos de creación inválidos');
     }
-    const { email, name, password, roleId, branchId } = body;
+    const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : body.email;
+    const { name, password, roleId, branchId } = body;
     if (
       !isValidEmail(email) ||
       typeof name !== 'string' ||
       !name.trim() ||
+      name.trim().length > 100 ||
       !isValidPassword(password)
     ) {
       throw new ValidationError('Email, nombre o contraseña inválidos');
     }
-    if (body.companyId !== undefined && body.companyId !== actor.companyId) {
-      throw new ValidationError('companyId no se puede cambiar');
-    }
-    await validRole(roleId, actor.companyId);
+    await validRole(roleId, actor.companyId, actor.isPlatformAdmin === true);
     await validBranch(branchId, actor.companyId);
     try {
       const user = await auditedMutation(
         async (session) =>
           userRepository.create(
             {
-              email,
-              name,
-              password,
+              email: email as string,
+              name: name as string,
+              password: password as string,
               roleId: roleId as string,
               companyId: actor.companyId,
               branchId: branchId as string | undefined,

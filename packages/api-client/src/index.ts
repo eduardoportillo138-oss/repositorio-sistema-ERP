@@ -5,6 +5,28 @@ import axios, {
   InternalAxiosRequestConfig,
 } from 'axios';
 
+export interface CreateUserRequest {
+  email: string;
+  name: string;
+  password: string;
+  roleId: string;
+  branchId?: string;
+}
+/** Safe user representation returned by the API; credential fields are omitted. */
+export interface UserResponse {
+  id: string;
+  email: string;
+  name: string;
+  companyId: string;
+  roleId: string;
+  branchId?: string;
+  phone?: string;
+  status: string;
+  lastLoginAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -160,6 +182,19 @@ export class ApiClient {
   }
   async delete<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {
     return (await this.client.delete<T>(url, config)).data;
+  }
+  createUser(request: CreateUserRequest): Promise<ApiEnvelope<UserResponse>> {
+    return this.post<ApiEnvelope<UserResponse>>('/users', request);
+  }
+  listUsers(
+    page = 1,
+    limit = 20,
+  ): Promise<
+    ApiEnvelope<UserResponse[]> & {
+      pagination: { page: number; limit: number; total: number; pages: number };
+    }
+  > {
+    return this.get('/users', { params: { page, limit } });
   }
 }
 export const apiClient = new ApiClient();

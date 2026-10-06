@@ -23,10 +23,15 @@ router.post(
   checkPermission('users.create'),
   validate({
     body: {
-      email: { type: 'string', required: true, validate: isValidEmail },
-      name: { type: 'string', required: true },
+      email: { type: 'string', required: true, validate: (value) => isValidEmail(value.trim()) },
+      name: {
+        type: 'string',
+        required: true,
+        validate: (value) => !!value.trim() && value.trim().length <= 100,
+      },
       password: { type: 'string', required: true, validate: isValidPassword },
       roleId: { type: 'string', required: true, validate: isValidObjectId },
+      branchId: { type: 'string', validate: isValidObjectId },
     },
   }),
   asyncHandler(createUser),

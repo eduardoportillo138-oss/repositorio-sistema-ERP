@@ -34,10 +34,12 @@ export function UsersScreen() {
   const [editing, setEditing] = useState<UserRow | 'new' | null>(null),
     [removing, setRemoving] = useState<UserRow | null>(null);
   const [roles, setRoles] = useState<Array<{ id: string; name: string }>>([]);
+  const [branches, setBranches] = useState<Array<{ _id: string; name: string }>>([]);
   const [name, setName] = useState(''),
     [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
-    [roleId, setRoleId] = useState('');
+    [roleId, setRoleId] = useState(''),
+    [branchId, setBranchId] = useState('');
   const [saving, setSaving] = useState(false),
     [formError, setFormError] = useState('');
   const compact = useWindowDimensions().width < 768;
@@ -47,7 +49,7 @@ export function UsersScreen() {
     setLoading(true);
     setError('');
     apiClient
-      .get<Page<UserRow>>('/users?page=' + page)
+      .listUsers(page)
       .then((response) => {
         if (active) {
           setRows(response.data);
@@ -72,6 +74,7 @@ export function UsersScreen() {
     setEmail(row === 'new' ? '' : row.email);
     setPassword('');
     setRoleId('');
+    setBranchId('');
     if (row === 'new') {
       try {
         const response =
@@ -84,6 +87,15 @@ export function UsersScreen() {
               role.status === 'active' && !role.permissions.some((p) => p.startsWith('platform.')),
           ),
         );
+        try {
+          const branchResponse = await apiClient.get<
+            Page<{ _id: string; name: string; status: string }>
+          >('/branches?limit=100');
+          setBranches(branchResponse.data.filter((branch) => branch.status === 'active'));
+        } catch {
+          // Branch assignment is optional; users without branches.view can still create users.
+          setBranches([]);
+        }
       } catch (failure) {
         setFormError(failure instanceof Error ? failure.message : 'No se pudieron cargar roles');
       }
@@ -94,14 +106,36 @@ export function UsersScreen() {
     setSaving(true);
     setFormError('');
     try {
-      if (editing === 'new') await apiClient.post('/users', { name, email, password, roleId });
+      if (editing === 'new') {
+        const normalizedEmail = email.trim().toLowerCase();
+        const passwordBytes = encodeURIComponent(password).replace(/%[0-9A-F]{2}/g, 'x').length;
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+          throw new Error('Ingresa un correo válido');
+        }
+        if (
+          password.length < 8 ||
+          passwordBytes > 72 ||
+          !/[a-z]/.test(password) ||
+          !/[A-Z]/.test(password) ||
+          !/\d/.test(password)
+        ) {
+          throw new Error('La contraseña requiere 8 caracteres, mayúscula, minúscula y número; máximo 72 bytes');
+        }
+        await apiClient.createUser({
+          name: name.trim(),
+          email: normalizedEmail,
+          password,
+          roleId,
+          ...(branchId ? { branchId } : {}),
+        });
+      }
       else await apiClient.patch('/users/' + editing.id, { name });
       setEditing(null);
-      setPassword('');
       setRevision(revision + 1);
     } catch (failure) {
       setFormError(failure instanceof Error ? failure.message : 'No se pudo guardar');
     } finally {
+      setPassword('');
       setSaving(false);
     }
   };
@@ -240,6 +274,18 @@ export function UsersScreen() {
               placeholder="Selecciona un rol"
               disabled={saving}
             />
+            {branches.length > 0 && (
+              <>
+                <Text style={styles.fieldLabel}>Sucursal (opcional)</Text>
+                <Select
+                  value={branchId}
+                  onChange={setBranchId}
+                  options={branches.map((branch) => ({ label: branch.name, value: branch._id }))}
+                  placeholder="Sin sucursal"
+                  disabled={saving}
+                />
+              </>
+            )}
           </>
         )}
         {formError && <ErrorState message={formError} />}
@@ -249,7 +295,7 @@ export function UsersScreen() {
             void save();
           }}
           loading={saving}
-          disabled={!name.trim() || (editing === 'new' && !roleId)}
+          disabled={!name.trim() || (editing === 'new' && (!roleId || !email.trim() || !password))}
         />
       </Modal>
       <ConfirmationDialog
@@ -271,6 +317,7 @@ export function UsersScreen() {
 const styles = StyleSheet.create({
   title: { ...typography.Heading1, color: colors.textPrimary },
   subtitle: { color: colors.textSecondary, fontSize: 13, lineHeight: 22 },
+  fieldLabel: { color: colors.textPrimary, fontSize: 13, fontWeight: '600', marginBottom: 8 },
   heading: {
     flexDirection: 'row',
     justifyContent: 'space-between',
