@@ -20,6 +20,8 @@ react {
         hermesCommand = monorepoHermesc.absolutePath
     }
     autolinkLibrariesWithApp()
+    /* Enable JS bundling for all build variants (including debug) so the app runs standalone */
+    debuggableVariants = []
     /* Folders */
     //   The root of your project, i.e. where "package.json" lives. Default is '..'
     // root = file("../")
@@ -110,12 +112,19 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
-        if (System.getProperty("os.name").toLowerCase().contains("windows")) {
-            externalNativeBuild {
-                cmake {
+        externalNativeBuild {
+            cmake {
+                arguments "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
+                          "-DCMAKE_EXE_LINKER_FLAGS=-Wl,-z,max-page-size=16384"
+                if (System.getProperty("os.name").toLowerCase().contains("windows")) {
                     arguments "-DCMAKE_OBJECT_PATH_MAX=240"
                 }
             }
+        }
+    }
+    packaging {
+        jniLibs {
+            useLegacyPackaging = false
         }
     }
     buildTypes {
