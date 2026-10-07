@@ -52,6 +52,9 @@ export { ProductsScreen } from './screens/ProductsScreen';
 export { InventoryScreen } from './screens/InventoryScreen';
 export { OrdersScreen } from './screens/OrdersScreen';
 export { FinanceScreen } from './screens/FinanceScreen';
+export { EmployeesScreen } from './screens/EmployeesScreen';
+export { ProjectsScreen } from './screens/ProjectsScreen';
+export { CrmScreen } from './screens/CrmScreen';
 
 // Tipos
 export type { ButtonProps } from './components/Button';

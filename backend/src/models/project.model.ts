@@ -1,55 +1,37 @@
-// ============================================
-// Modelo de Proyecto
-// ============================================
+import mongoose, { Document, Schema } from 'mongoose';
 
-import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
-
-export interface IProject extends BaseDocument {
-  name: string;
+export interface IProjectDocument extends Document {
+  companyId: mongoose.Types.ObjectId;
   code: string;
+  name: string;
   description?: string;
+  status: 'planned' | 'active' | 'completed' | 'cancelled';
   startDate: Date;
   endDate?: Date;
-  status: DocumentStatus;
-  priority: 'low' | 'medium' | 'high' | 'urgent';
-  budget?: number;
-  spent?: number;
+  budgetMinor?: number;
+  ownerUserId: mongoose.Types.ObjectId;
+  createdBy: mongoose.Types.ObjectId;
+  updatedBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface IProjectDocument extends IProject, Document {}
-
-const projectSchema = new Schema<IProjectDocument>(
-  {
-    name: {
-      type: String,
-      required: [true, 'El nombre es obligatorio'],
-      trim: true,
-      maxlength: 200,
-    },
-    code: { type: String, trim: true, maxlength: 20, index: true },
-    description: { type: String, trim: true, maxlength: 1000 },
-    startDate: { type: Date, required: true },
-    endDate: { type: Date },
-    status: {
-      type: String,
-      enum: ['active', 'inactive', 'cancelled', 'completed', 'on_hold'],
-      default: 'active',
-      index: true,
-    },
-    priority: {
-      type: String,
-      enum: ['low', 'medium', 'high', 'urgent'],
-      default: 'medium',
-    },
-    budget: { type: Number, min: 0 },
-    spent: { type: Number, default: 0, min: 0 },
-  },
-  { timestamps: true, collection: 'projects' },
-);
-
-projectSchema.index({ companyId: 1, code: 1 }, { unique: true });
-projectSchema.index({ companyId: 1, status: 1 });
-projectSchema.index({ companyId: 1, priority: 1 });
-
-export const Project = mongoose.model<IProjectDocument>('Project', projectSchema);
+const schema = new Schema<IProjectDocument>({
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+  code: { type: String, required: true, trim: true, uppercase: true, maxlength: 40 },
+  name: { type: String, required: true, trim: true, maxlength: 200 },
+  description: { type: String, trim: true, maxlength: 1000 },
+  status: { type: String, enum: ['planned', 'active', 'completed', 'cancelled'],
+    default: 'planned' },
+  startDate: { type: Date, required: true },
+  endDate: Date,
+  budgetMinor: { type: Number, min: 0, validate: Number.isSafeInteger },
+  ownerUserId: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  updatedBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+}, { timestamps: true, collection: 'projects' });
+schema.index({ companyId: 1, code: 1 },
+  { unique: true, partialFilterExpression: { companyId: { $exists: true }, code: { $exists: true } } });
+schema.index({ companyId: 1, status: 1, createdAt: -1 });
+schema.index({ companyId: 1, ownerUserId: 1 });
+export const Project = mongoose.model<IProjectDocument>('Project', schema);

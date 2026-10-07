@@ -9,7 +9,9 @@ import { isValidObjectId } from './validation';
 
 const grants = PERMISSIONS.filter((permission) =>
   permission.startsWith('categories.') || permission.startsWith('units.') ||
-  permission.startsWith('warehouses.') || permission === 'inventory.transfer' ||
+  permission.startsWith('warehouses.') || permission.startsWith('hr.') ||
+  permission.startsWith('projects.') || permission.startsWith('crm.') ||
+  permission === 'inventory.transfer' ||
   ['sales.confirm', 'sales.cancel', 'purchases.confirm', 'purchases.cancel',
     'finances.view', 'finances.create'].includes(permission));
 

@@ -437,6 +437,65 @@ test('Compra recibida aumenta stock; venta y cancelación lo revierten', async (
   expect(warehouseId).toBeTruthy();
   await noOverflow(page);
 });
+test('Empleados: alta, edición y desactivación desde interfaz compartida', async ({ page, request }, info) => {
+  const pair = await login(page);
+  const headers = { Authorization: 'Bearer ' + pair.accessToken };
+  const suffix = info.project.name.toUpperCase();
+  const branch = await request.post('http://127.0.0.1:3081/api/v1/branches', { headers,
+    data: { name: 'Sucursal HR ' + suffix, code: 'HR_' + suffix,
+      address: 'QA', city: 'CDMX', country: 'MX' } });
+  expect(branch.status()).toBe(201);
+  if ((page.viewportSize()?.width || 0) < 768)
+    await page.getByRole('button', { name: 'Más módulos' }).click();
+  const hrNav = page.getByRole('button', { name: 'Empleados', exact: true });
+  await ((page.viewportSize()?.width || 0) < 768 ? hrNav.last() : hrNav.first()).click();
+  await expect(page.getByRole('heading', { name: 'Empleados', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Nuevo empleado' }).click();
+  await page.getByLabel('Número de empleado').fill('HR-' + suffix);
+  await page.getByLabel('Nombre', { exact: true }).fill('Empleado QA ' + suffix);
+  await page.getByLabel('Correo electrónico').fill('hr-' + info.project.name + '@example.test');
+  await page.getByLabel('Puesto').fill('Analista');
+  await page.getByLabel('Departamento').fill('Operaciones');
+  await page.getByLabel('Fecha de ingreso (AAAA-MM-DD)').fill('2026-10-01');
+  await page.getByRole('button', { name: 'Selecciona sucursal' }).click();
+  await page.getByRole('button', { name: 'Sucursal HR ' + suffix }).click();
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Empleado creado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Editar' }).click();
+  await page.getByLabel('Puesto').fill('Gerente');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Empleado actualizado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar desactivación' }).click();
+  await expect(page.getByText('Empleado desactivado.')).toBeVisible();
+  await noOverflow(page);
+});
+test('Proyectos: borrador, edición, activación y cierre desde interfaz compartida', async ({ page }, info) => {
+  await login(page);
+  if ((page.viewportSize()?.width || 0) < 768)
+    await page.getByRole('button', { name: 'Más módulos' }).click();
+  const nav = page.getByRole('button', { name: 'Proyectos', exact: true });
+  await ((page.viewportSize()?.width || 0) < 768 ? nav.last() : nav.first()).click();
+  await expect(page.getByRole('heading', { name: 'Proyectos', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Nuevo proyecto' }).click();
+  await page.getByLabel('Código', { exact: true }).fill('PROJ-' + info.project.name.toUpperCase());
+  await page.getByLabel('Nombre', { exact: true }).fill('Proyecto QA ' + info.project.name);
+  await page.getByLabel('Inicio (AAAA-MM-DD)').fill('2026-10-01');
+  await page.getByLabel('Presupuesto').fill('1234.56');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Proyecto creado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Editar' }).click();
+  await page.getByLabel('Descripción').fill('Entrega de prueba');
+  await page.getByRole('button', { name: 'Guardar' }).click();
+  await expect(page.getByText('Proyecto actualizado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Activar' }).click();
+  await page.getByRole('button', { name: 'Confirmar cambio' }).click();
+  await expect(page.getByText('Proyecto activado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Completar' }).click();
+  await page.getByRole('button', { name: 'Confirmar cambio' }).click();
+  await expect(page.getByText('Proyecto completado.')).toBeVisible();
+  await noOverflow(page);
+});
 test('logout revoca también la sesión en el servidor', async ({ page, request }) => {
   const pair = await login(page);
   if ((page.viewportSize()?.width || 0) < 768)

@@ -299,6 +299,77 @@ export type FinanceAccountListResponse = ApiEnvelope<FinanceAccountResponse[]> &
   { pagination: PaginationResponse };
 export type PaymentListResponse = ApiEnvelope<PaymentResponse[]> &
   { pagination: PaginationResponse };
+export interface EmployeeResponse {
+  id: string;
+  employeeNumber: string;
+  name: string;
+  email: string;
+  phone?: string;
+  position: string;
+  department: string;
+  hireDate: string;
+  branchId: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+}
+export type CreateEmployeeRequest = Pick<EmployeeResponse,
+  'employeeNumber' | 'name' | 'email' | 'position' | 'department' | 'hireDate' | 'branchId'> &
+  Partial<Pick<EmployeeResponse, 'phone'>>;
+export type UpdateEmployeeRequest = Partial<CreateEmployeeRequest>;
+export type EmployeeListResponse = ApiEnvelope<EmployeeResponse[]> &
+  { pagination: PaginationResponse };
+export interface ProjectResponse {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  status: 'planned' | 'active' | 'completed' | 'cancelled';
+  startDate: string;
+  endDate?: string;
+  budgetMinor?: number;
+  ownerUserId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export type CreateProjectRequest = Pick<ProjectResponse, 'code' | 'name' | 'startDate'> &
+  Partial<Pick<ProjectResponse, 'description' | 'endDate' | 'budgetMinor' | 'ownerUserId'>>;
+export type UpdateProjectRequest = Partial<CreateProjectRequest>;
+export type ProjectListResponse = ApiEnvelope<ProjectResponse[]> &
+  { pagination: PaginationResponse };
+export interface LeadResponse {
+  id: string;
+  name: string;
+  companyName?: string;
+  email?: string;
+  phone?: string;
+  source: string;
+  status: 'new' | 'qualified' | 'inactive';
+  assignedTo: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export type CreateLeadRequest = Pick<LeadResponse, 'name' | 'source'> &
+  Partial<Pick<LeadResponse, 'companyName' | 'email' | 'phone' | 'assignedTo'>>;
+export type UpdateLeadRequest = Partial<CreateLeadRequest>;
+export type LeadListResponse = ApiEnvelope<LeadResponse[]> & { pagination: PaginationResponse };
+export interface OpportunityResponse {
+  id: string;
+  leadId?: string;
+  customerId?: string;
+  title: string;
+  amountMinor: number;
+  stage: 'prospecting' | 'proposal' | 'negotiation' | 'won' | 'lost' | 'cancelled';
+  expectedCloseDate?: string;
+  assignedTo: string;
+  createdAt: string;
+  updatedAt: string;
+}
+export type CreateOpportunityRequest = Pick<OpportunityResponse, 'title' | 'amountMinor'> &
+  Partial<Pick<OpportunityResponse, 'leadId' | 'customerId' | 'expectedCloseDate' | 'assignedTo'>>;
+export type UpdateOpportunityRequest = Partial<CreateOpportunityRequest>;
+export type OpportunityListResponse = ApiEnvelope<OpportunityResponse[]> &
+  { pagination: PaginationResponse };
 export interface BranchResponse {
   _id: string;
   name: string;
@@ -655,6 +726,82 @@ export class ApiClient {
   }
   recordPayment(request: CreatePaymentRequest): Promise<ApiEnvelope<PaymentResponse>> {
     return this.post<ApiEnvelope<PaymentResponse>>('/finance/payments', request);
+  }
+  listEmployees(params: { page?: number; limit?: number; search?: string;
+    status?: EmployeeResponse['status'] } = {}): Promise<EmployeeListResponse> {
+    return this.get<EmployeeListResponse>('/hr', { params });
+  }
+  getEmployee(id: string): Promise<ApiEnvelope<EmployeeResponse>> {
+    return this.get<ApiEnvelope<EmployeeResponse>>('/hr/' + encodeURIComponent(id));
+  }
+  createEmployee(request: CreateEmployeeRequest): Promise<ApiEnvelope<EmployeeResponse>> {
+    return this.post<ApiEnvelope<EmployeeResponse>>('/hr', request);
+  }
+  updateEmployee(id: string, request: UpdateEmployeeRequest): Promise<ApiEnvelope<EmployeeResponse>> {
+    return this.put<ApiEnvelope<EmployeeResponse>>('/hr/' + encodeURIComponent(id), request);
+  }
+  deactivateEmployee(id: string): Promise<ApiEnvelope<EmployeeResponse>> {
+    return this.patch<ApiEnvelope<EmployeeResponse>>('/hr/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listProjects(params: { page?: number; limit?: number; search?: string;
+    status?: ProjectResponse['status'] } = {}): Promise<ProjectListResponse> {
+    return this.get<ProjectListResponse>('/projects', { params });
+  }
+  getProject(id: string): Promise<ApiEnvelope<ProjectResponse>> {
+    return this.get<ApiEnvelope<ProjectResponse>>('/projects/' + encodeURIComponent(id));
+  }
+  createProject(request: CreateProjectRequest): Promise<ApiEnvelope<ProjectResponse>> {
+    return this.post<ApiEnvelope<ProjectResponse>>('/projects', request);
+  }
+  updateProject(id: string, request: UpdateProjectRequest): Promise<ApiEnvelope<ProjectResponse>> {
+    return this.put<ApiEnvelope<ProjectResponse>>('/projects/' + encodeURIComponent(id), request);
+  }
+  transitionProject(id: string, action: 'activate' | 'complete' | 'cancel'):
+    Promise<ApiEnvelope<ProjectResponse>> {
+    return this.patch<ApiEnvelope<ProjectResponse>>(
+      '/projects/' + encodeURIComponent(id) + '/' + action);
+  }
+  listLeads(params: { page?: number; limit?: number; search?: string;
+    status?: LeadResponse['status'] } = {}): Promise<LeadListResponse> {
+    return this.get<LeadListResponse>('/crm/leads', { params });
+  }
+  getLead(id: string): Promise<ApiEnvelope<LeadResponse>> {
+    return this.get<ApiEnvelope<LeadResponse>>('/crm/leads/' + encodeURIComponent(id));
+  }
+  createLead(request: CreateLeadRequest): Promise<ApiEnvelope<LeadResponse>> {
+    return this.post<ApiEnvelope<LeadResponse>>('/crm/leads', request);
+  }
+  updateLead(id: string, request: UpdateLeadRequest): Promise<ApiEnvelope<LeadResponse>> {
+    return this.put<ApiEnvelope<LeadResponse>>('/crm/leads/' + encodeURIComponent(id), request);
+  }
+  qualifyLead(id: string): Promise<ApiEnvelope<LeadResponse>> {
+    return this.patch<ApiEnvelope<LeadResponse>>('/crm/leads/' + encodeURIComponent(id) + '/qualify');
+  }
+  deactivateLead(id: string): Promise<ApiEnvelope<LeadResponse>> {
+    return this.patch<ApiEnvelope<LeadResponse>>('/crm/leads/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listOpportunities(params: { page?: number; limit?: number; search?: string;
+    status?: OpportunityResponse['stage'] } = {}): Promise<OpportunityListResponse> {
+    return this.get<OpportunityListResponse>('/crm/opportunities', { params });
+  }
+  getOpportunity(id: string): Promise<ApiEnvelope<OpportunityResponse>> {
+    return this.get<ApiEnvelope<OpportunityResponse>>('/crm/opportunities/' + encodeURIComponent(id));
+  }
+  createOpportunity(request: CreateOpportunityRequest): Promise<ApiEnvelope<OpportunityResponse>> {
+    return this.post<ApiEnvelope<OpportunityResponse>>('/crm/opportunities', request);
+  }
+  updateOpportunity(id: string, request: UpdateOpportunityRequest):
+    Promise<ApiEnvelope<OpportunityResponse>> {
+    return this.put<ApiEnvelope<OpportunityResponse>>('/crm/opportunities/' + encodeURIComponent(id), request);
+  }
+  setOpportunityStage(id: string, stage: 'proposal' | 'negotiation' | 'won' | 'lost'):
+    Promise<ApiEnvelope<OpportunityResponse>> {
+    return this.patch<ApiEnvelope<OpportunityResponse>>(
+      '/crm/opportunities/' + encodeURIComponent(id) + '/stage', { stage });
+  }
+  cancelOpportunity(id: string): Promise<ApiEnvelope<OpportunityResponse>> {
+    return this.patch<ApiEnvelope<OpportunityResponse>>(
+      '/crm/opportunities/' + encodeURIComponent(id) + '/cancel');
   }
   listBranches(params: { page?: number; limit?: number } = {}): Promise<
     ApiEnvelope<BranchResponse[]> & { pagination: PaginationResponse }> {

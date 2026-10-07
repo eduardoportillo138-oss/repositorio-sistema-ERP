@@ -15,6 +15,9 @@ import { ProductsScreen } from './screens/ProductsScreen';
 import { InventoryScreen } from './screens/InventoryScreen';
 import { OrdersScreen } from './screens/OrdersScreen';
 import { FinanceScreen } from './screens/FinanceScreen';
+import { EmployeesScreen } from './screens/EmployeesScreen';
+import { ProjectsScreen } from './screens/ProjectsScreen';
+import { CrmScreen } from './screens/CrmScreen';
 import { ERPLogo } from './components/ERPLogo';
 import { Input } from './components/Input';
 import { Modal } from './components/Modal';
@@ -101,6 +104,27 @@ export const navigationModules = [
     symbol: '◎',
     subtitle: 'Ingresos, gastos y pagos',
     permission: 'finances.view',
+  },
+  {
+    key: 'hr',
+    label: 'Empleados',
+    symbol: '♙',
+    subtitle: 'Personas de tu empresa',
+    permission: 'hr.view',
+  },
+  {
+    key: 'projects',
+    label: 'Proyectos',
+    symbol: '▧',
+    subtitle: 'Trabajo en marcha',
+    permission: 'projects.view',
+  },
+  {
+    key: 'crm',
+    label: 'CRM',
+    symbol: '◉',
+    subtitle: 'Leads y oportunidades',
+    permission: 'crm.view',
   },
   {
     key: 'reports',
@@ -386,6 +410,12 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
               <OrdersScreen kind="purchases" />
             ) : current.key === 'finance' ? (
               <FinanceScreen />
+            ) : current.key === 'hr' ? (
+              <EmployeesScreen />
+            ) : current.key === 'projects' ? (
+              <ProjectsScreen />
+            ) : current.key === 'crm' ? (
+              <CrmScreen />
             ) : (
               <ModuleScreen key={current.key} module={current} />
             )}
