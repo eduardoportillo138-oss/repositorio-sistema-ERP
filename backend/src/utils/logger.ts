@@ -76,10 +76,39 @@ export function sanitizeLogData(data: Record<string, any>): Record<string, any> 
   return sanitized;
 }
 
+export function errorLogFields(error: unknown): Record<string, unknown> {
+  const candidate = error as { name?: unknown; message?: unknown; stack?: unknown; code?: unknown } | null;
+  const code = candidate?.code;
+  return sanitizeLogData({
+    errorName: typeof candidate?.name === 'string' ? candidate.name : 'UnknownError',
+    errorMessage:
+      typeof candidate?.message === 'string' ? candidate.message : String(error),
+    errorStack: typeof candidate?.stack === 'string' ? candidate.stack : undefined,
+    errorCode: typeof code === 'string' || typeof code === 'number' ? code : undefined,
+  });
+}
+
 function sanitizeValue(value: unknown): unknown {
   if (typeof value !== 'string') return value;
-  return value
+  let sanitized = value
     .replace(/mongodb(?:\+srv)?:\/\/[^\s"']+/gi, '[REDACTED_URI]')
     .replace(/Bearer\s+[^\s"']+/gi, 'Bearer [REDACTED]')
     .replace(/eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+/g, '[REDACTED_JWT]');
+  const secrets = [process.env.MONGODB_URI, process.env.JWT_SECRET, process.env.JWT_REFRESH_SECRET];
+  const credentials: string[] = [];
+  if (process.env.MONGODB_URI) {
+    try {
+      const uri = new URL(process.env.MONGODB_URI);
+      credentials.push(uri.username, uri.password, decodeURIComponent(uri.username), decodeURIComponent(uri.password));
+    } catch {
+      // The URI itself is still redacted by the pattern above.
+    }
+  }
+  for (const secret of secrets) {
+    if (secret && secret.length >= 4) sanitized = sanitized.split(secret).join('[REDACTED]');
+  }
+  for (const credential of credentials) {
+    if (credential) sanitized = sanitized.split(credential).join('[REDACTED]');
+  }
+  return sanitized;
 }

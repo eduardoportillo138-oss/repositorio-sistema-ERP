@@ -1,15 +1,22 @@
 import { validateConfig } from './config/env';
 import { appConfig } from './config/appConfig';
 import { createApp } from './app';
-import { logger } from './utils/logger';
+import { errorLogFields, logger } from './utils/logger';
 import { connectDatabase, disconnectDatabase } from './config/database';
 
 async function startServer(): Promise<void> {
+  let startupStage = 'configuration';
   try {
     validateConfig();
+    logger.info('Startup configuration: PASS');
+    startupStage = 'mongodb';
     await connectDatabase();
-    const server = createApp().listen(appConfig.port, () =>
-      logger.info('ERP Backend operativo', {
+    startupStage = 'express';
+    const app = createApp();
+    logger.info('Express initialization: PASS');
+    startupStage = 'listen';
+    const server = app.listen(appConfig.port, () =>
+      logger.info('Listening on PORT: PASS', {
         port: appConfig.port,
         environment: appConfig.nodeEnv,
       }),
@@ -30,8 +37,8 @@ async function startServer(): Promise<void> {
         await disconnectDatabase();
         clearTimeout(deadline);
         process.exit(exitCode);
-      } catch {
-        logger.error('Error durante cierre');
+      } catch (error) {
+        logger.error('Error durante cierre', errorLogFields(error));
         process.exit(1);
       }
     };
@@ -42,19 +49,19 @@ async function startServer(): Promise<void> {
       void shutdown();
     });
     process.on('uncaughtException', (error) => {
-      logger.error('Uncaught exception', { name: error.name });
+      logger.error('Uncaught exception', errorLogFields(error));
       void shutdown(1);
     });
-    process.on('unhandledRejection', () => {
-      logger.error('Unhandled rejection');
+    process.on('unhandledRejection', (error) => {
+      logger.error('Unhandled rejection', errorLogFields(error));
       void shutdown(1);
     });
-    server.on('error', () => {
-      logger.error('No se pudo abrir el puerto');
+    server.on('error', (error) => {
+      logger.error('No se pudo abrir el puerto', errorLogFields(error));
       void shutdown(1);
     });
   } catch (error) {
-    logger.error('Error al iniciar servidor', { name: (error as Error).name });
+    logger.error('Error al iniciar servidor', { stage: startupStage, ...errorLogFields(error) });
     await disconnectDatabase().catch(() => undefined);
     process.exit(1);
   }
