@@ -28,6 +28,12 @@ revisarse antes de activar los módulos en producción. Véanse
 Settings añade una nueva migración `db:settings-index` (`--dry-run`/`--apply`);
 debe revisarse junto con los índices heredados antes de desplegar.
 
+Fase G: la interfaz compartida administra sucursales y roles empresariales.
+El selector de permisos solo ofrece permisos que posee quien administra; los
+roles del sistema no se editan y no se desactiva un rol con usuarios activos.
+Las pantallas y flujos pasan E2E en desktop, tablet y móvil; la prueba Core de
+roles/sucursales pasa 38 casos.
+
 ## Corte anterior
 
 Actualizado: 2026-10-02. Commit base inspeccionado: `8685186`. **CURRENT PHASE: CORE HARDENING. Estado: `CORE_HARDENING_CODE_COMPLETE`, `EXTERNAL_GATES_PENDING`.** El cierre productivo requiere los gates externos descritos abajo.

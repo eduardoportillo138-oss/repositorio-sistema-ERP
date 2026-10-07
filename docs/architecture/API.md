@@ -103,3 +103,10 @@ HTTP 400 validación/JSON inválido, 401 autenticación/sesión, 403 permiso, 40
 - `GET /settings` requiere `settings.view`; `PATCH /settings` requiere `settings.edit`. Solo admite `locale` (`es-MX` o `en-US`), `timeZone` IANA y `dateFormat` (`dd/MM/yyyy`, `MM/dd/yyyy` o `yyyy-MM-dd`). Se guardan por empresa y se auditan.
 
 Estas operaciones derivan empresa y usuario del contexto autenticado. [Estado actual](../DEVELOPMENT-STATUS.md).
+
+## Roles y sucursales
+
+- `GET /roles?page=&limit=` y `GET /roles/:id` requieren `roles.view`; `POST /roles`, `PUT /roles/:id` y `PATCH /roles/:id/deactivate` requieren `roles.manage`. Solo pueden asignarse permisos empresariales que posea la persona administradora. Los roles del sistema son inmutables y un rol con usuarios activos no se puede desactivar.
+- `GET /branches?page=&limit=`, `GET /branches/:id`, `POST /branches`, `PUT /branches/:id` y `PATCH /branches/:id/deactivate` usan los permisos `branches.view/create/edit/disable`. Una sucursal con usuarios activos no se puede desactivar.
+
+Las mutaciones quedan auditadas y filtran por la empresa autenticada.

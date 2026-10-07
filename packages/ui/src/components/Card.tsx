@@ -8,6 +8,7 @@ export interface CardProps {
   onPress?: () => void;
   variant?: 'default' | 'elevated' | 'outlined';
   style?: StyleProp<ViewStyle>;
+  testID?: string;
 }
 export function Card({
   title,
@@ -16,6 +17,7 @@ export function Card({
   onPress,
   variant = 'default',
   style,
+  testID,
 }: CardProps) {
   const content = (
     <>
@@ -31,11 +33,12 @@ export function Card({
       style={appearance}
       accessibilityRole="button"
       accessibilityLabel={title}
+      testID={testID}
     >
       {content}
     </Pressable>
   ) : (
-    <View style={appearance}>{content}</View>
+    <View style={appearance} testID={testID}>{content}</View>
   );
 }
 const styles = StyleSheet.create({

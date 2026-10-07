@@ -21,6 +21,8 @@ import { CrmScreen } from './screens/CrmScreen';
 import { ReportsScreen } from './screens/ReportsScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { NotificationsScreen } from './screens/NotificationsScreen';
+import { RolesScreen } from './screens/RolesScreen';
+import { BranchesScreen } from './screens/BranchesScreen';
 import { ERPLogo } from './components/ERPLogo';
 import { Input } from './components/Input';
 import { Modal } from './components/Modal';
@@ -142,6 +144,20 @@ export const navigationModules = [
     symbol: '♧',
     subtitle: 'Personas y accesos de tu equipo',
     permission: 'users.view',
+  },
+  {
+    key: 'roles',
+    label: 'Roles',
+    symbol: '⌘',
+    subtitle: 'Permisos y acceso de tu equipo',
+    permission: 'roles.view',
+  },
+  {
+    key: 'branches',
+    label: 'Sucursales',
+    symbol: '⌂',
+    subtitle: 'Ubicaciones de tu empresa',
+    permission: 'branches.view',
   },
   {
     key: 'settings',
@@ -423,6 +439,10 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
               <ReportsScreen />
             ) : current.key === 'settings' ? (
               <SettingsScreen />
+            ) : current.key === 'roles' ? (
+              <RolesScreen />
+            ) : current.key === 'branches' ? (
+              <BranchesScreen />
             ) : (
               <ModuleScreen key={current.key} module={current} />
             )}

@@ -86,7 +86,7 @@ test('Usuarios: lista persistida, modal, crear usuario y RBAC visible', async ({
     path: path.join(captures, 'users-' + info.project.name + '.png'),
     fullPage: true,
   });
-  await page.getByRole('button', { name: 'Editar', exact: true }).first().click();
+  await page.getByRole('button', { name: 'Editar', exact: true }).last().click();
   const updatedName = 'QA Worker ' + info.project.name + ' editado';
   await page.getByLabel('Nombre', { exact: true }).fill(updatedName);
   await page.getByRole('button', { name: 'Guardar usuario', exact: true }).click();
@@ -517,6 +517,49 @@ test('Reportes, preferencias y notificaciones usan API real', async ({ page }, i
   const bell = page.getByRole('button', { name: 'Notificaciones' });
   await bell.click();
   await expect(page.getByText('Sin notificaciones', { exact: true })).toBeVisible();
+});
+test('Roles y sucursales exponen administración segura desde interfaz compartida', async ({ page, request }, info) => {
+  const pair = await login(page);
+  const headers = { Authorization: 'Bearer ' + pair.accessToken };
+  const open = async (label: string) => {
+    if ((page.viewportSize()?.width || 0) < 768)
+      await page.getByRole('button', { name: 'Más módulos' }).click();
+    const nav = page.getByRole('button', { name: label, exact: true });
+    await ((page.viewportSize()?.width || 0) < 768 ? nav.last() : nav.first()).click();
+  };
+  await open('Roles');
+  await page.getByRole('button', { name: 'Nuevo rol' }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill('QA Operator ' + info.project.name);
+  await page.getByLabel('Descripción', { exact: true }).fill('Permisos limitados');
+  await page.getByRole('checkbox', { name: 'users.view' }).click();
+  await page.getByRole('button', { name: 'Guardar rol' }).click();
+  await expect(page.getByText('Rol creado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Editar', exact: true }).first().click();
+  await page.getByLabel('Descripción', { exact: true }).fill('Rol de QA editado');
+  await page.getByRole('button', { name: 'Guardar rol' }).click();
+  await expect(page.getByText('Rol actualizado.')).toBeVisible();
+
+  await open('Sucursales');
+  await page.getByRole('button', { name: 'Nueva sucursal' }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill('Sucursal QA ' + info.project.name);
+  await page.getByLabel('Código', { exact: true }).fill('BR-' + info.project.name.toUpperCase());
+  await page.getByLabel('Dirección', { exact: true }).fill('Av. QA 1');
+  await page.getByLabel('Ciudad', { exact: true }).fill('CDMX');
+  await page.getByLabel('País', { exact: true }).fill('MX');
+  await page.getByRole('button', { name: 'Guardar sucursal' }).click();
+  await expect(page.getByText('Sucursal creada.')).toBeVisible();
+  const branches = await request.get('http://127.0.0.1:3081/api/v1/branches?limit=100', { headers });
+  const branch = (await branches.json()).data.find((item: { code: string }) =>
+    item.code === 'BR-' + info.project.name.toUpperCase());
+  const branchCard = page.getByTestId('branch-card-' + branch._id);
+  await branchCard.getByRole('button', { name: 'Editar', exact: true }).click();
+  await page.getByLabel('Ciudad', { exact: true }).fill('Monterrey');
+  await page.getByRole('button', { name: 'Guardar sucursal' }).click();
+  await expect(page.getByText('Sucursal actualizada.')).toBeVisible();
+  await branchCard.getByRole('button', { name: 'Desactivar', exact: true }).click();
+  await page.getByRole('button', { name: 'Confirmar desactivación' }).click();
+  await expect(page.getByText('Sucursal desactivada.')).toBeVisible();
+  await noOverflow(page);
 });
 test('logout revoca también la sesión en el servidor', async ({ page, request }) => {
   const pair = await login(page);

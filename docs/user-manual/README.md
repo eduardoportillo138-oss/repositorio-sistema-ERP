@@ -24,7 +24,18 @@ cero. Las series disponibles cubren los últimos seis meses.
 
 Con permisos suficientes puedes listar usuarios de tu empresa, crear uno con un rol empresarial activo, editar su nombre y confirmar su desactivación. Errores de validación o permisos se muestran; un fallo no se anuncia como guardado.
 
-La gestión API de roles, empresas y sucursales existe, pero no se añadió una consola completa para esos flujos en esta entrega.
+La administración de empresas sigue disponible mediante API con permisos; la consola web empresarial no cubre ese flujo.
+
+## Roles y sucursales
+
+Con `roles.view` consulta los roles de tu empresa. `roles.manage` permite crear
+y editar roles personalizados con permisos que ya posee tu usuario. Los roles
+del sistema no se pueden editar; tampoco se desactiva un rol mientras tenga
+usuarios activos.
+
+Con `branches.view` consulta las sucursales. Los permisos `branches.create`,
+`branches.edit` y `branches.disable` controlan la administración. Una sucursal
+con usuarios activos asignados no se puede desactivar.
 
 ## Catálogo e inventario
 

@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { Role } from '../models/role.model';
+import { User } from '../models/user.model';
 import { PERMISSIONS } from '../../../packages/types/dist';
 import { auditedMutation } from '../services/auditedMutation';
 import { AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../errors/AppError';
@@ -173,6 +174,9 @@ export async function deactivateRole(req: Request, res: Response) {
         .exec();
       if (!role) throw new NotFoundError('Rol');
       if (role.isSystemRole) throw new ValidationError('El rol del sistema no se puede desactivar');
+      if (await User.exists({ companyId: req.user!.companyId, roleId: role._id, status: 'active' })
+        .session(session).exec())
+        throw new ConflictError('El rol tiene usuarios activos');
       role.status = 'inactive';
       await role.save({ session });
       return role;

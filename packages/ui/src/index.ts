@@ -58,6 +58,8 @@ export { CrmScreen } from './screens/CrmScreen';
 export { ReportsScreen } from './screens/ReportsScreen';
 export { SettingsScreen } from './screens/SettingsScreen';
 export { NotificationsScreen } from './screens/NotificationsScreen';
+export { RolesScreen } from './screens/RolesScreen';
+export { BranchesScreen } from './screens/BranchesScreen';
 
 // Tipos
 export type { ButtonProps } from './components/Button';

@@ -740,6 +740,11 @@ describe('Core HTTP con MongoDB real y temporal', () => {
           .send({ name: 'Viewer' })
       ).status,
     ).toBe(200);
+    const assigned = await User.create({ email: 'operator@example.test', name: 'Operator',
+      companyId: companyA, roleId: id, passwordHash: password });
+    expect((await request(app).patch('/api/v1/roles/' + id + '/deactivate')
+      .set(auth(pair.accessToken))).status).toBe(409);
+    await User.deleteOne({ _id: assigned._id });
     expect(
       (
         await request(app)

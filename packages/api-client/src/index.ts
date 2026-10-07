@@ -372,10 +372,34 @@ export type OpportunityListResponse = ApiEnvelope<OpportunityResponse[]> &
   { pagination: PaginationResponse };
 export interface BranchResponse {
   _id: string;
+  companyId: string;
   name: string;
   code: string;
-  status: string;
+  address: string;
+  city: string;
+  country: string;
+  phone?: string;
+  email?: string;
+  isMain: boolean;
+  status: 'active' | 'inactive' | 'cancelled';
 }
+export interface RoleResponse {
+  id: string;
+  companyId: string;
+  name: string;
+  description?: string;
+  permissions: string[];
+  isSystemRole: boolean;
+  status: 'active' | 'inactive' | 'cancelled';
+}
+export type RoleListResponse = ApiEnvelope<RoleResponse[]> & { pagination: PaginationResponse };
+export type CreateRoleRequest = Pick<RoleResponse, 'name' | 'permissions'> &
+  Partial<Pick<RoleResponse, 'description'>>;
+export type UpdateRoleRequest = Partial<CreateRoleRequest>;
+export type BranchListResponse = ApiEnvelope<BranchResponse[]> & { pagination: PaginationResponse };
+export type CreateBranchRequest = Pick<BranchResponse, 'name' | 'code' | 'address' | 'city' | 'country'> &
+  Partial<Pick<BranchResponse, 'phone' | 'email' | 'isMain'>>;
+export type UpdateBranchRequest = Partial<CreateBranchRequest>;
 
 export interface AuthUser {
   id: string;
@@ -834,6 +858,30 @@ export class ApiClient {
   }
   getBranch(id: string): Promise<ApiEnvelope<BranchResponse>> {
     return this.get<ApiEnvelope<BranchResponse>>('/branches/' + encodeURIComponent(id));
+  }
+  createBranch(request: CreateBranchRequest): Promise<ApiEnvelope<BranchResponse>> {
+    return this.post('/branches', request);
+  }
+  updateBranch(id: string, request: UpdateBranchRequest): Promise<ApiEnvelope<BranchResponse>> {
+    return this.put('/branches/' + encodeURIComponent(id), request);
+  }
+  deactivateBranch(id: string): Promise<ApiEnvelope<BranchResponse>> {
+    return this.patch('/branches/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listRoles(params: { page?: number; limit?: number } = {}): Promise<RoleListResponse> {
+    return this.get('/roles', { params });
+  }
+  getRole(id: string): Promise<ApiEnvelope<RoleResponse>> {
+    return this.get('/roles/' + encodeURIComponent(id));
+  }
+  createRole(request: CreateRoleRequest): Promise<ApiEnvelope<RoleResponse>> {
+    return this.post('/roles', request);
+  }
+  updateRole(id: string, request: UpdateRoleRequest): Promise<ApiEnvelope<RoleResponse>> {
+    return this.put('/roles/' + encodeURIComponent(id), request);
+  }
+  deactivateRole(id: string): Promise<ApiEnvelope<RoleResponse>> {
+    return this.patch('/roles/' + encodeURIComponent(id) + '/deactivate');
   }
   getReportDashboard(): Promise<ApiEnvelope<ReportDashboardResponse>> {
     return this.get('/reports/dashboard');
