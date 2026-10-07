@@ -18,26 +18,55 @@ const options = { isDev: false, isLocal: false, remoteUrl, platform: 'android' a
 
 beforeEach(() => jest.clearAllMocks());
 
-test('debug emulator uses its development host', () => {
-  expect(getMobileApiBaseURL({ ...options, isDev: true })).toBe('http://10.0.2.2:3000/api/v1');
-});
-
-test('native debug mode keeps settings visible when bundled JS has __DEV__ false', () => {
-  expect(isMobileDevelopmentBuild(false, true)).toBe(true);
-  expect(isMobileDevelopmentBuild(false, false)).toBe(false);
-  expect(
-    shouldShowDeveloperApiSettings({ ...options, isDev: isMobileDevelopmentBuild(false, true) }),
-  ).toBe(true);
-});
-test('developer server settings are visible only in Android debug', () => {
-  expect(shouldShowDeveloperApiSettings({ ...options, isDev: true })).toBe(true);
-  expect(shouldShowDeveloperApiSettings({ ...options, isDev: false, isLocal: true })).toBe(false);
-  expect(shouldShowDeveloperApiSettings({ ...options, isDev: false, isLocal: false })).toBe(false);
-  expect(shouldShowDeveloperApiSettings({ ...options, isDev: true, isLocal: true })).toBe(false);
-});
-test('local standalone and release use the configured HTTPS endpoint', () => {
+test('debug, local standalone and release default to the Render endpoint', () => {
+  expect(getMobileApiBaseURL({ ...options, isDev: true })).toBe(remoteUrl);
   expect(getMobileApiBaseURL({ ...options, isLocal: true })).toBe(remoteUrl);
   expect(getMobileApiBaseURL(options)).toBe(remoteUrl);
+});
+
+test('10.0.2.2 requires an explicit Android debug flag', () => {
+  expect(getMobileApiBaseURL({ ...options, isDev: true, useLocalEmulatorApi: true })).toBe(
+    'http://10.0.2.2:3000/api/v1',
+  );
+  expect(
+    getMobileApiBaseURL({ ...options, isDev: true, isLocal: true, useLocalEmulatorApi: true }),
+  ).toBe(remoteUrl);
+  expect(getMobileApiBaseURL({ ...options, useLocalEmulatorApi: true })).toBe(remoteUrl);
+  expect(
+    getMobileApiBaseURL({ ...options, isDev: true, platform: 'ios', useLocalEmulatorApi: true }),
+  ).toBe(remoteUrl);
+});
+
+test('developer settings stay hidden unless explicitly enabled in Android debug', () => {
+  const bundledDebug = isMobileDevelopmentBuild(false, true);
+  expect(bundledDebug).toBe(true);
+  expect(shouldShowDeveloperApiSettings({ ...options, isDev: bundledDebug })).toBe(false);
+  expect(
+    shouldShowDeveloperApiSettings({
+      ...options,
+      isDev: bundledDebug,
+      showDeveloperApiSettings: true,
+    }),
+  ).toBe(true);
+  expect(
+    shouldShowDeveloperApiSettings({
+      ...options,
+      isDev: true,
+      isLocal: true,
+      showDeveloperApiSettings: true,
+    }),
+  ).toBe(false);
+  expect(shouldShowDeveloperApiSettings({ ...options, showDeveloperApiSettings: true })).toBe(
+    false,
+  );
+  expect(
+    shouldShowDeveloperApiSettings({
+      ...options,
+      isDev: true,
+      platform: 'ios',
+      showDeveloperApiSettings: true,
+    }),
+  ).toBe(false);
 });
 
 test('normalizes trailing slash and appends the API path', () => {
@@ -64,10 +93,12 @@ test('allows private LAN HTTP only in development settings', () => {
   expect(() => normalizeMobileApiURL('https://localhost:3000/api/v1')).toThrow();
 });
 
-test('initialization configures the shared client before use', () => {
+test('initialization configures Render on debug and standalone before use', () => {
+  expect(initializeMobileApi({ ...options, isDev: true })).toBe(remoteUrl);
   expect(initializeMobileApi({ ...options, isLocal: true })).toBe(remoteUrl);
-  expect(configureApiBaseURL).toHaveBeenCalledTimes(1);
-  expect(configureApiBaseURL).toHaveBeenCalledWith(remoteUrl);
+  expect(configureApiBaseURL).toHaveBeenCalledTimes(2);
+  expect(configureApiBaseURL).toHaveBeenNthCalledWith(1, remoteUrl);
+  expect(configureApiBaseURL).toHaveBeenNthCalledWith(2, remoteUrl);
 });
 
 test('health diagnostic uses the shared client at the service root', async () => {

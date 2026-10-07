@@ -90,6 +90,9 @@ if (mobileApiBaseUrl && !(mobileApiBaseUrl ==~ /^https:\/\/[A-Za-z0-9.-]+(?::[0-
     throw new GradleException("mobileApiBaseUrl must be an HTTPS API URL without credentials or query parameters")
 }
 
+// Debug-only opt-ins. Normal APKs use Render and do not expose server controls.
+def showDeveloperApiSettings = providers.gradleProperty("showDeveloperApiSettings").orElse("false").get().toBoolean()
+def useLocalEmulatorApi = providers.gradleProperty("useLocalEmulatorApi").orElse("false").get().toBoolean()
 android {
     def nativeStage = System.getenv("ERP_ANDROID_CXX_STAGE")
     if (!nativeStage && System.getProperty("os.name").toLowerCase().contains("windows")) {
@@ -120,6 +123,8 @@ android {
         versionCode 1
         versionName "1.0"
         buildConfigField "String", "MOBILE_API_BASE_URL", "\"${mobileApiBaseUrl}\""
+        buildConfigField "boolean", "SHOW_DEVELOPER_API_SETTINGS", showDeveloperApiSettings.toString()
+        buildConfigField "boolean", "USE_LOCAL_EMULATOR_API", useLocalEmulatorApi.toString()
         externalNativeBuild {
             cmake {
                 arguments "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384",

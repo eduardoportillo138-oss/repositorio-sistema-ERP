@@ -10,7 +10,13 @@ private class ERPBuildModeModule(context: ReactApplicationContext) : ReactContex
   override fun getName(): String = "ERPBuildMode"
 
   override fun getConstants(): Map<String, Any> =
-      mapOf("isLocal" to (BuildConfig.BUILD_TYPE == "local"), "isDebug" to (BuildConfig.BUILD_TYPE == "debug"), "apiBaseUrl" to BuildConfig.MOBILE_API_BASE_URL)
+      mapOf(
+        "isLocal" to (BuildConfig.BUILD_TYPE == "local"),
+        "isDebug" to (BuildConfig.BUILD_TYPE == "debug"),
+        "showDeveloperApiSettings" to (BuildConfig.BUILD_TYPE == "debug" && BuildConfig.SHOW_DEVELOPER_API_SETTINGS),
+        "useLocalEmulatorApi" to (BuildConfig.BUILD_TYPE == "debug" && BuildConfig.USE_LOCAL_EMULATOR_API),
+        "apiBaseUrl" to BuildConfig.MOBILE_API_BASE_URL,
+      )
 }
 
 class ERPBuildModePackage : ReactPackage {

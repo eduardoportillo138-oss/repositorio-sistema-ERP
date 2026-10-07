@@ -3,6 +3,7 @@ import { apiClient, configureApiBaseURL } from '@erp/api-client';
 export interface MobileApiOptions {
   isDev: boolean;
   isLocal: boolean;
+  useLocalEmulatorApi?: boolean;
   remoteUrl?: string;
   platform: 'android' | 'ios' | 'web';
 }
@@ -64,14 +65,12 @@ export function normalizeMobileApiURL(value: string, allowLocalHttp = false): st
 export function getMobileApiBaseURL({
   isDev,
   isLocal,
+  useLocalEmulatorApi,
   remoteUrl,
   platform,
 }: MobileApiOptions): string {
-  if (isDev && !isLocal) {
-    return normalizeMobileApiURL(
-      platform === 'android' ? 'http://10.0.2.2:3000/api/v1' : 'http://localhost:3000/api/v1',
-      true,
-    );
+  if (isDev && !isLocal && useLocalEmulatorApi === true && platform === 'android') {
+    return normalizeMobileApiURL('http://10.0.2.2:3000/api/v1', true);
   }
   if (!remoteUrl?.trim()) {
     throw new Error('Falta mobileApiBaseUrl para la API móvil.');
@@ -84,13 +83,16 @@ export function getMobileApiBaseURL({
 export function isMobileDevelopmentBuild(jsDev: boolean, nativeDebug: boolean): boolean {
   return jsDev || nativeDebug;
 }
-/** Server switching belongs only to a true Android debug session. */
+/** Server switching requires an explicit build flag and a true Android debug session. */
 export function shouldShowDeveloperApiSettings({
   isDev,
   isLocal,
   platform,
-}: Pick<MobileApiOptions, 'isDev' | 'isLocal' | 'platform'>): boolean {
-  return isDev && !isLocal && platform === 'android';
+  showDeveloperApiSettings,
+}: Pick<MobileApiOptions, 'isDev' | 'isLocal' | 'platform'> & {
+  showDeveloperApiSettings?: boolean;
+}): boolean {
+  return showDeveloperApiSettings === true && isDev && !isLocal && platform === 'android';
 }
 /** Runs while App.tsx is imported, before ERPApplication can issue requests. */
 export function initializeMobileApi(options: MobileApiOptions): string {

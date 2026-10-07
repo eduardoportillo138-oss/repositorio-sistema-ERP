@@ -20,6 +20,7 @@ try {
   initialApiUrl = initializeMobileApi({
     isDev: isDevelopment,
     isLocal,
+    useLocalEmulatorApi: NativeModules.ERPBuildMode?.useLocalEmulatorApi === true,
     remoteUrl: NativeModules.ERPBuildMode?.apiBaseUrl,
     platform: Platform.OS as 'android' | 'ios' | 'web',
   });
@@ -121,6 +122,7 @@ export default function App() {
           shouldShowDeveloperApiSettings({
             isDev: isDevelopment,
             isLocal,
+            showDeveloperApiSettings: NativeModules.ERPBuildMode?.showDeveloperApiSettings === true,
             platform: Platform.OS as 'android' | 'ios' | 'web',
           }) ? (
             <DeveloperApiSettings />

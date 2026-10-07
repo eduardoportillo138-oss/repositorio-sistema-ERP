@@ -31,7 +31,7 @@ npm.cmd run mobile:start
 npm.cmd run mobile:android
 ```
 
-`assembleDebug` genera `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` con `index.android.bundle` por la configuración `debuggableVariants = []`. El servidor API inicial de debug Android es `http://10.0.2.2:3000/api/v1`; en un teléfono físico cambia **Servidor de desarrollo** a la IP LAN o al endpoint HTTPS de Render. La configuración actual abre desde el bundle y `MainApplication` fija `useDevSupport=false`, por lo que no necesita Metro para iniciar.
+`assembleDebug` genera `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` con `index.android.bundle` por la configuración `debuggableVariants = []`. La API inicial de debug Android es Render HTTPS y la sección **Servidor de desarrollo** permanece oculta. Para pruebas locales explícitas, compila debug con `-PshowDeveloperApiSettings=true` para mostrar el selector, y opcionalmente `-PuseLocalEmulatorApi=true` para iniciar con `10.0.2.2`. La configuración actual abre desde el bundle y `MainApplication` fija `useDevSupport=false`, por lo que no necesita Metro para iniciar.
 
 ## APK local con JavaScript incluido
 
@@ -46,9 +46,11 @@ Para probar independencia de Metro: detén Metro, confirma que 8081 no escucha, 
 
 ## API móvil y Render
 
-`debug` Android empieza con `http://10.0.2.2:3000/api/v1` para el emulador. Solo en `debug` Android, **Servidor de desarrollo** permite una IP LAN privada o `https://repositorio-sistema-erp-backend.onrender.com/api/v1`. Las variantes `local` y `release` ocultan ese control y empiezan con el endpoint HTTPS de Render sin intervención manual. El valor público está en `apps/mobile/android/gradle.properties` y se puede sustituir en una build con `-PmobileApiBaseUrl=https://otro-backend.example.com/api/v1`. Gradle bloquea `local` y `release` si falta la URL; la app valida HTTPS, ruta `/api/v1` y placeholders. Nunca incluyas claves ni contraseñas en esta propiedad.
+`debug`, `local` y `release` usan por defecto `https://repositorio-sistema-erp-backend.onrender.com/api/v1` sin interacción del usuario. Ninguna de estas APK normales muestra **Servidor de desarrollo**, el campo URL ni **Aplicar servidor**. El valor público sigue en `apps/mobile/android/gradle.properties` y se puede sustituir con `-PmobileApiBaseUrl=https://otro-backend.example.com/api/v1`. Gradle bloquea `local` y `release` si falta la URL; la app valida HTTPS, ruta `/api/v1` y placeholders. Nunca incluyas claves ni contraseñas en esta propiedad.
 
+Solo para una build debug de desarrollo, `-PshowDeveloperApiSettings=true` habilita el selector manual de IP LAN, `10.0.2.2` o HTTPS. `-PuseLocalEmulatorApi=true` cambia la URL inicial de esa build debug a `http://10.0.2.2:3000/api/v1`. Ambas banderas están desactivadas por defecto y se ignoran en `local` y `release`; `__DEV__` por sí solo no muestra el selector ni activa el emulador.
 Para verificar el backend antes del login, consulta `GET https://repositorio-sistema-erp-backend.onrender.com/health` y `/ready`; el diagnóstico opcional `checkMobileBackendHealth` usa el cliente compartido. El login permite hasta 90 segundos porque un servicio Render Free puede tardar cerca de un minuto en despertar; las demás solicitudes conservan 30 segundos. El HTTP sin cifrar sigue limitado a `debug` y `local` por sus manifests de red existentes, solo para servidores de desarrollo.
+
 ## 16 KB y diagnóstico
 
 El APK local RN 0.86.3 fue inspeccionado: 11/11 `.so` arm64 y 11/11 x86_64 tienen ELF de 16 KB o superior, y `zipalign -c -P 16 -v 4` pasó. Se conservaron las cuatro ABI. El AVD 16 KB devolvió `PAGE_SIZE=16384` y el Pixel_8 estándar `4096`; ambos instalaron y abrieron el APK sin advertencia ni `FATAL EXCEPTION` observada. Aún faltan Android Studio APK Analyzer y una prueba en teléfono físico de 16 KB; el teléfono probado aquí usa páginas de 4 KB.
