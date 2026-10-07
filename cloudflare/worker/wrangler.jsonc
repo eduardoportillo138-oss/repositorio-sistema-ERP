@@ -1,0 +1,11 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "erp-api-gateway",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-07",
+  "workers_dev": true,
+  "vars": {
+    "RENDER_ORIGIN": "https://repositorio-sistema-erp-backend.onrender.com",
+    "WEB_ORIGINS": "https://repositorio-sistema-erp-web.onrender.com",
+  },
+}

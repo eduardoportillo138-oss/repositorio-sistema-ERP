@@ -6,7 +6,8 @@
   "workspaces": [
     "apps/*",
     "backend",
-    "packages/*"
+    "packages/*",
+    "cloudflare/worker"
   ],
   "scripts": {
     "build": "npm run build:packages && npm run build -w backend && npm run build -w apps/web && npm run build -w apps/mobile",
@@ -32,7 +33,12 @@
     "build:packages": "npm run build -w packages/types && npm run build -w packages/constants && npm run build -w packages/config && npm run build -w packages/validation && npm run build -w packages/api-client && npm run build -w packages/ui && npm run build -w packages/session",
     "test:client": "jest --runInBand --testPathPattern=api-client",
     "mobile:web": "npm run dev -w apps/mobile",
-    "postinstall": "patch-package"
+    "postinstall": "patch-package",
+    "cloudflare:dev": "npm run dev -w @erp/cloudflare-worker",
+    "cloudflare:deploy": "npm run deploy -w @erp/cloudflare-worker",
+    "cloudflare:typecheck": "npm run typecheck -w @erp/cloudflare-worker",
+    "cloudflare:build": "npm run build -w @erp/cloudflare-worker",
+    "cloudflare:test": "npm run test -w @erp/cloudflare-worker"
   },
   "devDependencies": {
     "@react-native-community/cli": "20.1.0",
