@@ -56,7 +56,7 @@ test('dashboard real muestra disponibilidad sin inventar métricas', async ({ pa
     fullPage: true,
   });
   await page.getByRole('button', { name: 'Productos', exact: true }).click();
-  await expect(page.getByText('Estamos preparando este espacio')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Productos', exact: true })).toBeVisible();
   await noOverflow(page);
 });
 test('Usuarios: lista persistida, modal, crear usuario y RBAC visible', async ({ page }, info) => {
@@ -200,6 +200,79 @@ test('Unidades: crear, editar y desactivar desde web y vista móvil', async ({ p
   await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
   await page.getByRole('button', { name: 'Desactivar', exact: true }).last().click();
   await expect(page.getByText('Unidad desactivada.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
+  await page.getByRole('button', { name: 'Inactivos', exact: true }).click();
+  await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+  await noOverflow(page);
+});
+test('Almacenes: crear con sucursal, editar y desactivar', async ({ page, request }, info) => {
+  const pair = await login(page);
+  const branchName = 'Sucursal QA ' + info.project.name;
+  const branch = await request.post('http://127.0.0.1:3081/api/v1/branches', {
+    headers: { Authorization: 'Bearer ' + pair.accessToken },
+    data: { name: branchName, code: 'QA_' + info.project.name.toUpperCase(),
+      address: 'Calle QA', city: 'CDMX', country: 'MX' },
+  });
+  expect(branch.status()).toBe(201);
+  if ((page.viewportSize()?.width || 0) < 768)
+    await page.getByRole('button', { name: 'Más módulos' }).click();
+  await page.getByRole('button', { name: 'Almacenes', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Almacenes', exact: true })).toBeVisible();
+  const name = 'Almacén QA ' + info.project.name;
+  await page.getByRole('button', { name: 'Nuevo almacén' }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill(name);
+  await page.getByLabel('Código', { exact: true }).fill('ALM_' + info.project.name.toUpperCase());
+  await page.getByRole('button', { name: 'Selecciona una sucursal' }).click();
+  await page.getByRole('button', { name: branchName }).click();
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Almacén creado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Editar', exact: true }).click();
+  await page.getByLabel('Dirección', { exact: true }).fill('Nave QA');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Almacén actualizado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).last().click();
+  await expect(page.getByText('Almacén desactivado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
+  await page.getByRole('button', { name: 'Inactivos', exact: true }).click();
+  await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+  await noOverflow(page);
+});
+test('Productos: crear con categoría y unidad, editar y desactivar', async ({ page, request }, info) => {
+  const pair = await login(page);
+  const headers = { Authorization: 'Bearer ' + pair.accessToken };
+  const suffix = info.project.name.toUpperCase();
+  const categoryName = 'Categoría Producto ' + info.project.name;
+  const unitName = 'Unidad Producto ' + info.project.name;
+  const category = await request.post('http://127.0.0.1:3081/api/v1/categories', {
+    headers, data: { name: categoryName, code: 'PCAT_' + suffix },
+  });
+  const unit = await request.post('http://127.0.0.1:3081/api/v1/units', {
+    headers, data: { name: unitName, code: 'PUNIT_' + suffix, symbol: 'u' },
+  });
+  expect(category.status()).toBe(201);
+  expect(unit.status()).toBe(201);
+  await page.getByRole('button', { name: 'Productos', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Productos', exact: true })).toBeVisible();
+  const name = 'Producto QA ' + info.project.name;
+  await page.getByRole('button', { name: 'Nuevo producto' }).click();
+  await page.getByLabel('Código', { exact: true }).fill('PROD_' + suffix);
+  await page.getByLabel('Nombre', { exact: true }).fill(name);
+  await page.getByRole('button', { name: 'Selecciona una categoría' }).click();
+  await page.getByRole('button', { name: categoryName }).click();
+  await page.getByRole('button', { name: 'Selecciona una unidad' }).click();
+  await page.getByRole('button', { name: unitName }).click();
+  await page.getByLabel('Precio de venta').fill('123.45');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Producto creado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Editar', exact: true }).click();
+  await page.getByLabel('Precio de venta').fill('150.25');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Producto actualizado.')).toBeVisible();
+  await expect(page.getByText(/Precio: 150\.25/)).toBeVisible();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).last().click();
+  await expect(page.getByText('Producto desactivado.')).toBeVisible();
   await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
   await page.getByRole('button', { name: 'Inactivos', exact: true }).click();
   await expect(page.getByText(name, { exact: true }).first()).toBeVisible();

@@ -879,7 +879,7 @@ describe('Core HTTP con MongoDB real y temporal', () => {
     });
     expect((await auditService.getLogs({ companyId: companyB })).data).toHaveLength(0);
   });
-  test.each(['customers', 'suppliers', 'categories', 'units'])(
+  test.each(['customers', 'suppliers', 'categories', 'units', 'warehouses', 'products'])(
     '%s implementado valida el alta', async (module) => {
       const pair = (await login()).body.data;
       const response = await request(app)
@@ -892,8 +892,6 @@ describe('Core HTTP con MongoDB real y temporal', () => {
     },
   );
   test.each([
-    'products',
-    'warehouses',
     'inventory',
     'sales',
     'purchases',

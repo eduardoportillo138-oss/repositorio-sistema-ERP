@@ -12,10 +12,15 @@ export interface IProduct extends BaseDocument {
   description?: string;
   categoryId: mongoose.Types.ObjectId;
   unitId: mongoose.Types.ObjectId;
-  unitPrice: number;
+  /** Legacy decimal price. New writes use priceMinor. */
+  unitPrice?: number;
   costPrice?: number;
   taxRate?: number;
-  stockCurrent: number;
+  priceMinor?: number;
+  costMinor?: number;
+  taxRateBps?: number;
+  /** Legacy value; inventory movements are authoritative. */
+  stockCurrent?: number;
   stockMinimum: number;
   stockMaximum?: number;
   barcode?: string;
@@ -37,6 +42,8 @@ export interface IProductDocument extends IProduct, Document {}
 const productSchema = new Schema<IProductDocument>(
   {
     companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     code: {
       type: String,
       required: [true, 'El código del producto es obligatorio'],
@@ -67,11 +74,7 @@ const productSchema = new Schema<IProductDocument>(
       ref: 'Unit',
       required: [true, 'La unidad es obligatoria'],
     },
-    unitPrice: {
-      type: Number,
-      required: [true, 'El precio unitario es obligatorio'],
-      min: 0,
-    },
+    unitPrice: { type: Number, min: 0 },
     costPrice: {
       type: Number,
       min: 0,
@@ -82,10 +85,12 @@ const productSchema = new Schema<IProductDocument>(
       min: 0,
       max: 100,
     },
+    priceMinor: { type: Number, min: 0, validate: Number.isSafeInteger },
+    costMinor: { type: Number, min: 0, validate: Number.isSafeInteger },
+    taxRateBps: { type: Number, default: 0, min: 0, max: 10000,
+      validate: Number.isSafeInteger },
     stockCurrent: {
       type: Number,
-      required: true,
-      default: 0,
       min: 0,
     },
     stockMinimum: {
@@ -98,8 +103,8 @@ const productSchema = new Schema<IProductDocument>(
       type: Number,
       min: 0,
     },
-    barcode: { type: String, trim: true, unique: true },
-    sku: { type: String, trim: true, unique: true },
+    barcode: { type: String, trim: true },
+    sku: { type: String, trim: true },
     weight: { type: Number, min: 0 },
     dimensions: {
       length: { type: Number, min: 0 },
@@ -123,6 +128,9 @@ const productSchema = new Schema<IProductDocument>(
 productSchema.index({ companyId: 1, code: 1 }, { unique: true });
 productSchema.index({ companyId: 1, categoryId: 1 });
 productSchema.index({ companyId: 1, status: 1, name: 1 });
-productSchema.index({ sku: 1, companyId: 1 }, { unique: true });
+productSchema.index({ companyId: 1, sku: 1 },
+  { unique: true, partialFilterExpression: { sku: { $type: 'string' } } });
+productSchema.index({ companyId: 1, barcode: 1 },
+  { unique: true, partialFilterExpression: { barcode: { $type: 'string' } } });
 
 export const Product = mongoose.model<IProductDocument>('Product', productSchema);

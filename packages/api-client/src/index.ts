@@ -111,6 +111,56 @@ export type UpdateUnitRequest = Partial<CreateUnitRequest>;
 export type UnitListResponse = ApiEnvelope<UnitResponse[]> & {
   pagination: PaginationResponse;
 };
+export interface WarehouseResponse {
+  id: string;
+  name: string;
+  code: string;
+  branchId?: string;
+  address?: string;
+  location?: string;
+  status: 'active' | 'inactive';
+  createdAt?: string;
+  updatedAt?: string;
+}
+export type CreateWarehouseRequest = Pick<WarehouseResponse, 'name' | 'code'> & {
+  branchId: string;
+  address?: string;
+  location?: string;
+};
+export type UpdateWarehouseRequest = Partial<CreateWarehouseRequest>;
+export type WarehouseListResponse = ApiEnvelope<WarehouseResponse[]> & {
+  pagination: PaginationResponse;
+};
+export interface ProductResponse {
+  id: string;
+  code: string;
+  name: string;
+  description?: string;
+  barcode?: string;
+  categoryId: string;
+  unitId: string;
+  priceMinor?: number;
+  costMinor?: number;
+  taxRateBps: number;
+  stockMinimum: number;
+  status: 'active' | 'inactive';
+  createdAt?: string;
+  updatedAt?: string;
+}
+export type CreateProductRequest = Pick<ProductResponse,
+  'code' | 'name' | 'categoryId' | 'unitId' | 'priceMinor'> &
+  Partial<Pick<ProductResponse,
+    'description' | 'barcode' | 'costMinor' | 'taxRateBps' | 'stockMinimum'>>;
+export type UpdateProductRequest = Partial<CreateProductRequest>;
+export type ProductListResponse = ApiEnvelope<ProductResponse[]> & {
+  pagination: PaginationResponse;
+};
+export interface BranchResponse {
+  _id: string;
+  name: string;
+  code: string;
+  status: string;
+}
 
 export interface AuthUser {
   id: string;
@@ -353,6 +403,45 @@ export class ApiClient {
   }
   deactivateUnit(id: string): Promise<ApiEnvelope<UnitResponse>> {
     return this.patch<ApiEnvelope<UnitResponse>>('/units/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listWarehouses(params: { page?: number; limit?: number; search?: string;
+    status?: 'active' | 'inactive' } = {}): Promise<WarehouseListResponse> {
+    return this.get<WarehouseListResponse>('/warehouses', { params });
+  }
+  getWarehouse(id: string): Promise<ApiEnvelope<WarehouseResponse>> {
+    return this.get<ApiEnvelope<WarehouseResponse>>('/warehouses/' + encodeURIComponent(id));
+  }
+  createWarehouse(request: CreateWarehouseRequest): Promise<ApiEnvelope<WarehouseResponse>> {
+    return this.post<ApiEnvelope<WarehouseResponse>>('/warehouses', request);
+  }
+  updateWarehouse(id: string, request: UpdateWarehouseRequest): Promise<ApiEnvelope<WarehouseResponse>> {
+    return this.put<ApiEnvelope<WarehouseResponse>>('/warehouses/' + encodeURIComponent(id), request);
+  }
+  deactivateWarehouse(id: string): Promise<ApiEnvelope<WarehouseResponse>> {
+    return this.patch<ApiEnvelope<WarehouseResponse>>('/warehouses/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listProducts(params: { page?: number; limit?: number; search?: string;
+    status?: 'active' | 'inactive'; categoryId?: string } = {}): Promise<ProductListResponse> {
+    return this.get<ProductListResponse>('/products', { params });
+  }
+  getProduct(id: string): Promise<ApiEnvelope<ProductResponse>> {
+    return this.get<ApiEnvelope<ProductResponse>>('/products/' + encodeURIComponent(id));
+  }
+  createProduct(request: CreateProductRequest): Promise<ApiEnvelope<ProductResponse>> {
+    return this.post<ApiEnvelope<ProductResponse>>('/products', request);
+  }
+  updateProduct(id: string, request: UpdateProductRequest): Promise<ApiEnvelope<ProductResponse>> {
+    return this.put<ApiEnvelope<ProductResponse>>('/products/' + encodeURIComponent(id), request);
+  }
+  deactivateProduct(id: string): Promise<ApiEnvelope<ProductResponse>> {
+    return this.patch<ApiEnvelope<ProductResponse>>('/products/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listBranches(params: { page?: number; limit?: number } = {}): Promise<
+    ApiEnvelope<BranchResponse[]> & { pagination: PaginationResponse }> {
+    return this.get('/branches', { params });
+  }
+  getBranch(id: string): Promise<ApiEnvelope<BranchResponse>> {
+    return this.get<ApiEnvelope<BranchResponse>>('/branches/' + encodeURIComponent(id));
   }
 }
 export const apiClient = new ApiClient();

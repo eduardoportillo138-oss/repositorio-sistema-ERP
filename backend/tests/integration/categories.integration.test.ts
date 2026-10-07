@@ -150,11 +150,11 @@ test('migración explícita de permisos es idempotente y auditada', async () => 
   await role!.save();
   const args = [companyA, String(role!._id), String(actor!._id)] as const;
   const dry = await grantMasterDataPermissions(...args);
-  expect(dry.missing).toHaveLength(8);
+  expect(dry.missing).toHaveLength(12);
   expect(dry.applied).toEqual([]);
   expect((await Role.findById(role!._id))!.permissions).toEqual(['roles.manage', 'users.view']);
   const applied = await grantMasterDataPermissions(...args, true);
-  expect(applied.applied).toHaveLength(8);
+  expect(applied.applied).toHaveLength(12);
   expect((await grantMasterDataPermissions(...args, true)).applied).toEqual([]);
   const saved = await Role.findById(role!._id);
   expect(saved!.permissions.some((permission) => permission.startsWith('platform.'))).toBe(false);

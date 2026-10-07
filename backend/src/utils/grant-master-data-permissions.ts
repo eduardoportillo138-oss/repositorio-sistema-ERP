@@ -8,7 +8,8 @@ import { AuthorizationError, NotFoundError, ValidationError } from '../errors/Ap
 import { isValidObjectId } from './validation';
 
 const grants = PERMISSIONS.filter((permission) =>
-  permission.startsWith('categories.') || permission.startsWith('units.'));
+  permission.startsWith('categories.') || permission.startsWith('units.') ||
+  permission.startsWith('warehouses.'));
 
 /** An explicit, idempotent migration for one existing enterprise admin role. */
 export async function grantMasterDataPermissions(
