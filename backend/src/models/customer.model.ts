@@ -6,15 +6,17 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface ICustomer extends BaseDocument {
+  companyId: mongoose.Types.ObjectId;
+  branchId?: mongoose.Types.ObjectId;
   name: string;
   email?: string;
   phone?: string;
   fiscalName?: string;
   taxId?: string;
-  address: string;
-  city: string;
-  country: string;
-  postalCode: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  postalCode?: string;
   notes?: string;
   creditLimit?: number;
   balance?: number;
@@ -26,6 +28,10 @@ export interface ICustomerDocument extends ICustomer, Document {}
 
 const customerSchema = new Schema<ICustomerDocument>(
   {
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    branchId: { type: Schema.Types.ObjectId, ref: 'Branch' },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     name: {
       type: String,
       required: [true, 'El nombre del cliente es obligatorio'],
@@ -56,7 +62,7 @@ const customerSchema = new Schema<ICustomerDocument>(
     },
     address: { type: String, trim: true, maxlength: 500 },
     city: { type: String, trim: true, maxlength: 100 },
-    country: { type: String, required: true, trim: true, maxlength: 100 },
+    country: { type: String, trim: true, maxlength: 100 },
     postalCode: { type: String, trim: true, maxlength: 20 },
     notes: { type: String, trim: true, maxlength: 1000 },
     creditLimit: { type: Number, min: 0 },

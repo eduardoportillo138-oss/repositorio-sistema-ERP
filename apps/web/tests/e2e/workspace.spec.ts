@@ -102,6 +102,36 @@ test('Usuarios: lista persistida, modal, crear usuario y RBAC visible', async ({
   await expect(page.getByText('Inactivo', { exact: true }).first()).toBeVisible();
   await noOverflow(page);
 });
+test('Clientes: crear, buscar, editar y desactivar desde web y vista móvil', async ({ page }, info) => {
+  await login(page);
+  await page.getByRole('button', { name: 'Clientes', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Clientes', exact: true })).toBeVisible();
+  const name = 'Cliente QA ' + info.project.name;
+  await page.getByRole('button', { name: 'Nuevo cliente' }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill(name);
+  await page.getByLabel('Correo electrónico', { exact: true })
+    .fill('cliente-' + info.project.name + '@example.test');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Cliente creado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
+  await page.getByLabel('Buscar clientes').fill(name);
+  await page.getByRole('button', { name: 'Buscar', exact: true }).click();
+  await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Ver detalle' }).first().click();
+  await page.getByRole('button', { name: 'Editar', exact: true }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill(name + ' editado');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Cliente actualizado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
+  await expect(page.getByText('El cliente permanecerá en el historial. ¿Confirmas la desactivación?'))
+    .toBeVisible();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).last().click();
+  await expect(page.getByText('Cliente desactivado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
+  await page.getByRole('button', { name: 'Inactivos', exact: true }).click();
+  await expect(page.getByText(name + ' editado', { exact: true }).first()).toBeVisible();
+  await noOverflow(page);
+});
 test('logout revoca también la sesión en el servidor', async ({ page, request }) => {
   const pair = await login(page);
   if ((page.viewportSize()?.width || 0) < 768)

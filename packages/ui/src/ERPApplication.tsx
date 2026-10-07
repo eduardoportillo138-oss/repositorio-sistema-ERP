@@ -6,6 +6,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { LoginScreen } from './screens/LoginScreen';
 import { DashboardScreen } from './screens/DashboardScreen';
 import { UsersScreen } from './screens/UsersScreen';
+import { CustomersScreen } from './screens/CustomersScreen';
 import { ERPLogo } from './components/ERPLogo';
 import { Input } from './components/Input';
 import { Modal } from './components/Modal';
@@ -336,6 +337,8 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
               <DashboardScreen modules={allowed} onNavigate={navigate} />
             ) : current.key === 'users' ? (
               <UsersScreen />
+            ) : current.key === 'customers' ? (
+              <CustomersScreen />
             ) : (
               <ModuleScreen key={current.key} module={current} />
             )}

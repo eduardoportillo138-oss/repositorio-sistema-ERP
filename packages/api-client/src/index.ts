@@ -27,6 +27,36 @@ export interface UserResponse {
   updatedAt?: string;
 }
 
+export interface CustomerResponse {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  taxId?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  postalCode?: string;
+  notes?: string;
+  branchId?: string;
+  status: 'active' | 'inactive';
+  createdAt?: string;
+  updatedAt?: string;
+}
+export type CreateCustomerRequest = Pick<CustomerResponse, 'name'> &
+  Partial<Pick<CustomerResponse, 'email' | 'phone' | 'taxId' | 'address' | 'city' |
+    'country' | 'postalCode' | 'notes' | 'branchId'>>;
+export type UpdateCustomerRequest = Partial<CreateCustomerRequest>;
+export interface PaginationResponse {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+export type CustomerListResponse = ApiEnvelope<CustomerResponse[]> & {
+  pagination: PaginationResponse;
+};
+
 export interface AuthUser {
   id: string;
   email: string;
@@ -204,6 +234,22 @@ export class ApiClient {
     }
   > {
     return this.get('/users', { params: { page, limit } });
+  }
+  listCustomers(params: { page?: number; limit?: number; search?: string;
+    status?: 'active' | 'inactive' } = {}): Promise<CustomerListResponse> {
+    return this.get<CustomerListResponse>('/customers', { params });
+  }
+  getCustomer(id: string): Promise<ApiEnvelope<CustomerResponse>> {
+    return this.get<ApiEnvelope<CustomerResponse>>('/customers/' + encodeURIComponent(id));
+  }
+  createCustomer(request: CreateCustomerRequest): Promise<ApiEnvelope<CustomerResponse>> {
+    return this.post<ApiEnvelope<CustomerResponse>>('/customers', request);
+  }
+  updateCustomer(id: string, request: UpdateCustomerRequest): Promise<ApiEnvelope<CustomerResponse>> {
+    return this.put<ApiEnvelope<CustomerResponse>>('/customers/' + encodeURIComponent(id), request);
+  }
+  deactivateCustomer(id: string): Promise<ApiEnvelope<CustomerResponse>> {
+    return this.patch<ApiEnvelope<CustomerResponse>>('/customers/' + encodeURIComponent(id) + '/deactivate');
   }
 }
 export const apiClient = new ApiClient();

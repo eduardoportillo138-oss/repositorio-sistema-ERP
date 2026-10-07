@@ -43,6 +43,7 @@ export { ERPApplication, SidebarItem, navigationModules } from './ERPApplication
 export { LoginScreen } from './screens/LoginScreen';
 export { DashboardScreen } from './screens/DashboardScreen';
 export { UsersScreen } from './screens/UsersScreen';
+export { CustomersScreen } from './screens/CustomersScreen';
 
 // Tipos
 export type { ButtonProps } from './components/Button';
