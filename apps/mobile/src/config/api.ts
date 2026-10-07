@@ -80,6 +80,18 @@ export function getMobileApiBaseURL({
   return normalizeMobileApiURL(remoteUrl, false);
 }
 
+/** A bundled Android debug APK can have __DEV__ false; use its native build type too. */
+export function isMobileDevelopmentBuild(jsDev: boolean, nativeDebug: boolean): boolean {
+  return jsDev || nativeDebug;
+}
+/** Server switching belongs only to a true Android debug session. */
+export function shouldShowDeveloperApiSettings({
+  isDev,
+  isLocal,
+  platform,
+}: Pick<MobileApiOptions, 'isDev' | 'isLocal' | 'platform'>): boolean {
+  return isDev && !isLocal && platform === 'android';
+}
 /** Runs while App.tsx is imported, before ERPApplication can issue requests. */
 export function initializeMobileApi(options: MobileApiOptions): string {
   const url = getMobileApiBaseURL(options);

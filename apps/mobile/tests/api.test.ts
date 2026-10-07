@@ -3,7 +3,9 @@ import {
   checkMobileBackendHealth,
   getMobileApiBaseURL,
   initializeMobileApi,
+  isMobileDevelopmentBuild,
   normalizeMobileApiURL,
+  shouldShowDeveloperApiSettings,
 } from '../src/config/api';
 
 jest.mock('@erp/api-client', () => ({
@@ -20,6 +22,19 @@ test('debug emulator uses its development host', () => {
   expect(getMobileApiBaseURL({ ...options, isDev: true })).toBe('http://10.0.2.2:3000/api/v1');
 });
 
+test('native debug mode keeps settings visible when bundled JS has __DEV__ false', () => {
+  expect(isMobileDevelopmentBuild(false, true)).toBe(true);
+  expect(isMobileDevelopmentBuild(false, false)).toBe(false);
+  expect(
+    shouldShowDeveloperApiSettings({ ...options, isDev: isMobileDevelopmentBuild(false, true) }),
+  ).toBe(true);
+});
+test('developer server settings are visible only in Android debug', () => {
+  expect(shouldShowDeveloperApiSettings({ ...options, isDev: true })).toBe(true);
+  expect(shouldShowDeveloperApiSettings({ ...options, isDev: false, isLocal: true })).toBe(false);
+  expect(shouldShowDeveloperApiSettings({ ...options, isDev: false, isLocal: false })).toBe(false);
+  expect(shouldShowDeveloperApiSettings({ ...options, isDev: true, isLocal: true })).toBe(false);
+});
 test('local standalone and release use the configured HTTPS endpoint', () => {
   expect(getMobileApiBaseURL({ ...options, isLocal: true })).toBe(remoteUrl);
   expect(getMobileApiBaseURL(options)).toBe(remoteUrl);

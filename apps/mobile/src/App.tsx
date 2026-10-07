@@ -2,14 +2,23 @@ import React, { useState } from 'react';
 import { NativeModules, Platform, Pressable, StatusBar, Text, TextInput, View } from 'react-native';
 import { ERPApplication, colors } from '@erp/ui';
 import { configureApiBaseURL } from '@erp/api-client';
-import { initializeMobileApi, normalizeMobileApiURL } from './config/api';
+import {
+  initializeMobileApi,
+  isMobileDevelopmentBuild,
+  normalizeMobileApiURL,
+  shouldShowDeveloperApiSettings,
+} from './config/api';
 
 const isLocal = NativeModules.ERPBuildMode?.isLocal === true;
+const isDevelopment = isMobileDevelopmentBuild(
+  __DEV__,
+  NativeModules.ERPBuildMode?.isDebug === true,
+);
 let initialApiUrl = '';
 let initialApiError = '';
 try {
   initialApiUrl = initializeMobileApi({
-    isDev: __DEV__,
+    isDev: isDevelopment,
     isLocal,
     remoteUrl: NativeModules.ERPBuildMode?.apiBaseUrl,
     platform: Platform.OS as 'android' | 'ios' | 'web',
@@ -26,7 +35,7 @@ function DeveloperApiSettings() {
 
   const apply = () => {
     try {
-      const candidate = normalizeMobileApiURL(url, __DEV__ || isLocal);
+      const candidate = normalizeMobileApiURL(url, isDevelopment);
       configureApiBaseURL(candidate);
       setUrl(candidate);
       setActiveUrl(candidate);
@@ -109,7 +118,13 @@ export default function App() {
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} translucent={false} />
       <ERPApplication
         developerSettings={
-          (__DEV__ || isLocal) && Platform.OS === 'android' ? <DeveloperApiSettings /> : undefined
+          shouldShowDeveloperApiSettings({
+            isDev: isDevelopment,
+            isLocal,
+            platform: Platform.OS as 'android' | 'ios' | 'web',
+          }) ? (
+            <DeveloperApiSettings />
+          ) : undefined
         }
       />
     </>
