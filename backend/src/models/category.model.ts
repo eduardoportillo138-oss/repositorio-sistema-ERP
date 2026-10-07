@@ -6,6 +6,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface ICategory extends BaseDocument {
+  companyId: mongoose.Types.ObjectId;
   name: string;
   code: string;
   description?: string;
@@ -18,6 +19,9 @@ export interface ICategoryDocument extends ICategory, Document {}
 
 const categorySchema = new Schema<ICategoryDocument>(
   {
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     name: {
       type: String,
       required: [true, 'El nombre es obligatorio'],
@@ -49,6 +53,7 @@ const categorySchema = new Schema<ICategoryDocument>(
 );
 
 categorySchema.index({ companyId: 1, code: 1 }, { unique: true });
+categorySchema.index({ companyId: 1, status: 1, name: 1 });
 categorySchema.index({ companyId: 1, parentId: 1 });
 categorySchema.index({ parentId: 1, level: 1 });
 

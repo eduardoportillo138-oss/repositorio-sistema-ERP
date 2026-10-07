@@ -80,6 +80,37 @@ export type UpdateSupplierRequest = Partial<CreateSupplierRequest>;
 export type SupplierListResponse = ApiEnvelope<SupplierResponse[]> & {
   pagination: PaginationResponse;
 };
+export interface CategoryResponse {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  status: 'active' | 'inactive';
+  createdAt?: string;
+  updatedAt?: string;
+}
+export type CreateCategoryRequest = Pick<CategoryResponse, 'name' | 'code'> &
+  Partial<Pick<CategoryResponse, 'description'>>;
+export type UpdateCategoryRequest = Partial<CreateCategoryRequest>;
+export type CategoryListResponse = ApiEnvelope<CategoryResponse[]> & {
+  pagination: PaginationResponse;
+};
+export interface UnitResponse {
+  id: string;
+  name: string;
+  code: string;
+  symbol: string;
+  description?: string;
+  status: 'active' | 'inactive';
+  createdAt?: string;
+  updatedAt?: string;
+}
+export type CreateUnitRequest = Pick<UnitResponse, 'name' | 'code' | 'symbol'> &
+  Partial<Pick<UnitResponse, 'description'>>;
+export type UpdateUnitRequest = Partial<CreateUnitRequest>;
+export type UnitListResponse = ApiEnvelope<UnitResponse[]> & {
+  pagination: PaginationResponse;
+};
 
 export interface AuthUser {
   id: string;
@@ -290,6 +321,38 @@ export class ApiClient {
   }
   deactivateSupplier(id: string): Promise<ApiEnvelope<SupplierResponse>> {
     return this.patch<ApiEnvelope<SupplierResponse>>('/suppliers/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listCategories(params: { page?: number; limit?: number; search?: string;
+    status?: 'active' | 'inactive' } = {}): Promise<CategoryListResponse> {
+    return this.get<CategoryListResponse>('/categories', { params });
+  }
+  getCategory(id: string): Promise<ApiEnvelope<CategoryResponse>> {
+    return this.get<ApiEnvelope<CategoryResponse>>('/categories/' + encodeURIComponent(id));
+  }
+  createCategory(request: CreateCategoryRequest): Promise<ApiEnvelope<CategoryResponse>> {
+    return this.post<ApiEnvelope<CategoryResponse>>('/categories', request);
+  }
+  updateCategory(id: string, request: UpdateCategoryRequest): Promise<ApiEnvelope<CategoryResponse>> {
+    return this.put<ApiEnvelope<CategoryResponse>>('/categories/' + encodeURIComponent(id), request);
+  }
+  deactivateCategory(id: string): Promise<ApiEnvelope<CategoryResponse>> {
+    return this.patch<ApiEnvelope<CategoryResponse>>('/categories/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listUnits(params: { page?: number; limit?: number; search?: string;
+    status?: 'active' | 'inactive' } = {}): Promise<UnitListResponse> {
+    return this.get<UnitListResponse>('/units', { params });
+  }
+  getUnit(id: string): Promise<ApiEnvelope<UnitResponse>> {
+    return this.get<ApiEnvelope<UnitResponse>>('/units/' + encodeURIComponent(id));
+  }
+  createUnit(request: CreateUnitRequest): Promise<ApiEnvelope<UnitResponse>> {
+    return this.post<ApiEnvelope<UnitResponse>>('/units', request);
+  }
+  updateUnit(id: string, request: UpdateUnitRequest): Promise<ApiEnvelope<UnitResponse>> {
+    return this.put<ApiEnvelope<UnitResponse>>('/units/' + encodeURIComponent(id), request);
+  }
+  deactivateUnit(id: string): Promise<ApiEnvelope<UnitResponse>> {
+    return this.patch<ApiEnvelope<UnitResponse>>('/units/' + encodeURIComponent(id) + '/deactivate');
   }
 }
 export const apiClient = new ApiClient();

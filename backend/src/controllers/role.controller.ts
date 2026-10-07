@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import { Role } from '../models/role.model';
 import { PERMISSIONS } from '../../../packages/types/dist';
 import { auditedMutation } from '../services/auditedMutation';
-import { ConflictError, NotFoundError, ValidationError } from '../errors/AppError';
+import { AuthorizationError, ConflictError, NotFoundError, ValidationError } from '../errors/AppError';
 import { isValidObjectId, pagination } from '../utils/validation';
 
 const permitted = new Set<string>(PERMISSIONS);
@@ -37,6 +37,13 @@ function fields(body: Record<string, unknown>) {
     throw new ValidationError('Los permisos de plataforma requieren aprovisionamiento externo');
   }
   return body;
+}
+
+function checkAssignablePermissions(req: Request, body: Record<string, unknown>) {
+  if (Array.isArray(body.permissions) &&
+    body.permissions.some((permission) => !req.user!.permissions.includes(permission))) {
+    throw new AuthorizationError('No puedes asignar permisos que no posees');
+  }
 }
 
 export async function listRoles(req: Request, res: Response) {
@@ -76,6 +83,7 @@ export async function getRole(req: Request, res: Response) {
 
 export async function createRole(req: Request, res: Response) {
   const body = fields(req.body);
+  checkAssignablePermissions(req, body);
   if (!body.name) throw new ValidationError('Nombre obligatorio');
   try {
     const role = await auditedMutation(
@@ -115,6 +123,7 @@ export async function createRole(req: Request, res: Response) {
 export async function updateRole(req: Request, res: Response) {
   if (!isValidObjectId(req.params.id!)) throw new ValidationError('ID inválido');
   const body = fields(req.body);
+  checkAssignablePermissions(req, body);
   let oldValue: { name: string; permissions: typeof Role.prototype.permissions };
   const role = await auditedMutation(
     async (session) => {

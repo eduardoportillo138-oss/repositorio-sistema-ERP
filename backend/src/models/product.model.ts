@@ -6,6 +6,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface IProduct extends BaseDocument {
+  companyId: mongoose.Types.ObjectId;
   code: string;
   name: string;
   description?: string;
@@ -35,6 +36,7 @@ export interface IProductDocument extends IProduct, Document {}
 
 const productSchema = new Schema<IProductDocument>(
   {
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
     code: {
       type: String,
       required: [true, 'El código del producto es obligatorio'],

@@ -8,6 +8,8 @@ import { DashboardScreen } from './screens/DashboardScreen';
 import { UsersScreen } from './screens/UsersScreen';
 import { CustomersScreen } from './screens/CustomersScreen';
 import { SuppliersScreen } from './screens/SuppliersScreen';
+import { CategoriesScreen } from './screens/CategoriesScreen';
+import { UnitsScreen } from './screens/UnitsScreen';
 import { ERPLogo } from './components/ERPLogo';
 import { Input } from './components/Input';
 import { Modal } from './components/Modal';
@@ -38,6 +40,20 @@ export const navigationModules = [
     symbol: '◈',
     subtitle: 'Tu red de abastecimiento',
     permission: 'suppliers.view',
+  },
+  {
+    key: 'categories',
+    label: 'Categorías',
+    symbol: '▣',
+    subtitle: 'Organiza tu catálogo',
+    permission: 'categories.view',
+  },
+  {
+    key: 'units',
+    label: 'Unidades',
+    symbol: '◫',
+    subtitle: 'Unidades de medida',
+    permission: 'units.view',
   },
   {
     key: 'products',
@@ -342,6 +358,10 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
               <CustomersScreen />
             ) : current.key === 'suppliers' ? (
               <SuppliersScreen />
+            ) : current.key === 'categories' ? (
+              <CategoriesScreen />
+            ) : current.key === 'units' ? (
+              <UnitsScreen />
             ) : (
               <ModuleScreen key={current.key} module={current} />
             )}

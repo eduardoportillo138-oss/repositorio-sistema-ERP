@@ -156,6 +156,55 @@ test('Proveedores: crear, editar y desactivar desde web y vista móvil', async (
   await expect(page.getByText(name + ' editado', { exact: true }).first()).toBeVisible();
   await noOverflow(page);
 });
+test('Categorías: crear, editar y desactivar desde web y vista móvil', async ({ page }, info) => {
+  await login(page);
+  if ((page.viewportSize()?.width || 0) < 768)
+    await page.getByRole('button', { name: 'Más módulos' }).click();
+  await page.getByRole('button', { name: 'Categorías', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Categorías', exact: true })).toBeVisible();
+  const name = 'Categoría QA ' + info.project.name;
+  await page.getByRole('button', { name: 'Nueva categoría' }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill(name);
+  await page.getByLabel('Código', { exact: true }).fill('CAT_' + info.project.name.toUpperCase());
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Categoría creada.')).toBeVisible();
+  await page.getByRole('button', { name: 'Editar', exact: true }).click();
+  await page.getByLabel('Descripción', { exact: true }).fill('Descripción QA');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Categoría actualizada.')).toBeVisible();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).last().click();
+  await expect(page.getByText('Categoría desactivada.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
+  await page.getByRole('button', { name: 'Inactivos', exact: true }).click();
+  await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+  await noOverflow(page);
+});
+test('Unidades: crear, editar y desactivar desde web y vista móvil', async ({ page }, info) => {
+  await login(page);
+  if ((page.viewportSize()?.width || 0) < 768)
+    await page.getByRole('button', { name: 'Más módulos' }).click();
+  await page.getByRole('button', { name: 'Unidades', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Unidades', exact: true })).toBeVisible();
+  const name = 'Unidad QA ' + info.project.name;
+  await page.getByRole('button', { name: 'Nueva unidad' }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill(name);
+  await page.getByLabel('Código', { exact: true }).fill('UNT_' + info.project.name.toUpperCase());
+  await page.getByLabel('Símbolo', { exact: true }).fill('u');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Unidad creada.')).toBeVisible();
+  await page.getByRole('button', { name: 'Editar', exact: true }).click();
+  await page.getByLabel('Descripción', { exact: true }).fill('Unidad de prueba');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Unidad actualizada.')).toBeVisible();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).last().click();
+  await expect(page.getByText('Unidad desactivada.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
+  await page.getByRole('button', { name: 'Inactivos', exact: true }).click();
+  await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
+  await noOverflow(page);
+});
 test('logout revoca también la sesión en el servidor', async ({ page, request }) => {
   const pair = await login(page);
   if ((page.viewportSize()?.width || 0) < 768)

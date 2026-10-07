@@ -280,7 +280,7 @@ describe('Aislamiento de empresa', () => {
     await updateRole(
       {
         params: { id: roleId },
-        user: actor,
+        user: { ...actor, permissions: ['users.view', 'users.create'] },
         body: { permissions: ['users.view', 'users.create'] },
         ip: '',
         get: () => '',

@@ -879,11 +879,19 @@ describe('Core HTTP con MongoDB real y temporal', () => {
     });
     expect((await auditService.getLogs({ companyId: companyB })).data).toHaveLength(0);
   });
+  test.each(['customers', 'suppliers', 'categories', 'units'])(
+    '%s implementado valida el alta', async (module) => {
+      const pair = (await login()).body.data;
+      const response = await request(app)
+        .post('/api/v1/' + module)
+        .set(auth(pair.accessToken))
+        .send({});
+      expect(response.status).toBe(400);
+      expect(response.body).toMatchObject({ success: false,
+        error: { code: 'VALIDATION_ERROR' } });
+    },
+  );
   test.each([
-    'customers',
-    'suppliers',
-    'categories',
-    'units',
     'products',
     'warehouses',
     'inventory',
