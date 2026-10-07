@@ -263,6 +263,42 @@ export interface CreatePurchaseRequest {
 export type UpdatePurchaseRequest = Partial<CreatePurchaseRequest>;
 export type SaleListResponse = ApiEnvelope<SaleResponse[]> & { pagination: PaginationResponse };
 export type PurchaseListResponse = ApiEnvelope<PurchaseResponse[]> & { pagination: PaginationResponse };
+export type FinanceAccountKind = 'receivable' | 'payable';
+export interface FinanceAccountResponse {
+  id: string;
+  branchId: string;
+  sourceId: string;
+  partyId: string;
+  amountMinor: number;
+  paidMinor: number;
+  balanceMinor: number;
+  status: 'pending' | 'partial' | 'paid' | 'cancelled';
+  createdAt: string;
+  updatedAt: string;
+}
+export interface PaymentResponse {
+  id: string;
+  accountType: FinanceAccountKind;
+  accountId: string;
+  branchId: string;
+  amountMinor: number;
+  paymentMethod: string;
+  reference?: string;
+  notes?: string;
+  createdAt: string;
+}
+export interface CreatePaymentRequest {
+  accountType: FinanceAccountKind;
+  accountId: string;
+  amountMinor: number;
+  paymentMethod: string;
+  reference?: string;
+  notes?: string;
+}
+export type FinanceAccountListResponse = ApiEnvelope<FinanceAccountResponse[]> &
+  { pagination: PaginationResponse };
+export type PaymentListResponse = ApiEnvelope<PaymentResponse[]> &
+  { pagination: PaginationResponse };
 export interface BranchResponse {
   _id: string;
   name: string;
@@ -602,6 +638,23 @@ export class ApiClient {
   }
   cancelPurchase(id: string): Promise<ApiEnvelope<PurchaseResponse>> {
     return this.patch<ApiEnvelope<PurchaseResponse>>('/purchases/' + encodeURIComponent(id) + '/cancel');
+  }
+  listFinanceAccounts(kind: FinanceAccountKind,
+    params: { page?: number; limit?: number; status?: FinanceAccountResponse['status'] } = {}):
+    Promise<FinanceAccountListResponse> {
+    return this.get<FinanceAccountListResponse>(
+      '/finance/' + (kind === 'receivable' ? 'receivables' : 'payables'), { params });
+  }
+  getFinanceAccount(kind: FinanceAccountKind, id: string): Promise<ApiEnvelope<FinanceAccountResponse>> {
+    return this.get<ApiEnvelope<FinanceAccountResponse>>(
+      '/finance/' + (kind === 'receivable' ? 'receivables' : 'payables') + '/' + encodeURIComponent(id));
+  }
+  listPayments(params: { page?: number; limit?: number; accountType?: FinanceAccountKind;
+    accountId?: string } = {}): Promise<PaymentListResponse> {
+    return this.get<PaymentListResponse>('/finance/payments', { params });
+  }
+  recordPayment(request: CreatePaymentRequest): Promise<ApiEnvelope<PaymentResponse>> {
+    return this.post<ApiEnvelope<PaymentResponse>>('/finance/payments', request);
   }
   listBranches(params: { page?: number; limit?: number } = {}): Promise<
     ApiEnvelope<BranchResponse[]> & { pagination: PaginationResponse }> {

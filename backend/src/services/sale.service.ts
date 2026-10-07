@@ -8,6 +8,7 @@ import { saleRepository } from '../repositories/sale.repository';
 import { auditedMutation } from './auditedMutation';
 import { availableStock, appendInventoryMovement, lockInventoryProduct } from './inventory.service';
 import { calculateOrder, PriceLine } from './order-calculation';
+import { createSaleReceivable, cancelSaleReceivable } from './finance.service';
 import { Actor } from './user.service';
 import { ConflictError, InventoryInsufficientError, NotFoundError,
   ValidationError } from '../errors/AppError';
@@ -196,6 +197,7 @@ export const saleService = {
       sale.status = 'confirmed'; sale.confirmedBy = new mongoose.Types.ObjectId(actor.userId);
       sale.confirmedAt = new Date();
       await saleRepository.save(sale, session);
+      await createSaleReceivable(sale, session);
       return publicSale(sale);
     }, (sale) => audit(actor, 'confirm', sale.id, ip, device,
       { status: sale.status, totalMinor: sale.totalMinor }));
@@ -207,6 +209,7 @@ export const saleService = {
       if (!sale) throw new NotFoundError('Venta');
       if (sale.status === 'cancelled') throw new ConflictError('Venta ya cancelada');
       if (sale.status === 'confirmed') {
+        if (sale.totalMinor > 0) await cancelSaleReceivable(actor.companyId, saleId, session);
         const sorted = [...sale.items].sort((a, b) => String(a.productId).localeCompare(String(b.productId)));
         for (const item of sorted)
           await lockInventoryProduct(actor.companyId, String(item.productId), session, true);

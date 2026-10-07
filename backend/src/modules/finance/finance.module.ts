@@ -1,33 +1,15 @@
-// ============================================
-// Módulo de Finanzas
-// ============================================
-
 import { Router } from 'express';
-import {
-  getFinances,
-  getInvoice,
-  createInvoice,
-  getAccountsReceivable,
-  getAccountsPayable,
-} from '../../controllers/finance.controller';
 import { authenticateToken, checkPermission } from '../../middlewares/auth';
-import { validate } from '../../middlewares/validators';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { listReceivables, getReceivable, listPayables, getPayable,
+  listPayments, recordPayment } from '../../controllers/finance.controller';
 
 const router = Router();
-
 router.use(authenticateToken);
-
-// Cuentas por cobrar
-router.get('/accounts-receivable', checkPermission('finances.view'), getAccountsReceivable);
-
-// Cuentas por pagar
-router.get('/accounts-payable', checkPermission('finances.view'), getAccountsPayable);
-
-// Facturación
-router.get('/invoices', checkPermission('finances.view'), getInvoice);
-router.post('/invoices', checkPermission('finances.create'), createInvoice);
-
-// Finanzas generales
-router.get('/', checkPermission('finances.view'), getFinances);
-
+router.get('/receivables', checkPermission('finances.view'), asyncHandler(listReceivables));
+router.get('/receivables/:id', checkPermission('finances.view'), asyncHandler(getReceivable));
+router.get('/payables', checkPermission('finances.view'), asyncHandler(listPayables));
+router.get('/payables/:id', checkPermission('finances.view'), asyncHandler(getPayable));
+router.get('/payments', checkPermission('finances.view'), asyncHandler(listPayments));
+router.post('/payments', checkPermission('finances.create'), asyncHandler(recordPayment));
 export const financeRouter = router;

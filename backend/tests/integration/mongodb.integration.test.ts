@@ -893,7 +893,6 @@ describe('Core HTTP con MongoDB real y temporal', () => {
     },
   );
   test.each([
-    'finance',
     'reports',
     'hr',
     'projects',
@@ -906,6 +905,19 @@ describe('Core HTTP con MongoDB real y temporal', () => {
       .send({});
     expect(response.status).toBe(501);
     expect(response.body).toMatchObject({ success: false, error: { code: 'NOT_IMPLEMENTED' } });
+  });
+  test('finanzas lista cuentas reales y valida pagos', async () => {
+    const pair = (await login()).body.data;
+    const listed = await request(app).get('/api/v1/finance/receivables')
+      .set(auth(pair.accessToken));
+    expect(listed.status).toBe(200);
+    expect(listed.body).toMatchObject({ success: true, data: [],
+      pagination: { page: 1, limit: 20, total: 0, pages: 0 } });
+    const invalid = await request(app).post('/api/v1/finance/payments')
+      .set(auth(pair.accessToken)).send({});
+    expect(invalid.status).toBe(400);
+    expect(invalid.body).toMatchObject({ success: false,
+      error: { code: 'VALIDATION_ERROR' } });
   });
   test('inventario expone consulta y no permite alta directa de stock', async () => {
     const pair = (await login()).body.data;

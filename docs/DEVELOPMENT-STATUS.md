@@ -6,13 +6,16 @@ Clientes, proveedores, categorías, unidades, productos y almacenes tienen API,
 cliente tipado e interfaz compartida con CRUD, RBAC, auditoría, aislamiento de
 empresa y pruebas. Inventario tiene ledger de movimientos, ajustes y
 transferencias atómicas, interfaz compartida y pruebas de concurrencia. La
-suite local pasó 20 suites y 141 pruebas; 39 E2E de catálogo, inventario y
+suite local pasó 20 suites y 144 pruebas; 39 E2E de catálogo, inventario y
 órdenes pasaron en tamaños desktop, tablet y móvil. `assembleDebug` produjo un APK
 debug. Los flujos nativos todavía requieren prueba en dispositivo.
 
 Ventas y compras ya tienen borradores, confirmación/cancelación transaccional,
-interfaz compartida y pruebas de integración/E2E. Finanzas, HR, proyectos,
-CRM, notificaciones, reportes y settings siguen pendientes. Atlas y el
+interfaz compartida y pruebas de integración/E2E. Finanzas conecta cuentas y
+pagos enteros a ambas órdenes con bloqueo de cancelación tras pagar; el flujo
+web/móvil pasó E2E en tres tamaños. HR, proyectos, CRM, notificaciones,
+reportes y settings siguen pendientes. `assembleDebug` también pasó tras
+finanzas. Atlas y el
 despliegue real no se han modificado.
 La migración controlada de índices de productos y permisos nuevos debe
 revisarse antes de activar los módulos en producción. Véanse

@@ -14,6 +14,8 @@ import { Warehouse } from '../../src/models/warehouse.model';
 import { Product } from '../../src/models/product.model';
 import { Customer } from '../../src/models/customer.model';
 import { Sale } from '../../src/models/sale.model';
+import { AccountsReceivable } from '../../src/models/accountsReceivable.model';
+import { Payment } from '../../src/models/payment.model';
 import { InventoryMovement } from '../../src/models/inventoryMovement.model';
 import { AuditLog } from '../../src/models/auditLog.model';
 
@@ -24,7 +26,7 @@ let companyA: string, companyB: string, warehouseA: string, warehouseB: string;
 let customerA: string, customerB: string, productA: string;
 const cache = path.resolve(__dirname, '../../../node_modules/.cache/mongodb-memory-server');
 const permissions = ['sales.view', 'sales.create', 'sales.edit', 'sales.confirm',
-  'sales.cancel', 'inventory.view', 'inventory.adjust'];
+  'sales.cancel', 'inventory.view', 'inventory.adjust', 'finances.view', 'finances.create'];
 const auth = (value: string) => ({ Authorization: 'Bearer ' + value });
 async function token(email: string, companyId: string) {
   const response = await request(app).post('/api/v1/auth/login').send({ email, password, companyId });
@@ -50,6 +52,7 @@ beforeAll(async () => {
   await connectDatabase();
   await Promise.all([Company.init(), Role.init(), User.init(), Session.init(), Branch.init(),
     Warehouse.init(), Product.init(), Customer.init(), Sale.init(),
+    AccountsReceivable.init(), Payment.init(),
     InventoryMovement.init(), AuditLog.init()]);
 }, 120000);
 afterAll(async () => { await disconnectDatabase(); if (mongo) await mongo.stop(); });
@@ -57,6 +60,7 @@ beforeEach(async () => {
   await Promise.all([Company.deleteMany({}), Role.deleteMany({}), User.deleteMany({}),
     Session.deleteMany({}), Branch.deleteMany({}), Warehouse.deleteMany({}),
     Product.deleteMany({}), Customer.deleteMany({}), Sale.deleteMany({}),
+    AccountsReceivable.deleteMany({}), Payment.deleteMany({}),
     InventoryMovement.deleteMany({}), AuditLog.deleteMany({})]);
   const a = await Company.create({ name: 'Empresa A', legalName: 'A', taxId: 'A-TEST',
     email: 'a@example.test', country: 'MX' });
@@ -106,6 +110,7 @@ test('borrador, totales enteros, confirmación, cancelación e inventario', asyn
     .set(auth(access));
   expect(confirmed.status).toBe(200);
   expect(confirmed.body.data.status).toBe('confirmed');
+  expect((await AccountsReceivable.findOne({ saleId, companyId: companyA }))?.balanceMinor).toBe(2900);
   expect((await request(app).get('/api/v1/inventory/product/' + productA)
     .set(auth(access))).body.data.quantityMilli).toBe(0);
   expect((await request(app).put('/api/v1/sales/' + saleId).set(auth(access))
@@ -114,6 +119,7 @@ test('borrador, totales enteros, confirmación, cancelación e inventario', asyn
     .set(auth(access));
   expect(cancelled.status).toBe(200);
   expect(cancelled.body.data.status).toBe('cancelled');
+  expect((await AccountsReceivable.findOne({ saleId, companyId: companyA }))?.status).toBe('cancelled');
   expect((await request(app).get('/api/v1/inventory/product/' + productA)
     .set(auth(access))).body.data.quantityMilli).toBe(2000);
   expect((await request(app).patch('/api/v1/sales/' + saleId + '/cancel')
@@ -130,6 +136,56 @@ test('saldo insuficiente revierte confirmación y movimientos', async () => {
     .set(auth(access))).status).toBe(409);
   expect((await Sale.findById(saleId))?.status).toBe('draft');
   expect(await InventoryMovement.countDocuments({ referenceType: 'sale' })).toBe(0);
+});
+test('cuenta por cobrar: pago parcial, total, aislamiento y cancelación protegida', async () => {
+  const access = await token('a@example.test', companyA);
+  const outsider = await token('b@example.test', companyB);
+  const viewer = await token('viewer@example.test', companyA);
+  await seedStock(access);
+  const created = await request(app).post('/api/v1/sales').set(auth(access)).send(draft());
+  const saleId = created.body.data.id as string;
+  expect((await request(app).patch('/api/v1/sales/' + saleId + '/confirm')
+    .set(auth(access))).status).toBe(200);
+  const list = await request(app).get('/api/v1/finance/receivables?limit=1').set(auth(access));
+  expect(list.status).toBe(200);
+  expect(list.body.pagination.total).toBe(1);
+  const accountId = list.body.data[0].id as string;
+  expect(list.body.data[0]).toMatchObject({ sourceId: saleId, amountMinor: 2900,
+    balanceMinor: 2900, status: 'pending' });
+  expect((await request(app).get('/api/v1/finance/receivables/' + accountId)
+    .set(auth(outsider))).status).toBe(404);
+  expect((await request(app).post('/api/v1/finance/payments').set(auth(outsider))
+    .send({ accountType: 'receivable', accountId, amountMinor: 100,
+      paymentMethod: 'transferencia' })).status).toBe(404);
+  expect((await request(app).post('/api/v1/finance/payments').set(auth(viewer))
+    .send({ accountType: 'receivable', accountId, amountMinor: 100,
+      paymentMethod: 'transferencia' })).status).toBe(403);
+  expect((await request(app).post('/api/v1/finance/payments').set(auth(access))
+    .send({ accountType: 'receivable', accountId, amountMinor: 0.5,
+      paymentMethod: 'transferencia' })).status).toBe(400);
+  const partial = await request(app).post('/api/v1/finance/payments').set(auth(access))
+    .send({ accountType: 'receivable', accountId, amountMinor: 900,
+      paymentMethod: 'transferencia', reference: 'QA-1' });
+  expect(partial.status).toBe(201);
+  expect((await AccountsReceivable.findById(accountId)))
+    .toMatchObject({ paidMinor: 900, balanceMinor: 2000, status: 'partial' });
+  expect((await request(app).patch('/api/v1/sales/' + saleId + '/cancel')
+    .set(auth(access))).status).toBe(409);
+  expect((await Sale.findById(saleId))?.status).toBe('confirmed');
+  expect(await InventoryMovement.countDocuments({ referenceType: 'sale', referenceId: saleId })).toBe(1);
+  expect((await request(app).post('/api/v1/finance/payments').set(auth(access))
+    .send({ accountType: 'receivable', accountId, amountMinor: 2001,
+      paymentMethod: 'efectivo' })).status).toBe(409);
+  const full = await request(app).post('/api/v1/finance/payments').set(auth(access))
+    .send({ accountType: 'receivable', accountId, amountMinor: 2000,
+      paymentMethod: 'efectivo' });
+  expect(full.status).toBe(201);
+  expect((await AccountsReceivable.findById(accountId)))
+    .toMatchObject({ paidMinor: 2900, balanceMinor: 0, status: 'paid' });
+  expect((await request(app).get('/api/v1/finance/payments?accountType=receivable&accountId=' + accountId)
+    .set(auth(access))).body.pagination.total).toBe(2);
+  expect(await AuditLog.countDocuments({ companyId: companyA, module: 'finances',
+    action: 'pay' })).toBe(2);
 });
 test('aísla tenant, referencias ajenas y rechaza totales enviados', async () => {
   const accessA = await token('a@example.test', companyA);
@@ -148,6 +204,24 @@ test('aísla tenant, referencias ajenas y rechaza totales enviados', async () =>
   expect((await request(app).put('/api/v1/sales/' + saleId).set(auth(accessB))
     .send({ notes: 'Ajeno' })).status).toBe(404);
   expect((await request(app).get('/api/v1/sales').set(auth(accessB))).body.data).toEqual([]);
+});
+test('pagos simultáneos no cobran dos veces el mismo saldo', async () => {
+  const access = await token('a@example.test', companyA);
+  await seedStock(access);
+  const created = await request(app).post('/api/v1/sales').set(auth(access)).send(draft());
+  const saleId = created.body.data.id as string;
+  expect((await request(app).patch('/api/v1/sales/' + saleId + '/confirm')
+    .set(auth(access))).status).toBe(200);
+  const account = await AccountsReceivable.findOne({ saleId, companyId: companyA });
+  const accountId = String(account!._id);
+  const attempts = await Promise.all([1, 2].map(() =>
+    request(app).post('/api/v1/finance/payments').set(auth(access))
+      .send({ accountType: 'receivable', accountId, amountMinor: 2900,
+        paymentMethod: 'efectivo' })));
+  expect(attempts.map((result) => result.status).sort()).toEqual([201, 409]);
+  expect((await AccountsReceivable.findById(accountId)))
+    .toMatchObject({ paidMinor: 2900, balanceMinor: 0, status: 'paid' });
+  expect(await Payment.countDocuments({ companyId: companyA, accountId })).toBe(1);
 });
 test('permisos, búsqueda, paginación y transición inválida', async () => {
   expect((await request(app).get('/api/v1/sales')).status).toBe(401);

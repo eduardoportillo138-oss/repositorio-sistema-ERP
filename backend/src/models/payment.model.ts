@@ -1,47 +1,30 @@
-// ============================================
-// Modelo de Pago
-// ============================================
+import mongoose, { Document, Schema } from 'mongoose';
 
-import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
-
-export interface IPayment extends BaseDocument {
-  invoiceId?: mongoose.Types.ObjectId;
-  purchaseOrderId?: mongoose.Types.ObjectId;
-  customerId?: mongoose.Types.ObjectId;
-  supplierId?: mongoose.Types.ObjectId;
-  amount: number;
+export interface IPaymentDocument extends Document {
+  companyId: mongoose.Types.ObjectId;
+  branchId: mongoose.Types.ObjectId;
+  accountType: 'receivable' | 'payable';
+  accountId: mongoose.Types.ObjectId;
+  amountMinor: number;
   paymentMethod: string;
   reference?: string;
   notes?: string;
-  status: DocumentStatus;
+  createdBy: mongoose.Types.ObjectId;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface IPaymentDocument extends IPayment, Document {}
-
-const paymentSchema = new Schema<IPaymentDocument>(
-  {
-    invoiceId: { type: Schema.Types.ObjectId, ref: 'Invoice' },
-    purchaseOrderId: { type: Schema.Types.ObjectId, ref: 'PurchaseOrder' },
-    customerId: { type: Schema.Types.ObjectId, ref: 'Customer' },
-    supplierId: { type: Schema.Types.ObjectId, ref: 'Supplier' },
-    amount: { type: Number, required: [true, 'El monto es obligatorio'], min: 0 },
-    paymentMethod: { type: String, required: true, trim: true },
-    reference: { type: String, trim: true },
-    notes: { type: String, trim: true, maxlength: 500 },
-    status: {
-      type: String,
-      enum: ['active', 'inactive', 'cancelled'],
-      default: 'active',
-      index: true,
-    },
-  },
-  { timestamps: true, collection: 'payments' },
-);
-
-paymentSchema.index({ companyId: 1, invoiceId: 1 });
-paymentSchema.index({ companyId: 1, customerId: 1 });
-paymentSchema.index({ companyId: 1, supplierId: 1 });
-paymentSchema.index({ companyId: 1, createdAt: -1 });
-
-export const Payment = mongoose.model<IPaymentDocument>('Payment', paymentSchema);
+const schema = new Schema<IPaymentDocument>({
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+  branchId: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
+  accountType: { type: String, required: true, enum: ['receivable', 'payable'] },
+  accountId: { type: Schema.Types.ObjectId, required: true },
+  amountMinor: { type: Number, required: true, min: 1, validate: Number.isSafeInteger },
+  paymentMethod: { type: String, required: true, trim: true, maxlength: 60 },
+  reference: { type: String, trim: true, maxlength: 120 },
+  notes: { type: String, trim: true, maxlength: 500 },
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+}, { timestamps: true, collection: 'payments' });
+schema.index({ companyId: 1, accountType: 1, accountId: 1, createdAt: -1 });
+schema.index({ companyId: 1, createdAt: -1 });
+export const Payment = mongoose.model<IPaymentDocument>('Payment', schema);

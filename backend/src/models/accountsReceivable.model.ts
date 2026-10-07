@@ -1,55 +1,31 @@
-// ============================================
-// Modelo de Cuentas por Cobrar
-// ============================================
+import mongoose, { Document, Schema } from 'mongoose';
 
-import mongoose, { Schema, Document } from 'mongoose';
-import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
-
-export interface IAccountsReceivable extends BaseDocument {
-  invoiceId: mongoose.Types.ObjectId;
+export type AccountStatus = 'pending' | 'partial' | 'paid' | 'cancelled';
+export interface IAccountsReceivableDocument extends Document {
+  companyId: mongoose.Types.ObjectId;
+  branchId: mongoose.Types.ObjectId;
+  saleId: mongoose.Types.ObjectId;
   customerId: mongoose.Types.ObjectId;
-  saleId?: mongoose.Types.ObjectId;
-  amount: number;
-  paidAmount: number;
-  balance: number;
-  dueDate: Date;
-  status: DocumentStatus;
+  amountMinor: number;
+  paidMinor: number;
+  balanceMinor: number;
+  status: AccountStatus;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-export interface IAccountsReceivableDocument extends IAccountsReceivable, Document {}
-
-const accountsReceivableSchema = new Schema<IAccountsReceivableDocument>(
-  {
-    invoiceId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Invoice',
-      required: [true, 'La factura es obligatoria'],
-    },
-    customerId: {
-      type: Schema.Types.ObjectId,
-      ref: 'Customer',
-      required: [true, 'El cliente es obligatorio'],
-    },
-    saleId: { type: Schema.Types.ObjectId, ref: 'SalesOrder' },
-    amount: { type: Number, required: [true, 'El monto es obligatorio'], min: 0 },
-    paidAmount: { type: Number, default: 0, min: 0 },
-    balance: { type: Number, required: true, min: 0 },
-    dueDate: { type: Date, required: true },
-    status: {
-      type: String,
-      enum: ['active', 'inactive', 'cancelled', 'overdue', 'paid'],
-      default: 'active',
-      index: true,
-    },
-  },
-  { timestamps: true, collection: 'accountsReceivable' },
-);
-
-accountsReceivableSchema.index({ companyId: 1, customerId: 1, status: 1 });
-accountsReceivableSchema.index({ companyId: 1, dueDate: 1 });
-accountsReceivableSchema.index({ companyId: 1, status: 1, balance: 1 });
-
-export const AccountsReceivable = mongoose.model<IAccountsReceivableDocument>(
-  'AccountsReceivable',
-  accountsReceivableSchema,
-);
+const schema = new Schema<IAccountsReceivableDocument>({
+  companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
+  branchId: { type: Schema.Types.ObjectId, ref: 'Branch', required: true },
+  saleId: { type: Schema.Types.ObjectId, ref: 'Sale', required: true },
+  customerId: { type: Schema.Types.ObjectId, ref: 'Customer', required: true },
+  amountMinor: { type: Number, required: true, min: 1, validate: Number.isSafeInteger },
+  paidMinor: { type: Number, required: true, default: 0, min: 0, validate: Number.isSafeInteger },
+  balanceMinor: { type: Number, required: true, min: 0, validate: Number.isSafeInteger },
+  status: { type: String, required: true,
+    enum: ['pending', 'partial', 'paid', 'cancelled'], default: 'pending' },
+}, { timestamps: true, collection: 'accountsReceivable', optimisticConcurrency: true });
+schema.index({ companyId: 1, saleId: 1 }, { unique: true, partialFilterExpression: { saleId: { $exists: true } } });
+schema.index({ companyId: 1, status: 1, createdAt: -1 });
+schema.index({ companyId: 1, customerId: 1 });
+export const AccountsReceivable = mongoose.model<IAccountsReceivableDocument>('AccountsReceivable', schema);

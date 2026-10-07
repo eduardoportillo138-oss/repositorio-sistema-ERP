@@ -417,6 +417,23 @@ test('Compra recibida aumenta stock; venta y cancelación lo revierten', async (
   await expect(page.getByText('Venta cancelada.')).toBeVisible();
   const stockRestored = await request.get(api + '/inventory/product/' + productId, { headers });
   expect((await stockRestored.json()).data.quantityMilli).toBe(2000);
+  await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
+  if ((page.viewportSize()?.width || 0) < 768)
+    await page.getByRole('button', { name: 'Más módulos' }).click();
+  const financeNav = page.getByRole('button', { name: 'Finanzas', exact: true });
+  await ((page.viewportSize()?.width || 0) < 768 ? financeNav.last() : financeNav.first()).click();
+  await expect(page.getByRole('heading', { name: 'Finanzas', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Cuentas por pagar' }).click();
+  await page.getByRole('button', { name: 'pending' }).click();
+  await expect(page.getByRole('button', { name: 'Ver detalle' }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Ver detalle' }).first().click();
+  await page.getByRole('button', { name: 'Nuevo pago' }).click();
+  await page.getByLabel('Monto del pago').fill('1.00');
+  await page.getByLabel('Método de pago').fill('transferencia');
+  await page.getByRole('button', { name: 'Registrar pago' }).click();
+  await expect(page.getByText('Pago registrado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Pagos', exact: true }).click();
+  await expect(page.getByText('transferencia · Sin referencia').first()).toBeVisible();
   expect(warehouseId).toBeTruthy();
   await noOverflow(page);
 });

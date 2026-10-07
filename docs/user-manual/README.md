@@ -53,9 +53,19 @@ recibida solo si aún hay existencias suficientes para revertirla; en caso
 contrario solicita revisión de negocio. Los importes se muestran en centavos
 convertidos a dos decimales.
 
+## Finanzas
+
+Las ventas confirmadas y compras recibidas con importe positivo generan una
+cuenta pendiente. En Finanzas consulta cuentas por cobrar, cuentas por pagar
+y pagos, filtra por estado y abre una cuenta para ver su saldo e historial.
+Con `finances.create` puedes registrar un pago con monto, método y referencia
+opcional. El monto no puede exceder el saldo. Una venta o compra con pagos
+registrados no puede cancelarse directamente: requiere el procedimiento de
+devolución o conciliación definido por la empresa.
+
 ## Negocio pendiente
 
-Finanzas, reportes, HR, proyectos y CRM aún no tienen flujos
+Reportes, HR, proyectos y CRM aún no tienen flujos
 operativos. La interfaz informa disponibilidad y la API responde 501.
 
 Consulta [estado por módulo](../DEVELOPMENT-STATUS.md) y [capturas](../qa/screenshots/README.md).

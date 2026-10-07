@@ -72,6 +72,20 @@ total con enteros; rechaza totales enviados por el cliente. La confirmación
 se hace dentro de una transacción con movimientos y auditoría. Véase
 [flujo de órdenes](ORDERS.md).
 
+## Finanzas
+
+Al confirmar una venta o recibir una compra con total positivo, la misma
+transacción crea una cuenta por cobrar o pagar, respectivamente. `GET
+/finance/receivables`, `GET /finance/payables` y `GET /finance/payments`
+devuelven listados paginados por empresa. `GET
+/finance/receivables/:id` y `GET /finance/payables/:id` muestran detalle.
+`POST /finance/payments` registra un pago con `accountType` (`receivable` o
+`payable`), `accountId`, `amountMinor` entero positivo, `paymentMethod`,
+`reference` y `notes` opcionales. Requiere `finances.create`; consultas
+requieren `finances.view`. La cuenta pasa de `pending` a `partial` o `paid`.
+No se permite pagar más que el saldo ni cancelar una orden que ya tiene pagos.
+Véase [diseño financiero](FINANCE.md).
+
 Listado: {success:true,data:[],pagination:{page,limit,total,pages}}. Recurso individual: {success:true,data:resource}. No interpretar una página vacía como placeholder: el Core consulta datos reales.
 
 ## Errores
@@ -84,7 +98,7 @@ HTTP 400 validación/JSON inválido, 401 autenticación/sesión, 403 permiso, 40
 
 ## Negocio pendiente
 
-`/finance`, `/reports`, `/hr`, `/projects`, `/crm`,
+`/reports`, `/hr`, `/projects`, `/crm`,
 `/notifications` y `/settings` aún responden 501 tras autenticación.
 
 ```json

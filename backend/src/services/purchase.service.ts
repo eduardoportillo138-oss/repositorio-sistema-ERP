@@ -8,6 +8,7 @@ import { purchaseRepository } from '../repositories/purchase.repository';
 import { auditedMutation } from './auditedMutation';
 import { availableStock, appendInventoryMovement, lockInventoryProduct } from './inventory.service';
 import { calculateOrder, PriceLine } from './order-calculation';
+import { createPurchasePayable, cancelPurchasePayable } from './finance.service';
 import { Actor } from './user.service';
 import { ConflictError, InventoryInsufficientError, NotFoundError,
   ValidationError } from '../errors/AppError';
@@ -189,6 +190,7 @@ export const purchaseService = {
       purchase.status = 'received'; purchase.receivedBy = new mongoose.Types.ObjectId(actor.userId);
       purchase.receivedAt = new Date();
       await purchaseRepository.save(purchase, session);
+      await createPurchasePayable(purchase, session);
       return publicPurchase(purchase);
     }, (purchase) => audit(actor, 'confirm', purchase.id, ip, device,
       { status: purchase.status, totalMinor: purchase.totalMinor }));
@@ -200,6 +202,7 @@ export const purchaseService = {
       if (!purchase) throw new NotFoundError('Compra');
       if (purchase.status === 'cancelled') throw new ConflictError('Compra ya cancelada');
       if (purchase.status === 'received') {
+        if (purchase.totalMinor > 0) await cancelPurchasePayable(actor.companyId, purchaseId, session);
         const sorted = [...purchase.items].sort((a, b) => String(a.productId).localeCompare(String(b.productId)));
         for (const item of sorted) {
           const product = await lockInventoryProduct(actor.companyId, String(item.productId), session, true);

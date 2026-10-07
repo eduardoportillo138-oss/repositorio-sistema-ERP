@@ -14,6 +14,8 @@ import { Warehouse } from '../../src/models/warehouse.model';
 import { Product } from '../../src/models/product.model';
 import { Supplier } from '../../src/models/supplier.model';
 import { Purchase } from '../../src/models/purchase.model';
+import { AccountsPayable } from '../../src/models/accountsPayable.model';
+import { Payment } from '../../src/models/payment.model';
 import { InventoryMovement } from '../../src/models/inventoryMovement.model';
 import { AuditLog } from '../../src/models/auditLog.model';
 
@@ -24,7 +26,8 @@ let companyA: string, companyB: string, warehouseA: string, warehouseB: string;
 let supplierA: string, supplierB: string, productA: string;
 const cache = path.resolve(__dirname, '../../../node_modules/.cache/mongodb-memory-server');
 const permissions = ['purchases.view', 'purchases.create', 'purchases.edit',
-  'purchases.confirm', 'purchases.cancel', 'inventory.view', 'inventory.adjust'];
+  'purchases.confirm', 'purchases.cancel', 'inventory.view', 'inventory.adjust',
+  'finances.view', 'finances.create'];
 const auth = (value: string) => ({ Authorization: 'Bearer ' + value });
 async function token(email: string, companyId: string) {
   const response = await request(app).post('/api/v1/auth/login').send({ email, password, companyId });
@@ -44,6 +47,7 @@ beforeAll(async () => {
   await connectDatabase();
   await Promise.all([Company.init(), Role.init(), User.init(), Session.init(), Branch.init(),
     Warehouse.init(), Product.init(), Supplier.init(), Purchase.init(),
+    AccountsPayable.init(), Payment.init(),
     InventoryMovement.init(), AuditLog.init()]);
 }, 120000);
 afterAll(async () => { await disconnectDatabase(); if (mongo) await mongo.stop(); });
@@ -51,6 +55,7 @@ beforeEach(async () => {
   await Promise.all([Company.deleteMany({}), Role.deleteMany({}), User.deleteMany({}),
     Session.deleteMany({}), Branch.deleteMany({}), Warehouse.deleteMany({}),
     Product.deleteMany({}), Supplier.deleteMany({}), Purchase.deleteMany({}),
+    AccountsPayable.deleteMany({}), Payment.deleteMany({}),
     InventoryMovement.deleteMany({}), AuditLog.deleteMany({})]);
   const a = await Company.create({ name: 'Empresa A', legalName: 'A', taxId: 'A-TEST',
     email: 'a@example.test', country: 'MX' });
@@ -97,6 +102,7 @@ test('borrador, costo negociado, recepción y cancelación atómica', async () =
     .set(auth(access));
   expect(confirmed.status).toBe(200);
   expect(confirmed.body.data.status).toBe('received');
+  expect((await AccountsPayable.findOne({ purchaseId: id, companyId: companyA }))?.balanceMinor).toBe(2088);
   expect((await request(app).get('/api/v1/inventory/product/' + productA)
     .set(auth(access))).body.data.quantityMilli).toBe(2000);
   expect((await request(app).put('/api/v1/purchases/' + id).set(auth(access))
@@ -105,6 +111,7 @@ test('borrador, costo negociado, recepción y cancelación atómica', async () =
     .set(auth(access));
   expect(cancelled.status).toBe(200);
   expect(cancelled.body.data.status).toBe('cancelled');
+  expect((await AccountsPayable.findOne({ purchaseId: id, companyId: companyA }))?.status).toBe('cancelled');
   expect((await request(app).get('/api/v1/inventory/product/' + productA)
     .set(auth(access))).body.data.quantityMilli).toBe(0);
   expect(await InventoryMovement.countDocuments({ referenceType: 'purchase', referenceId: id })).toBe(2);
@@ -119,6 +126,31 @@ test('no revierte una compra recibida si su stock ya fue consumido', async () =>
   expect((await request(app).post('/api/v1/inventory/adjustments').set(auth(access))
     .send({ productId: productA, warehouseId: warehouseA, direction: 'out',
       quantityMilli: 1500, reason: 'Consumo' })).status).toBe(201);
+  expect((await request(app).patch('/api/v1/purchases/' + id + '/cancel')
+    .set(auth(access))).status).toBe(409);
+  expect((await Purchase.findById(id))?.status).toBe('received');
+  expect(await InventoryMovement.countDocuments({ referenceType: 'purchase', referenceId: id })).toBe(1);
+});
+test('cuenta por pagar se paga en centavos y bloquea cancelación de compra', async () => {
+  const access = await token('a@example.test', companyA);
+  const outsider = await token('b@example.test', companyB);
+  const created = await request(app).post('/api/v1/purchases').set(auth(access)).send(draft());
+  const id = created.body.data.id as string;
+  expect((await request(app).patch('/api/v1/purchases/' + id + '/confirm')
+    .set(auth(access))).status).toBe(200);
+  const list = await request(app).get('/api/v1/finance/payables').set(auth(access));
+  expect(list.body.pagination.total).toBe(1);
+  const accountId = list.body.data[0].id as string;
+  expect(list.body.data[0]).toMatchObject({ sourceId: id, amountMinor: 2088,
+    balanceMinor: 2088, status: 'pending' });
+  expect((await request(app).get('/api/v1/finance/payables/' + accountId)
+    .set(auth(outsider))).status).toBe(404);
+  const paid = await request(app).post('/api/v1/finance/payments').set(auth(access))
+    .send({ accountType: 'payable', accountId, amountMinor: 88,
+      paymentMethod: 'transferencia' });
+  expect(paid.status).toBe(201);
+  expect((await AccountsPayable.findById(accountId)))
+    .toMatchObject({ paidMinor: 88, balanceMinor: 2000, status: 'partial' });
   expect((await request(app).patch('/api/v1/purchases/' + id + '/cancel')
     .set(auth(access))).status).toBe(409);
   expect((await Purchase.findById(id))?.status).toBe('received');
