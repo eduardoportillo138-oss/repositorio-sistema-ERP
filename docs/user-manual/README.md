@@ -1,6 +1,7 @@
 # Manual de la interfaz disponible
 
-Actualizado: 2026-09-28. El ERP está en CORE HARDENING. Este manual describe la base web/preview; no acredita release Android/iOS.
+Actualizado: 2026-10-07. Este manual describe web y la interfaz compartida;
+el APK Android todavía requiere verificación de compilación y dispositivo.
 
 ## Entrar y salir
 
@@ -22,8 +23,24 @@ Con permisos suficientes puedes listar usuarios de tu empresa, crear uno con un 
 
 La gestión API de roles, empresas y sucursales existe, pero no se añadió una consola completa para esos flujos en esta entrega.
 
+## Catálogo e inventario
+
+Clientes, proveedores, categorías, unidades, productos y almacenes permiten
+listar, buscar, crear, consultar detalle, editar y desactivar según permisos.
+Cada lista muestra estados de carga, error y ausencia de datos. La
+desactivación solicita confirmación.
+
+Inventario muestra existencias por producto y almacén, y los movimientos
+recientes. Abre un producto para ver su desglose. Con `inventory.adjust`
+puedes registrar existencia inicial, entrada o salida; con
+`inventory.transfer`, mover cantidad entre dos almacenes. Los saldos se
+obtienen del historial de movimientos y una salida sin existencias se
+rechaza. Una existencia histórica pendiente de conciliación se informa como
+error; solicita revisión administrativa antes de registrar movimientos.
+
 ## Negocio pendiente
 
-Clientes, proveedores, categorías, unidades, productos, almacenes, inventario, ventas, compras, finanzas, reportes, HR, proyectos y CRM aún no tienen flujos operativos. La interfaz informa disponibilidad y la API responde 501.
+Ventas, compras, finanzas, reportes, HR, proyectos y CRM aún no tienen flujos
+operativos. La interfaz informa disponibilidad y la API responde 501.
 
 Consulta [estado por módulo](../DEVELOPMENT-STATUS.md) y [capturas](../qa/screenshots/README.md).

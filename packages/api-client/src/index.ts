@@ -155,6 +155,55 @@ export type UpdateProductRequest = Partial<CreateProductRequest>;
 export type ProductListResponse = ApiEnvelope<ProductResponse[]> & {
   pagination: PaginationResponse;
 };
+export interface InventoryStockResponse {
+  productId: string;
+  code: string;
+  name: string;
+  unitId: string;
+  stockMinimum: number;
+  quantityMilli: number;
+  lowStock: boolean;
+}
+export interface ProductStockResponse extends InventoryStockResponse {
+  warehouses: Array<{ warehouseId: string; warehouseName: string; quantityMilli: number }>;
+}
+export interface InventoryMovementResponse {
+  id: string;
+  productId: string;
+  warehouseId: string;
+  branchId?: string;
+  type: string;
+  quantityMilli: number;
+  unitCostMinor?: number;
+  referenceType?: string;
+  referenceId?: string;
+  reason: string;
+  notes?: string;
+  createdAt: string;
+}
+export type InventoryListResponse = ApiEnvelope<InventoryStockResponse[]> & {
+  pagination: PaginationResponse;
+};
+export type InventoryMovementListResponse = ApiEnvelope<InventoryMovementResponse[]> & {
+  pagination: PaginationResponse;
+};
+export interface CreateAdjustmentRequest {
+  productId: string;
+  warehouseId: string;
+  direction: 'initial' | 'in' | 'out';
+  quantityMilli: number;
+  reason: string;
+  notes?: string;
+  unitCostMinor?: number;
+}
+export interface CreateTransferRequest {
+  productId: string;
+  fromWarehouseId: string;
+  toWarehouseId: string;
+  quantityMilli: number;
+  reason: string;
+  notes?: string;
+}
 export interface BranchResponse {
   _id: string;
   name: string;
@@ -435,6 +484,27 @@ export class ApiClient {
   }
   deactivateProduct(id: string): Promise<ApiEnvelope<ProductResponse>> {
     return this.patch<ApiEnvelope<ProductResponse>>('/products/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listInventory(params: { page?: number; limit?: number; search?: string;
+    warehouseId?: string } = {}): Promise<InventoryListResponse> {
+    return this.get<InventoryListResponse>('/inventory', { params });
+  }
+  getProductStock(productId: string): Promise<ApiEnvelope<ProductStockResponse>> {
+    return this.get<ApiEnvelope<ProductStockResponse>>('/inventory/product/' + encodeURIComponent(productId));
+  }
+  listInventoryMovements(params: { page?: number; limit?: number; productId?: string;
+    warehouseId?: string; type?: string } = {}): Promise<InventoryMovementListResponse> {
+    return this.get<InventoryMovementListResponse>('/inventory/movements', { params });
+  }
+  createInventoryAdjustment(request: CreateAdjustmentRequest): Promise<
+    ApiEnvelope<{ movement: InventoryMovementResponse; quantityMilli: number }>> {
+    return this.post('/inventory/adjustments', request);
+  }
+  createInventoryTransfer(request: CreateTransferRequest): Promise<
+    ApiEnvelope<{ transferId: string; outgoing: InventoryMovementResponse;
+      incoming: InventoryMovementResponse; sourceStockMilli: number;
+      destinationStockMilli: number }>> {
+    return this.post('/inventory/transfers', request);
   }
   listBranches(params: { page?: number; limit?: number } = {}): Promise<
     ApiEnvelope<BranchResponse[]> & { pagination: PaginationResponse }> {

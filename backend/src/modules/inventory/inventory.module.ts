@@ -1,29 +1,14 @@
-// ============================================
-// Módulo de Inventario
-// ============================================
-
 import { Router } from 'express';
-import {
-  getInventory,
-  getInventoryMovement,
-  createInventoryMovement,
-  getWarehouses,
-} from '../../controllers/inventory.controller';
 import { authenticateToken, checkPermission } from '../../middlewares/auth';
-import { validate } from '../../middlewares/validators';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { getInventory, getProductStock, getInventoryMovements,
+  createAdjustment, createTransfer } from '../../controllers/inventory.controller';
 
 const router = Router();
-
 router.use(authenticateToken);
-
-// Inventario
-router.get('/', checkPermission('inventory.view'), getInventory);
-
-// Movimientos
-router.get('/movements', checkPermission('inventory.view'), getInventoryMovement);
-router.post('/movements', checkPermission('inventory.create'), createInventoryMovement);
-
-// Almacenes
-router.get('/warehouses', checkPermission('inventory.view'), getWarehouses);
-
+router.get('/', checkPermission('inventory.view'), asyncHandler(getInventory));
+router.get('/movements', checkPermission('inventory.view'), asyncHandler(getInventoryMovements));
+router.get('/product/:productId', checkPermission('inventory.view'), asyncHandler(getProductStock));
+router.post('/adjustments', checkPermission('inventory.adjust'), asyncHandler(createAdjustment));
+router.post('/transfers', checkPermission('inventory.transfer'), asyncHandler(createTransfer));
 export const inventoryRouter = router;

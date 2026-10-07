@@ -9,7 +9,7 @@ import { isValidObjectId } from './validation';
 
 const grants = PERMISSIONS.filter((permission) =>
   permission.startsWith('categories.') || permission.startsWith('units.') ||
-  permission.startsWith('warehouses.'));
+  permission.startsWith('warehouses.') || permission === 'inventory.transfer');
 
 /** An explicit, idempotent migration for one existing enterprise admin role. */
 export async function grantMasterDataPermissions(

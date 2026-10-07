@@ -145,6 +145,15 @@ Cada movimiento debe registrar:
 
 Esto permite reconstruir el historial de existencias y no depender de un stock mutable a ciegas.
 
+En el incremento local del 2026-10-07, los movimientos nuevos guardan
+`quantityMilli` entero (milésimas de unidad) y se suman por empresa, producto
+y almacén. `Product.stockRevision` es un bloqueo de escritura para serializar
+transacciones concurrentes; no representa existencias. El índice
+`companyId + productId + warehouseId + status` acelera el cálculo.
+`stockCurrent` heredado no se modifica ni se utiliza para el saldo.
+La [conciliación de datos históricos](../architecture/INVENTORY.md) es
+obligatoria si ese campo es distinto de cero o hay movimientos ambiguos.
+
 ## 8. Auditoría
 
 La colección auditLogs debe observarse como una fuente de evidencia administrativa.

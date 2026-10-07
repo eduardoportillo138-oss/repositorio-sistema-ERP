@@ -73,6 +73,7 @@ export const PERMISSIONS = [
   'inventory.create',
   'inventory.edit',
   'inventory.adjust',
+  'inventory.transfer',
   'sales.view',
   'sales.create',
   'sales.edit',

@@ -5,7 +5,9 @@
 import mongoose, { Schema, Document } from 'mongoose';
 import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
-export type MovementType = 'entry' | 'exit' | 'transfer' | 'adjustment' | 'return';
+export type MovementType = 'INITIAL' | 'PURCHASE' | 'SALE' | 'ADJUSTMENT_IN' |
+  'ADJUSTMENT_OUT' | 'TRANSFER_IN' | 'TRANSFER_OUT' | 'RETURN' |
+  'entry' | 'exit' | 'transfer' | 'adjustment' | 'return';
 
 export interface IInventoryMovement extends BaseDocument {
   productId: mongoose.Types.ObjectId;
@@ -14,6 +16,9 @@ export interface IInventoryMovement extends BaseDocument {
   warehouseId: mongoose.Types.ObjectId;
   type: MovementType;
   quantity: number;
+  /** Integer thousandths of a unit, authoritative for new movements. */
+  quantityMilli?: number;
+  unitCostMinor?: number;
   unitPrice?: number;
   referenceType?: string;
   referenceId?: string;
@@ -51,7 +56,9 @@ const inventoryMovementSchema = new Schema<IInventoryMovementDocument>(
     },
     type: {
       type: String,
-      enum: ['entry', 'exit', 'transfer', 'adjustment', 'return'],
+      enum: ['INITIAL', 'PURCHASE', 'SALE', 'ADJUSTMENT_IN', 'ADJUSTMENT_OUT',
+        'TRANSFER_IN', 'TRANSFER_OUT', 'RETURN',
+        'entry', 'exit', 'transfer', 'adjustment', 'return'],
       required: [true, 'El tipo de movimiento es obligatorio'],
       index: true,
     },
@@ -59,13 +66,16 @@ const inventoryMovementSchema = new Schema<IInventoryMovementDocument>(
       type: Number,
       required: [true, 'La cantidad es obligatoria'],
     },
+    quantityMilli: { type: Number, min: 1, validate: Number.isSafeInteger },
+    unitCostMinor: { type: Number, min: 0, validate: Number.isSafeInteger },
     unitPrice: {
       type: Number,
       min: 0,
     },
     referenceType: {
       type: String,
-      enum: ['salesOrder', 'purchaseOrder', 'invoice', 'transferOrder', 'adjustment', 'manual'],
+      enum: ['salesOrder', 'purchaseOrder', 'invoice', 'transferOrder',
+        'adjustment', 'manual', 'sale', 'purchase', 'transfer'],
     },
     referenceId: {
       type: String,
@@ -111,6 +121,8 @@ inventoryMovementSchema.index({ companyId: 1, productId: 1, type: 1, createdAt: 
 inventoryMovementSchema.index({ companyId: 1, warehouseId: 1, createdAt: -1 });
 inventoryMovementSchema.index({ referenceType: 1, referenceId: 1 });
 inventoryMovementSchema.index({ productId: 1, warehouseId: 1, createdAt: -1 });
+inventoryMovementSchema.index({ companyId: 1, productId: 1, warehouseId: 1, status: 1 });
+inventoryMovementSchema.index({ companyId: 1, createdAt: -1 });
 
 export const InventoryMovement = mongoose.model<IInventoryMovementDocument>(
   'InventoryMovement',

@@ -12,6 +12,7 @@ import { CategoriesScreen } from './screens/CategoriesScreen';
 import { UnitsScreen } from './screens/UnitsScreen';
 import { WarehousesScreen } from './screens/WarehousesScreen';
 import { ProductsScreen } from './screens/ProductsScreen';
+import { InventoryScreen } from './screens/InventoryScreen';
 import { ERPLogo } from './components/ERPLogo';
 import { Input } from './components/Input';
 import { Modal } from './components/Modal';
@@ -375,6 +376,8 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
               <WarehousesScreen />
             ) : current.key === 'products' ? (
               <ProductsScreen />
+            ) : current.key === 'inventory' ? (
+              <InventoryScreen />
             ) : (
               <ModuleScreen key={current.key} module={current} />
             )}

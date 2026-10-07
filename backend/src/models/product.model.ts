@@ -22,6 +22,8 @@ export interface IProduct extends BaseDocument {
   /** Legacy value; inventory movements are authoritative. */
   stockCurrent?: number;
   stockMinimum: number;
+  /** Write lock for serialized inventory movements; not a stock value. */
+  stockRevision?: number;
   stockMaximum?: number;
   barcode?: string;
   sku?: string;
@@ -99,6 +101,7 @@ const productSchema = new Schema<IProductDocument>(
       default: 0,
       min: 0,
     },
+    stockRevision: { type: Number, default: 0 },
     stockMaximum: {
       type: Number,
       min: 0,

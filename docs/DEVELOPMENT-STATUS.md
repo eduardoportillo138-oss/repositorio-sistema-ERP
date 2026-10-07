@@ -1,5 +1,24 @@
 # Estado de desarrollo del ERP
 
+## Incremento local del 2026-10-07
+
+Clientes, proveedores, categorías, unidades, productos y almacenes tienen API,
+cliente tipado e interfaz compartida con CRUD, RBAC, auditoría, aislamiento de
+empresa y pruebas. Inventario tiene ledger de movimientos, ajustes y
+transferencias atómicas, interfaz compartida y pruebas de concurrencia. La
+suite local pasó 18 suites y 133 pruebas; los E2E de catálogo e inventario
+pasaron en tamaños desktop, tablet y móvil. `assembleDebug` produjo un APK
+debug. Los flujos nativos todavía requieren prueba en dispositivo.
+
+Ventas, compras, finanzas, HR, proyectos, CRM, notificaciones, reportes y
+settings siguen pendientes. Atlas y el despliegue real no se han modificado.
+La migración controlada de índices de productos y permisos nuevos debe
+revisarse antes de activar los módulos en producción. Véanse
+[permisos](security/master-data-permissions.md) e
+[inventario](architecture/INVENTORY.md).
+
+## Corte anterior
+
 Actualizado: 2026-10-02. Commit base inspeccionado: `8685186`. **CURRENT PHASE: CORE HARDENING. Estado: `CORE_HARDENING_CODE_COMPLETE`, `EXTERNAL_GATES_PENDING`.** El cierre productivo requiere los gates externos descritos abajo.
 
 | Área                                                  | Estado                     | Evidencia / pendiente                                                                                                                                                                              |

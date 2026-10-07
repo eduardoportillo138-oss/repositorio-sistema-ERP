@@ -278,6 +278,61 @@ test('Productos: crear con categoría y unidad, editar y desactivar', async ({ p
   await expect(page.getByText(name, { exact: true }).first()).toBeVisible();
   await noOverflow(page);
 });
+test('Inventario: existencia inicial y transferencia conservan el total', async ({ page, request }, info) => {
+  const pair = await login(page);
+  const headers = { Authorization: 'Bearer ' + pair.accessToken };
+  const suffix = info.project.name.toUpperCase();
+  const api = 'http://127.0.0.1:3081/api/v1';
+  const branch = await request.post(api + '/branches', { headers,
+    data: { name: 'Sucursal Stock ' + suffix, code: 'STBR_' + suffix,
+      address: 'QA', city: 'CDMX', country: 'MX' } });
+  expect(branch.status()).toBe(201);
+  const branchId = (await branch.json()).data._id as string;
+  const warehouse1 = await request.post(api + '/warehouses', { headers,
+    data: { name: 'Origen Stock ' + suffix, code: 'STO_' + suffix, branchId } });
+  const warehouse2 = await request.post(api + '/warehouses', { headers,
+    data: { name: 'Destino Stock ' + suffix, code: 'STD_' + suffix, branchId } });
+  const category = await request.post(api + '/categories', { headers,
+    data: { name: 'Stock Cat ' + suffix, code: 'STC_' + suffix } });
+  const unit = await request.post(api + '/units', { headers,
+    data: { name: 'Stock Unit ' + suffix, code: 'STU_' + suffix, symbol: 'u' } });
+  for (const result of [warehouse1, warehouse2, category, unit]) expect(result.status()).toBe(201);
+  const productName = 'Inventario QA ' + info.project.name;
+  const product = await request.post(api + '/products', { headers,
+    data: { name: productName, code: 'STP_' + suffix,
+      categoryId: (await category.json()).data.id,
+      unitId: (await unit.json()).data.id, priceMinor: 1000 } });
+  expect(product.status()).toBe(201);
+  const inventoryNav = page.getByRole('button', { name: 'Inventario', exact: true });
+  await ((page.viewportSize()?.width || 0) < 768 ? inventoryNav.last() : inventoryNav.first()).click();
+  await expect(page.getByRole('heading', { name: 'Inventario', exact: true })).toBeVisible();
+  await page.getByLabel('Buscar productos en inventario').fill(productName);
+  await page.getByRole('button', { name: 'Buscar', exact: true }).click();
+  await expect(page.getByText(productName, { exact: true }).first()).toBeVisible();
+  await page.getByRole('button', { name: 'Ver existencias' }).click();
+  await page.getByRole('button', { name: 'Ajustar', exact: true }).click();
+  await page.getByRole('button', { name: 'Selecciona un almacén' }).click();
+  await page.getByRole('button', { name: 'Origen Stock ' + suffix }).click();
+  await page.getByRole('button', { name: 'Entrada' }).click();
+  await page.getByRole('button', { name: 'Existencia inicial' }).click();
+  await page.getByLabel('Cantidad').fill('10.250');
+  await page.getByLabel('Motivo').fill('Conteo QA');
+  await page.getByRole('button', { name: 'Registrar' }).click();
+  await expect(page.getByText('Ajuste registrado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Transferir', exact: true }).click();
+  await expect(page.getByRole('button', { name: 'Origen Stock ' + suffix })).toBeVisible();
+  await page.getByRole('button', { name: 'Selecciona el destino' }).click();
+  await page.getByRole('button', { name: 'Destino Stock ' + suffix }).click();
+  await page.getByLabel('Cantidad').fill('3');
+  await page.getByLabel('Motivo').fill('Reponer QA');
+  await page.getByRole('button', { name: 'Registrar' }).click();
+  await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
+  await expect(page.getByText('Transferencia registrada.')).toBeVisible();
+  await expect(page.getByText('Total: 10.25')).toBeVisible();
+  await expect(page.getByText('Origen Stock ' + suffix + ': 7.25')).toBeVisible();
+  await expect(page.getByText('Destino Stock ' + suffix + ': 3')).toBeVisible();
+  await noOverflow(page);
+});
 test('logout revoca también la sesión en el servidor', async ({ page, request }) => {
   const pair = await login(page);
   if ((page.viewportSize()?.width || 0) < 768)
