@@ -6,6 +6,7 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface INotification extends BaseDocument {
+  companyId: string;
   userId: string;
   title: string;
   message: string;
@@ -19,6 +20,7 @@ export interface INotificationDocument extends INotification, Document {}
 
 const notificationSchema = new Schema<INotificationDocument>(
   {
+    companyId: { type: String, required: true, index: true },
     userId: {
       type: String,
       required: [true, 'El userId es obligatorio'],
@@ -55,6 +57,7 @@ const notificationSchema = new Schema<INotificationDocument>(
 
 notificationSchema.index({ userId: 1, read: 1 });
 notificationSchema.index({ userId: 1, type: 1, createdAt: -1 });
+notificationSchema.index({ companyId: 1, userId: 1, createdAt: -1 });
 
 export const Notification = mongoose.model<INotificationDocument>(
   'Notification',

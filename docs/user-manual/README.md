@@ -15,7 +15,10 @@ Desktop muestra sidebar, tablet una barra compacta y móvil navegación inferior
 
 ## Dashboard
 
-Las tarjetas y gráficas muestran “Próximamente” mientras el backend correspondiente no exista. Un guion no significa cero ventas ni stock. Notificaciones/configuración aún no ofrecen funcionalidad empresarial completa.
+El dashboard consulta ventas confirmadas y compras recibidas del periodo, así
+como conteos de catálogo, CRM y saldos de cartera. Las métricas sin permiso se
+ocultan; las que no están disponibles muestran un guion en vez de inventar un
+cero. Las series disponibles cubren los últimos seis meses.
 
 ## Usuarios
 
@@ -63,9 +66,22 @@ opcional. El monto no puede exceder el saldo. Una venta o compra con pagos
 registrados no puede cancelarse directamente: requiere el procedimiento de
 devolución o conciliación definido por la empresa.
 
-## Negocio pendiente
+## Reportes y preferencias
 
-Reportes, HR, proyectos y CRM aún no tienen flujos
-operativos. La interfaz informa disponibilidad y la API responde 501.
+En Reportes consulta ventas confirmadas por intervalo, existencias derivadas de
+movimientos y saldos pendientes de cuentas por cobrar y pagar. Los importes de
+la API usan unidades monetarias menores enteras y el dashboard distingue métricas sin datos de
+valores reales.
+
+En Configuración puedes ajustar idioma, zona horaria y formato de fecha de la
+empresa. Los cambios requieren `settings.edit` y quedan auditados.
+
+El botón de Notificaciones muestra avisos dirigidos a tu usuario; puedes marcar
+uno o todos como leídos. Aún no se generan avisos automáticos desde eventos de
+ventas, compras o inventario.
+
+Empleados, proyectos y CRM ya tienen flujos web/móvil. La disponibilidad de
+acciones depende de permisos RBAC. Consulta [estado por módulo](../DEVELOPMENT-STATUS.md)
+y [capturas](../qa/screenshots/README.md).
 
 Consulta [estado por módulo](../DEVELOPMENT-STATUS.md) y [capturas](../qa/screenshots/README.md).

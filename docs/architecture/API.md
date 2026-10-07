@@ -96,13 +96,10 @@ Listado: {success:true,data:[],pagination:{page,limit,total,pages}}. Recurso ind
 
 HTTP 400 validación/JSON inválido, 401 autenticación/sesión, 403 permiso, 404 recurso inexistente/fuera de empresa, 409 duplicados, 413 cuerpo demasiado grande, 429 límite y 500 interno sin stack. La información detallada de DB no se devuelve.
 
-## Negocio pendiente
+## Reportes, notificaciones y ajustes
 
-`/reports`, `/hr`, `/projects`, `/crm`,
-`/notifications` y `/settings` aún responden 501 tras autenticación.
+- `GET /reports/dashboard`, `/reports/sales?from=&to=`, `/reports/inventory` y `/reports/finance` requieren `reports.view`. Fechas de ventas aceptan un intervalo máximo de 366 días. Montos se expresan en unidades menores enteras (`unit: minor`) y existencias en milésimas (`unit: milli`). La moneda debe definirse según la empresa antes de presentación fiscal/contable.
+- `GET /notifications?page=&limit=&read=` lista únicamente las notificaciones del usuario autenticado. `PATCH /notifications/:id/read` y `PATCH /notifications/read-all` requieren `notifications.read`. No existe escritura pública de notificaciones; se crean desde workflows del servidor.
+- `GET /settings` requiere `settings.view`; `PATCH /settings` requiere `settings.edit`. Solo admite `locale` (`es-MX` o `en-US`), `timeZone` IANA y `dateFormat` (`dd/MM/yyyy`, `MM/dd/yyyy` o `yyyy-MM-dd`). Se guardan por empresa y se auditan.
 
-```json
-{ "success": false, "error": { "code": "NOT_IMPLEMENTED", "message": "Módulo en desarrollo" } }
-```
-
-HTTP 501 no es CRUD ni éxito. [Estado actual](../DEVELOPMENT-STATUS.md).
+Estas operaciones derivan empresa y usuario del contexto autenticado. [Estado actual](../DEVELOPMENT-STATUS.md).

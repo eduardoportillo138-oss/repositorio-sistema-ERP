@@ -13,14 +13,20 @@ debug. Los flujos nativos todavía requieren prueba en dispositivo.
 Ventas y compras ya tienen borradores, confirmación/cancelación transaccional,
 interfaz compartida y pruebas de integración/E2E. Finanzas conecta cuentas y
 pagos enteros a ambas órdenes con bloqueo de cancelación tras pagar; el flujo
-web/móvil pasó E2E en tres tamaños. HR, proyectos, CRM, notificaciones,
-reportes y settings siguen pendientes. `assembleDebug` también pasó tras
-finanzas. Atlas y el
-despliegue real no se han modificado.
+web/móvil pasó E2E en tres tamaños. HR, proyectos y CRM tienen workflows,
+RBAC, auditoría, UI compartida y pruebas de integración/E2E. Reportes usa
+agregaciones reales con filtro tenant, notificaciones se limitan al usuario y
+empresa, y ajustes guarda idioma, zona horaria y formato de fecha por empresa.
+La fase F pasa cinco pruebas de integración y tres E2E nuevos (desktop, tablet
+y móvil). Las notificaciones pueden consultarse y marcarse como leídas; los productores automáticos de notificaciones
+siguen pendientes. Los builds de paquetes y backend pasan. Atlas y el despliegue
+real no se han modificado.
 La migración controlada de índices de productos y permisos nuevos debe
 revisarse antes de activar los módulos en producción. Véanse
 [permisos](security/master-data-permissions.md) e
 [inventario](architecture/INVENTORY.md).
+Settings añade una nueva migración `db:settings-index` (`--dry-run`/`--apply`);
+debe revisarse junto con los índices heredados antes de desplegar.
 
 ## Corte anterior
 

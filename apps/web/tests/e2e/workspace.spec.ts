@@ -496,6 +496,28 @@ test('Proyectos: borrador, edición, activación y cierre desde interfaz compart
   await expect(page.getByText('Proyecto completado.')).toBeVisible();
   await noOverflow(page);
 });
+test('Reportes, preferencias y notificaciones usan API real', async ({ page }, info) => {
+  await login(page);
+  const open = async (label: string) => {
+    if ((page.viewportSize()?.width || 0) < 768)
+      await page.getByRole('button', { name: 'Más módulos' }).click();
+    const nav = page.getByRole('button', { name: label, exact: true });
+    await ((page.viewportSize()?.width || 0) < 768 ? nav.last() : nav.first()).click();
+  };
+  await open('Configuración');
+  await page.getByRole('button', { name: 'UTC', exact: true }).click();
+  await page.getByRole('button', { name: 'Guardar preferencias' }).click();
+  await expect(page.getByText('Preferencias guardadas.')).toBeVisible();
+  await open('Reportes');
+  await expect(page.getByRole('heading', { name: 'Reportes', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Reporte Inventario', exact: true }).click();
+  await expect(page.getByText('productCount', { exact: true })).toBeVisible();
+  await noOverflow(page);
+  await page.screenshot({ path: path.join(captures, 'reports-' + info.project.name + '.png'), fullPage: true });
+  const bell = page.getByRole('button', { name: 'Notificaciones' });
+  await bell.click();
+  await expect(page.getByText('Sin notificaciones', { exact: true })).toBeVisible();
+});
 test('logout revoca también la sesión en el servidor', async ({ page, request }) => {
   const pair = await login(page);
   if ((page.viewportSize()?.width || 0) < 768)

@@ -18,6 +18,9 @@ import { FinanceScreen } from './screens/FinanceScreen';
 import { EmployeesScreen } from './screens/EmployeesScreen';
 import { ProjectsScreen } from './screens/ProjectsScreen';
 import { CrmScreen } from './screens/CrmScreen';
+import { ReportsScreen } from './screens/ReportsScreen';
+import { SettingsScreen } from './screens/SettingsScreen';
+import { NotificationsScreen } from './screens/NotificationsScreen';
 import { ERPLogo } from './components/ERPLogo';
 import { Input } from './components/Input';
 import { Modal } from './components/Modal';
@@ -416,6 +419,10 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
               <ProjectsScreen />
             ) : current.key === 'crm' ? (
               <CrmScreen />
+            ) : current.key === 'reports' ? (
+              <ReportsScreen />
+            ) : current.key === 'settings' ? (
+              <SettingsScreen />
             ) : (
               <ModuleScreen key={current.key} module={current} />
             )}
@@ -485,10 +492,7 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
         />
       </Modal>
       <Modal visible={notifications} title="Notificaciones" onClose={() => setNotifications(false)}>
-        <EmptyState
-          title="Notificaciones aún no disponibles"
-          message="Las novedades de tu empresa aparecerán en este espacio."
-        />
+        <NotificationsScreen />
       </Modal>
     </View>
   );

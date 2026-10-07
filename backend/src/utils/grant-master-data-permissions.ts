@@ -11,6 +11,8 @@ const grants = PERMISSIONS.filter((permission) =>
   permission.startsWith('categories.') || permission.startsWith('units.') ||
   permission.startsWith('warehouses.') || permission.startsWith('hr.') ||
   permission.startsWith('projects.') || permission.startsWith('crm.') ||
+  permission.startsWith('reports.') || permission.startsWith('settings.') ||
+  permission.startsWith('notifications.') ||
   permission === 'inventory.transfer' ||
   ['sales.confirm', 'sales.cancel', 'purchases.confirm', 'purchases.cancel',
     'finances.view', 'finances.create'].includes(permission));

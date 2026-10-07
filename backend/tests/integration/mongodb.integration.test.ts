@@ -893,16 +893,13 @@ describe('Core HTTP con MongoDB real y temporal', () => {
     },
   );
   test.each([
-    'reports',
-    'crm',
-  ])('%s incompleto nunca devuelve éxito', async (module) => {
+    ['/api/v1/reports/dashboard', 'reports'],
+    ['/api/v1/crm/leads', 'crm'],
+  ])('%s devuelve una respuesta real con permiso', async (path) => {
     const pair = (await login()).body.data;
-    const response = await request(app)
-      .post('/api/v1/' + module)
-      .set(auth(pair.accessToken))
-      .send({});
-    expect(response.status).toBe(501);
-    expect(response.body).toMatchObject({ success: false, error: { code: 'NOT_IMPLEMENTED' } });
+    const response = await request(app).get(path).set(auth(pair.accessToken));
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
   });
   test('finanzas lista cuentas reales y valida pagos', async () => {
     const pair = (await login()).body.data;

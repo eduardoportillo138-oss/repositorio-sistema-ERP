@@ -390,6 +390,31 @@ export interface ApiEnvelope<T> {
   success: boolean;
   data: T;
 }
+export interface CompanySettingsResponse {
+  locale: 'es-MX' | 'en-US';
+  timeZone: string;
+  dateFormat: 'dd/MM/yyyy' | 'MM/dd/yyyy' | 'yyyy-MM-dd';
+}
+export interface NotificationResponse {
+  id: string;
+  title: string;
+  message: string;
+  type: 'info' | 'warning' | 'error' | 'success';
+  read: boolean;
+  relatedEntity?: string;
+  relatedEntityId?: string;
+  createdAt?: string;
+}
+export type NotificationListResponse = ApiEnvelope<NotificationResponse[]> & {
+  unread: number;
+  pagination: PaginationResponse;
+};
+export interface ReportDashboardResponse {
+  metrics: Record<string, number>;
+  series: Record<string, Array<{ label: string; value: number }>>;
+  unit: 'minor';
+  period: { from: string; to: string };
+}
 export interface TokenResponse {
   accessToken: string;
   refreshToken: string;
@@ -809,6 +834,33 @@ export class ApiClient {
   }
   getBranch(id: string): Promise<ApiEnvelope<BranchResponse>> {
     return this.get<ApiEnvelope<BranchResponse>>('/branches/' + encodeURIComponent(id));
+  }
+  getReportDashboard(): Promise<ApiEnvelope<ReportDashboardResponse>> {
+    return this.get('/reports/dashboard');
+  }
+  getSalesReport(params: { from?: string; to?: string } = {}): Promise<ApiEnvelope<Record<string, unknown>>> {
+    return this.get('/reports/sales', { params });
+  }
+  getInventoryReport(): Promise<ApiEnvelope<Record<string, unknown>>> {
+    return this.get('/reports/inventory');
+  }
+  getFinanceReport(): Promise<ApiEnvelope<Record<string, unknown>>> {
+    return this.get('/reports/finance');
+  }
+  getSettings(): Promise<ApiEnvelope<CompanySettingsResponse>> {
+    return this.get('/settings');
+  }
+  updateSettings(request: Partial<CompanySettingsResponse>): Promise<ApiEnvelope<CompanySettingsResponse>> {
+    return this.patch('/settings', request);
+  }
+  listNotifications(params: { page?: number; limit?: number; read?: boolean } = {}): Promise<NotificationListResponse> {
+    return this.get('/notifications', { params });
+  }
+  markNotificationRead(id: string): Promise<ApiEnvelope<NotificationResponse>> {
+    return this.patch('/notifications/' + encodeURIComponent(id) + '/read');
+  }
+  markAllNotificationsRead(): Promise<ApiEnvelope<{ modified: number }>> {
+    return this.patch('/notifications/read-all');
   }
 }
 export const apiClient = new ApiClient();

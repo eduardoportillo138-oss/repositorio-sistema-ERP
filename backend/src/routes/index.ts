@@ -21,7 +21,9 @@ import { financeRouter } from '../modules/finance/finance.module';
 import { hrRouter } from '../modules/hr/hr.module';
 import { projectsRouter } from '../modules/projects/project.module';
 import { crmRouter } from '../modules/crm/crm.module';
-import { authenticateToken } from '../middlewares/auth';
+import { reportRouter } from '../modules/reports/report.module';
+import { settingsRouter } from '../modules/settings/settings.module';
+import { notificationsRouter } from '../modules/notifications/notifications.module';
 import { isDatabaseConnected } from '../config/database';
 
 export function setupRoutes(app: Application): void {
@@ -64,19 +66,7 @@ export function setupRoutes(app: Application): void {
   app.use('/api/v1/hr', hrRouter);
   app.use('/api/v1/projects', projectsRouter);
   app.use('/api/v1/crm', crmRouter);
-  // Los módulos heredados aún contienen controladores placeholder. No se anuncia éxito ficticio.
-  app.use(
-    [
-      '/api/v1/reports',
-      '/api/v1/notifications',
-      '/api/v1/settings',
-    ],
-    authenticateToken,
-    (_req, res) => {
-      res.status(501).json({
-        success: false,
-        error: { code: 'NOT_IMPLEMENTED', message: 'Módulo en desarrollo' },
-      });
-    },
-  );
+  app.use('/api/v1/reports', reportRouter);
+  app.use('/api/v1/settings', settingsRouter);
+  app.use('/api/v1/notifications', notificationsRouter);
 }

@@ -6,8 +6,9 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface ISystemSetting extends BaseDocument {
+  companyId: mongoose.Types.ObjectId;
   key: string;
-  value: string;
+  value: unknown;
   type: 'string' | 'number' | 'boolean' | 'json';
   description: string;
   isSystem: boolean;
@@ -17,6 +18,7 @@ export interface ISystemSettingDocument extends ISystemSetting, Document {}
 
 const systemSettingSchema = new Schema<ISystemSettingDocument>(
   {
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true },
     key: {
       type: String,
       required: [true, 'La clave es obligatoria'],
@@ -46,7 +48,10 @@ const systemSettingSchema = new Schema<ISystemSettingDocument>(
   { timestamps: true, collection: 'systemSettings' },
 );
 
-systemSettingSchema.index({ companyId: 1, key: 1 });
+systemSettingSchema.index({ companyId: 1, key: 1 }, {
+  name: 'companyId_1_key_1_tenant_unique', unique: true,
+  partialFilterExpression: { companyId: { $exists: true } },
+});
 systemSettingSchema.index({ isSystem: 1 });
 
 export const SystemSetting = mongoose.model<ISystemSettingDocument>(
