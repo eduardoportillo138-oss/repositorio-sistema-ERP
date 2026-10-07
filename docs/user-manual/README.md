@@ -38,9 +38,24 @@ obtienen del historial de movimientos y una salida sin existencias se
 rechaza. Una existencia histórica pendiente de conciliación se informa como
 error; solicita revisión administrativa antes de registrar movimientos.
 
+## Ventas y compras
+
+En Ventas crea un borrador, selecciona cliente y almacén, agrega productos
+con cantidades y guarda. El servidor calcula precios e impuestos. Abre el
+detalle para editar el borrador, confirmar la venta o cancelarla según tus
+permisos. Al confirmar se descuenta stock; si es insuficiente, la operación
+no se confirma. Cancelar una venta confirmada restaura las existencias y
+conserva el historial.
+
+En Compras crea un borrador con proveedor, almacén, productos, cantidades y
+costo unitario. Al recibir la compra entra stock. Puedes cancelar una compra
+recibida solo si aún hay existencias suficientes para revertirla; en caso
+contrario solicita revisión de negocio. Los importes se muestran en centavos
+convertidos a dos decimales.
+
 ## Negocio pendiente
 
-Ventas, compras, finanzas, reportes, HR, proyectos y CRM aún no tienen flujos
+Finanzas, reportes, HR, proyectos y CRM aún no tienen flujos
 operativos. La interfaz informa disponibilidad y la API responde 501.
 
 Consulta [estado por módulo](../DEVELOPMENT-STATUS.md) y [capturas](../qa/screenshots/README.md).

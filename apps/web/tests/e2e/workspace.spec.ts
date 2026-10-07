@@ -333,6 +333,93 @@ test('Inventario: existencia inicial y transferencia conservan el total', async 
   await expect(page.getByText('Destino Stock ' + suffix + ': 3')).toBeVisible();
   await noOverflow(page);
 });
+test('Compra recibida aumenta stock; venta y cancelación lo revierten', async ({ page, request }, info) => {
+  const pair = await login(page);
+  const headers = { Authorization: 'Bearer ' + pair.accessToken };
+  const suffix = info.project.name.toUpperCase();
+  const api = 'http://127.0.0.1:3081/api/v1';
+  const branch = await request.post(api + '/branches', { headers,
+    data: { name: 'Sucursal Orden ' + suffix, code: 'OBR_' + suffix,
+      address: 'QA', city: 'CDMX', country: 'MX' } });
+  expect(branch.status()).toBe(201);
+  const branchId = (await branch.json()).data._id as string;
+  const warehouseName = 'Almacén Orden ' + suffix;
+  const warehouse = await request.post(api + '/warehouses', { headers,
+    data: { name: warehouseName, code: 'OW_' + suffix, branchId } });
+  const category = await request.post(api + '/categories', { headers,
+    data: { name: 'Orden Cat ' + suffix, code: 'OC_' + suffix } });
+  const unit = await request.post(api + '/units', { headers,
+    data: { name: 'Orden Unit ' + suffix, code: 'OU_' + suffix, symbol: 'u' } });
+  const supplierName = 'Proveedor Orden ' + suffix;
+  const customerName = 'Cliente Orden ' + suffix;
+  const supplier = await request.post(api + '/suppliers', { headers,
+    data: { name: supplierName } });
+  const customer = await request.post(api + '/customers', { headers,
+    data: { name: customerName } });
+  for (const result of [warehouse, category, unit, supplier, customer])
+    expect(result.status()).toBe(201);
+  const productName = 'Producto Orden ' + suffix;
+  const product = await request.post(api + '/products', { headers,
+    data: { name: productName, code: 'OP_' + suffix,
+      categoryId: (await category.json()).data.id,
+      unitId: (await unit.json()).data.id, priceMinor: 1500, taxRateBps: 1600 } });
+  expect(product.status()).toBe(201);
+  const productId = (await product.json()).data.id as string;
+  const warehouseId = (await warehouse.json()).data.id as string;
+
+  if ((page.viewportSize()?.width || 0) < 768)
+    await page.getByRole('button', { name: 'Más módulos' }).click();
+  const purchasesNav = page.getByRole('button', { name: 'Compras', exact: true });
+  await ((page.viewportSize()?.width || 0) < 768 ? purchasesNav.last() : purchasesNav.first()).click();
+  await expect(page.getByRole('heading', { name: 'Compras', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Nueva compra' }).click();
+  await page.getByRole('button', { name: 'Selecciona proveedor' }).click();
+  await page.getByRole('button', { name: supplierName }).click();
+  await page.getByRole('button', { name: 'Selecciona un almacén' }).click();
+  await page.getByRole('button', { name: warehouseName }).click();
+  await page.getByRole('button', { name: 'Selecciona un producto' }).click();
+  await page.getByRole('button', { name: productName + ' (OP_' + suffix + ')' }).click();
+  await page.getByLabel('Cantidad').fill('2');
+  await page.getByLabel('Costo unitario').fill('10.00');
+  await page.getByRole('button', { name: 'Agregar producto' }).click();
+  await page.getByRole('button', { name: 'Guardar borrador' }).click();
+  await expect(page.getByText('Compra guardada como borrador.')).toBeVisible();
+  await page.getByRole('button', { name: 'Recibir compra' }).click();
+  await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
+  await expect(page.getByText('Compra recibida.')).toBeVisible();
+  const stockAfterPurchase = await request.get(api + '/inventory/product/' + productId, { headers });
+  expect((await stockAfterPurchase.json()).data.quantityMilli).toBe(2000);
+  await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
+
+  if ((page.viewportSize()?.width || 0) < 768)
+    await page.getByRole('button', { name: 'Más módulos' }).click();
+  const salesNav = page.getByRole('button', { name: 'Ventas', exact: true });
+  await ((page.viewportSize()?.width || 0) < 768 ? salesNav.last() : salesNav.first()).click();
+  await expect(page.getByRole('heading', { name: 'Ventas', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Nueva venta' }).click();
+  await page.getByRole('button', { name: 'Selecciona cliente' }).click();
+  await page.getByRole('button', { name: customerName }).click();
+  await page.getByRole('button', { name: 'Selecciona un almacén' }).click();
+  await page.getByRole('button', { name: warehouseName }).click();
+  await page.getByRole('button', { name: 'Selecciona un producto' }).click();
+  await page.getByRole('button', { name: productName + ' (OP_' + suffix + ')' }).click();
+  await page.getByLabel('Cantidad').fill('1');
+  await page.getByRole('button', { name: 'Agregar producto' }).click();
+  await page.getByRole('button', { name: 'Guardar borrador' }).click();
+  await expect(page.getByText('Venta guardada como borrador.')).toBeVisible();
+  await page.getByRole('button', { name: 'Confirmar venta' }).click();
+  await page.getByRole('button', { name: 'Confirmar', exact: true }).click();
+  await expect(page.getByText('Venta confirmada.')).toBeVisible();
+  const stockAfterSale = await request.get(api + '/inventory/product/' + productId, { headers });
+  expect((await stockAfterSale.json()).data.quantityMilli).toBe(1000);
+  await page.getByRole('button', { name: 'Cancelar operación', exact: true }).click();
+  await page.getByRole('button', { name: 'Cancelar operación ahora' }).click();
+  await expect(page.getByText('Venta cancelada.')).toBeVisible();
+  const stockRestored = await request.get(api + '/inventory/product/' + productId, { headers });
+  expect((await stockRestored.json()).data.quantityMilli).toBe(2000);
+  expect(warehouseId).toBeTruthy();
+  await noOverflow(page);
+});
 test('logout revoca también la sesión en el servidor', async ({ page, request }) => {
   const pair = await login(page);
   if ((page.viewportSize()?.width || 0) < 768)

@@ -54,6 +54,24 @@ Una salida insuficiente devuelve 409 con código `INVENTORY_INSUFFICIENT`.
 Datos históricos ambiguos devuelven 409 hasta su conciliación; véase
 [diseño de inventario](INVENTORY.md).
 
+## Ventas y compras
+
+`GET /sales` y `GET /purchases` listan por empresa, con `page`, `limit`,
+`search` y `status`. `GET /:id` consulta detalle. `POST /` crea borrador y
+`PUT/PATCH /:id` edita solo borradores. `PATCH /:id/confirm` confirma una
+venta o recibe una compra. `PATCH /:id/cancel` cancela; conserva documentos e
+historial. Los permisos nuevos son `sales.confirm/cancel` y
+`purchases.confirm/cancel` además de view/create/edit.
+
+Un borrador de venta recibe `customerId`, `warehouseId` e `items` con
+`productId`, `quantityMilli` y descuento opcional en centavos. El precio e
+impuesto se toman del producto en el backend al guardar el borrador. Un
+borrador de compra recibe `supplierId`, `warehouseId` e `items` con
+`unitCostMinor` negociado. El backend calcula subtotal, descuento, impuesto y
+total con enteros; rechaza totales enviados por el cliente. La confirmación
+se hace dentro de una transacción con movimientos y auditoría. Véase
+[flujo de órdenes](ORDERS.md).
+
 Listado: {success:true,data:[],pagination:{page,limit,total,pages}}. Recurso individual: {success:true,data:resource}. No interpretar una página vacía como placeholder: el Core consulta datos reales.
 
 ## Errores
@@ -66,7 +84,7 @@ HTTP 400 validación/JSON inválido, 401 autenticación/sesión, 403 permiso, 40
 
 ## Negocio pendiente
 
-`/sales`, `/purchases`, `/finance`, `/reports`, `/hr`, `/projects`, `/crm`,
+`/finance`, `/reports`, `/hr`, `/projects`, `/crm`,
 `/notifications` y `/settings` aún responden 501 tras autenticación.
 
 ```json

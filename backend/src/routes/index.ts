@@ -15,6 +15,8 @@ import { unitsRouter } from '../modules/units/units.module';
 import { warehousesRouter } from '../modules/warehouses/warehouses.module';
 import { productsRouter } from '../modules/products/product.module';
 import { inventoryRouter } from '../modules/inventory/inventory.module';
+import { salesRouter } from '../modules/sales/sales.module';
+import { purchasesRouter } from '../modules/purchases/purchase.module';
 import { authenticateToken } from '../middlewares/auth';
 import { isDatabaseConnected } from '../config/database';
 
@@ -52,11 +54,11 @@ export function setupRoutes(app: Application): void {
   app.use('/api/v1/warehouses', warehousesRouter);
   app.use('/api/v1/products', productsRouter);
   app.use('/api/v1/inventory', inventoryRouter);
+  app.use('/api/v1/sales', salesRouter);
+  app.use('/api/v1/purchases', purchasesRouter);
   // Los módulos heredados aún contienen controladores placeholder. No se anuncia éxito ficticio.
   app.use(
     [
-      '/api/v1/sales',
-      '/api/v1/purchases',
       '/api/v1/finance',
       '/api/v1/reports',
       '/api/v1/hr',

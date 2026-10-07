@@ -1,60 +1,16 @@
-// ============================================
-// Módulo de Ventas
-// ============================================
-
-import { isValidObjectId } from '../../utils/validation';
 import { Router } from 'express';
-import {
-  getSales,
-  getSaleById,
-  createSale,
-  updateSale,
-  approveSale,
-} from '../../controllers/sale.controller';
 import { authenticateToken, checkPermission } from '../../middlewares/auth';
-import { validate } from '../../middlewares/validators';
+import { asyncHandler } from '../../utils/asyncHandler';
+import { getSales, getSaleById, createSale, updateSale,
+  confirmSale, cancelSale } from '../../controllers/sale.controller';
 
 const router = Router();
-
 router.use(authenticateToken);
-
-router.get('/', checkPermission('sales.view'), getSales);
-router.get(
-  '/:id',
-  checkPermission('sales.view'),
-  validate({
-    params: { id: { type: 'string', validate: isValidObjectId, message: 'ID inválido' } },
-  }),
-  getSaleById,
-);
-router.post(
-  '/',
-  checkPermission('sales.create'),
-  validate({
-    body: {
-      customerId: { type: 'string', required: true },
-      warehouseId: { type: 'string', required: true },
-      items: { type: 'array', required: true },
-      total: { type: 'number', required: true },
-    },
-  }),
-  createSale,
-);
-router.put(
-  '/:id',
-  checkPermission('sales.edit'),
-  validate({
-    params: { id: { type: 'string', validate: isValidObjectId, message: 'ID inválido' } },
-  }),
-  updateSale,
-);
-router.patch(
-  '/:id/approve',
-  checkPermission('sales.approve'),
-  validate({
-    params: { id: { type: 'string', validate: isValidObjectId, message: 'ID inválido' } },
-  }),
-  approveSale,
-);
-
+router.get('/', checkPermission('sales.view'), asyncHandler(getSales));
+router.get('/:id', checkPermission('sales.view'), asyncHandler(getSaleById));
+router.post('/', checkPermission('sales.create'), asyncHandler(createSale));
+router.put('/:id', checkPermission('sales.edit'), asyncHandler(updateSale));
+router.patch('/:id', checkPermission('sales.edit'), asyncHandler(updateSale));
+router.patch('/:id/confirm', checkPermission('sales.confirm'), asyncHandler(confirmSale));
+router.patch('/:id/cancel', checkPermission('sales.cancel'), asyncHandler(cancelSale));
 export const salesRouter = router;

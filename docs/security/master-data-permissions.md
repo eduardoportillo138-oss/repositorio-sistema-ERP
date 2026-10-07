@@ -3,6 +3,8 @@
 Los permisos nuevos son `categories.view/create/edit/disable`,
 `units.view/create/edit/disable` y `warehouses.view/create/edit/disable`.
 La misma migración concede `inventory.transfer` al administrador empresarial.
+También añade `sales.confirm`, `sales.cancel`, `purchases.confirm` y
+`purchases.cancel` para los flujos transaccionales.
 Los roles existentes no los reciben al
 desplegar código. El rol administrador empresarial debe actualizarse mediante
 la migración explícita, sin ejecutar bootstrap otra vez.
@@ -23,7 +25,7 @@ node backend/dist/utils/grant-master-data-permissions.js --apply COMPANY_ID ROLE
 ```
 
 La operación añade únicamente permisos faltantes de categorías, unidades,
-almacenes y transferencia de inventario,
+almacenes, transferencia de inventario y confirmación/cancelación de órdenes,
 usa una transacción con auditoría y puede repetirse sin duplicar permisos.
 No crea usuarios ni modifica contraseñas. Las sesiones ya existentes consultan
 el rol en cada petición, por lo que los permisos nuevos quedan disponibles sin

@@ -86,8 +86,9 @@ async function warehouse(companyId: string, warehouseId: string, session?: mongo
 }
 /** Every writer to the ledger must acquire this product document lock in its transaction. */
 export async function lockInventoryProduct(companyId: string, productId: string,
-  session: mongoose.ClientSession) {
-  const product = await Product.findOneAndUpdate({ _id: productId, companyId, status: 'active' },
+  session: mongoose.ClientSession, allowInactive = false) {
+  const product = await Product.findOneAndUpdate({ _id: productId, companyId,
+    ...(allowInactive ? {} : { status: 'active' }) },
     { $inc: { stockRevision: 1 } }, { new: true, session, timestamps: false }).exec();
   if (!product) throw new NotFoundError('Producto activo');
   assertLegacyStock(product);

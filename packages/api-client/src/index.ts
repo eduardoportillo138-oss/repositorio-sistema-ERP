@@ -204,6 +204,65 @@ export interface CreateTransferRequest {
   reason: string;
   notes?: string;
 }
+export interface SaleItemResponse {
+  productId: string;
+  name: string;
+  quantityMilli: number;
+  unitPriceMinor: number;
+  discountMinor: number;
+  taxRateBps: number;
+  subtotalMinor: number;
+  taxMinor: number;
+  totalMinor: number;
+}
+export interface SaleResponse {
+  id: string;
+  folio: string;
+  status: 'draft' | 'confirmed' | 'cancelled';
+  customerId: string;
+  customerName: string;
+  warehouseId: string;
+  warehouseName: string;
+  branchId: string;
+  notes?: string;
+  items: SaleItemResponse[];
+  subtotalMinor: number;
+  discountMinor: number;
+  taxMinor: number;
+  totalMinor: number;
+  createdAt: string;
+  updatedAt: string;
+  confirmedAt?: string;
+  cancelledAt?: string;
+}
+export interface PurchaseItemResponse extends Omit<SaleItemResponse, 'unitPriceMinor'> {
+  unitCostMinor: number;
+}
+export interface PurchaseResponse extends Omit<SaleResponse,
+  'status' | 'customerId' | 'customerName' | 'items' | 'confirmedAt'> {
+  status: 'draft' | 'received' | 'cancelled';
+  supplierId: string;
+  supplierName: string;
+  items: PurchaseItemResponse[];
+  receivedAt?: string;
+}
+export interface CreateSaleRequest {
+  customerId: string;
+  warehouseId: string;
+  items: Array<{ productId: string; quantityMilli: number; discountMinor?: number }>;
+  notes?: string;
+}
+export type UpdateSaleRequest = Partial<CreateSaleRequest>;
+export interface CreatePurchaseRequest {
+  supplierId: string;
+  warehouseId: string;
+  items: Array<{ productId: string; quantityMilli: number;
+    unitCostMinor: number; discountMinor?: number }>;
+  notes?: string;
+}
+export type UpdatePurchaseRequest = Partial<CreatePurchaseRequest>;
+export type SaleListResponse = ApiEnvelope<SaleResponse[]> & { pagination: PaginationResponse };
+export type PurchaseListResponse = ApiEnvelope<PurchaseResponse[]> & { pagination: PaginationResponse };
 export interface BranchResponse {
   _id: string;
   name: string;
@@ -505,6 +564,44 @@ export class ApiClient {
       incoming: InventoryMovementResponse; sourceStockMilli: number;
       destinationStockMilli: number }>> {
     return this.post('/inventory/transfers', request);
+  }
+  listSales(params: { page?: number; limit?: number; search?: string;
+    status?: SaleResponse['status'] } = {}): Promise<SaleListResponse> {
+    return this.get<SaleListResponse>('/sales', { params });
+  }
+  getSale(id: string): Promise<ApiEnvelope<SaleResponse>> {
+    return this.get<ApiEnvelope<SaleResponse>>('/sales/' + encodeURIComponent(id));
+  }
+  createSale(request: CreateSaleRequest): Promise<ApiEnvelope<SaleResponse>> {
+    return this.post<ApiEnvelope<SaleResponse>>('/sales', request);
+  }
+  updateSale(id: string, request: UpdateSaleRequest): Promise<ApiEnvelope<SaleResponse>> {
+    return this.put<ApiEnvelope<SaleResponse>>('/sales/' + encodeURIComponent(id), request);
+  }
+  confirmSale(id: string): Promise<ApiEnvelope<SaleResponse>> {
+    return this.patch<ApiEnvelope<SaleResponse>>('/sales/' + encodeURIComponent(id) + '/confirm');
+  }
+  cancelSale(id: string): Promise<ApiEnvelope<SaleResponse>> {
+    return this.patch<ApiEnvelope<SaleResponse>>('/sales/' + encodeURIComponent(id) + '/cancel');
+  }
+  listPurchases(params: { page?: number; limit?: number; search?: string;
+    status?: PurchaseResponse['status'] } = {}): Promise<PurchaseListResponse> {
+    return this.get<PurchaseListResponse>('/purchases', { params });
+  }
+  getPurchase(id: string): Promise<ApiEnvelope<PurchaseResponse>> {
+    return this.get<ApiEnvelope<PurchaseResponse>>('/purchases/' + encodeURIComponent(id));
+  }
+  createPurchase(request: CreatePurchaseRequest): Promise<ApiEnvelope<PurchaseResponse>> {
+    return this.post<ApiEnvelope<PurchaseResponse>>('/purchases', request);
+  }
+  updatePurchase(id: string, request: UpdatePurchaseRequest): Promise<ApiEnvelope<PurchaseResponse>> {
+    return this.put<ApiEnvelope<PurchaseResponse>>('/purchases/' + encodeURIComponent(id), request);
+  }
+  confirmPurchase(id: string): Promise<ApiEnvelope<PurchaseResponse>> {
+    return this.patch<ApiEnvelope<PurchaseResponse>>('/purchases/' + encodeURIComponent(id) + '/confirm');
+  }
+  cancelPurchase(id: string): Promise<ApiEnvelope<PurchaseResponse>> {
+    return this.patch<ApiEnvelope<PurchaseResponse>>('/purchases/' + encodeURIComponent(id) + '/cancel');
   }
   listBranches(params: { page?: number; limit?: number } = {}): Promise<
     ApiEnvelope<BranchResponse[]> & { pagination: PaginationResponse }> {
