@@ -132,6 +132,30 @@ test('Clientes: crear, buscar, editar y desactivar desde web y vista móvil', as
   await expect(page.getByText(name + ' editado', { exact: true }).first()).toBeVisible();
   await noOverflow(page);
 });
+test('Proveedores: crear, editar y desactivar desde web y vista móvil', async ({ page }, info) => {
+  await login(page);
+  if ((page.viewportSize()?.width || 0) < 768)
+    await page.getByRole('button', { name: 'Más módulos' }).click();
+  await page.getByRole('button', { name: 'Proveedores', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Proveedores', exact: true })).toBeVisible();
+  const name = 'Proveedor QA ' + info.project.name;
+  await page.getByRole('button', { name: 'Nuevo proveedor' }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill(name);
+  await page.getByLabel('Persona de contacto').fill('Contacto QA');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Proveedor creado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Editar', exact: true }).click();
+  await page.getByLabel('Nombre', { exact: true }).fill(name + ' editado');
+  await page.getByRole('button', { name: 'Guardar', exact: true }).click();
+  await expect(page.getByText('Proveedor actualizado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).click();
+  await page.getByRole('button', { name: 'Desactivar', exact: true }).last().click();
+  await expect(page.getByText('Proveedor desactivado.')).toBeVisible();
+  await page.getByRole('button', { name: 'Cerrar modal' }).first().click();
+  await page.getByRole('button', { name: 'Inactivos', exact: true }).click();
+  await expect(page.getByText(name + ' editado', { exact: true }).first()).toBeVisible();
+  await noOverflow(page);
+});
 test('logout revoca también la sesión en el servidor', async ({ page, request }) => {
   const pair = await login(page);
   if ((page.viewportSize()?.width || 0) < 768)

@@ -6,16 +6,17 @@ import mongoose, { Schema, Document } from 'mongoose';
 import { BaseDocument, DocumentStatus } from '../../../packages/types/dist';
 
 export interface ISupplier extends BaseDocument {
+  companyId: mongoose.Types.ObjectId;
   name: string;
   email?: string;
   phone?: string;
   contactName?: string;
   taxId?: string;
-  address: string;
-  city: string;
-  country: string;
-  postalCode: string;
-  paymentTerms: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  postalCode?: string;
+  paymentTerms?: string;
   notes?: string;
   status: DocumentStatus;
 }
@@ -24,6 +25,9 @@ export interface ISupplierDocument extends ISupplier, Document {}
 
 const supplierSchema = new Schema<ISupplierDocument>(
   {
+    companyId: { type: Schema.Types.ObjectId, ref: 'Company', required: true, index: true },
+    createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
+    updatedBy: { type: Schema.Types.ObjectId, ref: 'User' },
     name: {
       type: String,
       required: [true, 'El nombre del proveedor es obligatorio'],
@@ -37,7 +41,7 @@ const supplierSchema = new Schema<ISupplierDocument>(
     taxId: { type: String, trim: true, index: true },
     address: { type: String, trim: true, maxlength: 500 },
     city: { type: String, trim: true, maxlength: 100 },
-    country: { type: String, required: true, trim: true, maxlength: 100 },
+    country: { type: String, trim: true, maxlength: 100 },
     postalCode: { type: String, trim: true, maxlength: 20 },
     paymentTerms: { type: String, default: '30 días' },
     notes: { type: String, trim: true, maxlength: 1000 },

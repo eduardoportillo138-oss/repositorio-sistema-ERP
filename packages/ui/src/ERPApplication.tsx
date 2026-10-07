@@ -7,6 +7,7 @@ import { LoginScreen } from './screens/LoginScreen';
 import { DashboardScreen } from './screens/DashboardScreen';
 import { UsersScreen } from './screens/UsersScreen';
 import { CustomersScreen } from './screens/CustomersScreen';
+import { SuppliersScreen } from './screens/SuppliersScreen';
 import { ERPLogo } from './components/ERPLogo';
 import { Input } from './components/Input';
 import { Modal } from './components/Modal';
@@ -339,6 +340,8 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
               <UsersScreen />
             ) : current.key === 'customers' ? (
               <CustomersScreen />
+            ) : current.key === 'suppliers' ? (
+              <SuppliersScreen />
             ) : (
               <ModuleScreen key={current.key} module={current} />
             )}

@@ -44,6 +44,7 @@ export { LoginScreen } from './screens/LoginScreen';
 export { DashboardScreen } from './screens/DashboardScreen';
 export { UsersScreen } from './screens/UsersScreen';
 export { CustomersScreen } from './screens/CustomersScreen';
+export { SuppliersScreen } from './screens/SuppliersScreen';
 
 // Tipos
 export type { ButtonProps } from './components/Button';

@@ -9,6 +9,7 @@ import { roleRoutes } from './role.routes';
 import { branchRoutes } from './branch.routes';
 import { companiesRouter } from '../modules/companies/company.module';
 import { customersRouter } from '../modules/customers/customer.module';
+import { suppliersRouter } from '../modules/suppliers/supplier.module';
 import { authenticateToken } from '../middlewares/auth';
 import { isDatabaseConnected } from '../config/database';
 
@@ -40,10 +41,10 @@ export function setupRoutes(app: Application): void {
   app.use('/api/v1/branches', branchRoutes);
   app.use('/api/v1/companies', companiesRouter);
   app.use('/api/v1/customers', customersRouter);
+  app.use('/api/v1/suppliers', suppliersRouter);
   // Los módulos heredados aún contienen controladores placeholder. No se anuncia éxito ficticio.
   app.use(
     [
-      '/api/v1/suppliers',
       '/api/v1/products',
       '/api/v1/categories',
       '/api/v1/inventory',

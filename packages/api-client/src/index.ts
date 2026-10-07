@@ -56,6 +56,30 @@ export interface PaginationResponse {
 export type CustomerListResponse = ApiEnvelope<CustomerResponse[]> & {
   pagination: PaginationResponse;
 };
+export interface SupplierResponse {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  taxId?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  postalCode?: string;
+  notes?: string;
+  contactName?: string;
+  paymentTerms?: string;
+  status: 'active' | 'inactive';
+  createdAt?: string;
+  updatedAt?: string;
+}
+export type CreateSupplierRequest = Pick<SupplierResponse, 'name'> &
+  Partial<Pick<SupplierResponse, 'email' | 'phone' | 'taxId' | 'address' | 'city' |
+    'country' | 'postalCode' | 'notes' | 'contactName' | 'paymentTerms'>>;
+export type UpdateSupplierRequest = Partial<CreateSupplierRequest>;
+export type SupplierListResponse = ApiEnvelope<SupplierResponse[]> & {
+  pagination: PaginationResponse;
+};
 
 export interface AuthUser {
   id: string;
@@ -250,6 +274,22 @@ export class ApiClient {
   }
   deactivateCustomer(id: string): Promise<ApiEnvelope<CustomerResponse>> {
     return this.patch<ApiEnvelope<CustomerResponse>>('/customers/' + encodeURIComponent(id) + '/deactivate');
+  }
+  listSuppliers(params: { page?: number; limit?: number; search?: string;
+    status?: 'active' | 'inactive' } = {}): Promise<SupplierListResponse> {
+    return this.get<SupplierListResponse>('/suppliers', { params });
+  }
+  getSupplier(id: string): Promise<ApiEnvelope<SupplierResponse>> {
+    return this.get<ApiEnvelope<SupplierResponse>>('/suppliers/' + encodeURIComponent(id));
+  }
+  createSupplier(request: CreateSupplierRequest): Promise<ApiEnvelope<SupplierResponse>> {
+    return this.post<ApiEnvelope<SupplierResponse>>('/suppliers', request);
+  }
+  updateSupplier(id: string, request: UpdateSupplierRequest): Promise<ApiEnvelope<SupplierResponse>> {
+    return this.put<ApiEnvelope<SupplierResponse>>('/suppliers/' + encodeURIComponent(id), request);
+  }
+  deactivateSupplier(id: string): Promise<ApiEnvelope<SupplierResponse>> {
+    return this.patch<ApiEnvelope<SupplierResponse>>('/suppliers/' + encodeURIComponent(id) + '/deactivate');
   }
 }
 export const apiClient = new ApiClient();
