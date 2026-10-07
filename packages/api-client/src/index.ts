@@ -157,6 +157,15 @@ export class ApiClient {
     return this.refreshPromise;
   }
   private handleError(error: AxiosError): ApiError {
+    if (!error.response && (globalThis as { __DEV__?: boolean }).__DEV__) {
+      // Only transport metadata: never log the request body, headers or tokens.
+      console.warn('API connection failed', {
+        baseURL: error.config?.baseURL,
+        code: error.code,
+        timeout: error.config?.timeout,
+        kind: error.code === 'ECONNABORTED' ? 'timeout' : 'network',
+      });
+    }
     const body = error.response?.data as
       { error?: { code?: string; message?: string } } | undefined;
     return new ApiError(

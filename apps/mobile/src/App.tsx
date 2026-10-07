@@ -2,33 +2,39 @@ import React, { useState } from 'react';
 import { NativeModules, Platform, Pressable, StatusBar, Text, TextInput, View } from 'react-native';
 import { ERPApplication, colors } from '@erp/ui';
 import { configureApiBaseURL } from '@erp/api-client';
-import { getMobileApiBaseURL } from './config/api';
+import { initializeMobileApi, normalizeMobileApiURL } from './config/api';
+
+const isLocal = NativeModules.ERPBuildMode?.isLocal === true;
+let initialApiUrl = '';
+let initialApiError = '';
+try {
+  initialApiUrl = initializeMobileApi({
+    isDev: __DEV__,
+    isLocal,
+    remoteUrl: NativeModules.ERPBuildMode?.apiBaseUrl,
+    platform: Platform.OS as 'android' | 'ios' | 'web',
+  });
+} catch (error) {
+  initialApiError = error instanceof Error ? error.message : 'Configuración de API inválida.';
+}
 
 function DeveloperApiSettings() {
   const [expanded, setExpanded] = useState(false);
-  const [url, setUrl] = useState(getMobileApiBaseURL(true));
-  const [activeUrl, setActiveUrl] = useState(getMobileApiBaseURL(true));
+  const [url, setUrl] = useState(initialApiUrl);
+  const [activeUrl, setActiveUrl] = useState(initialApiUrl);
   const [error, setError] = useState('');
 
   const apply = () => {
-    const candidate = url.trim().replace(/\/$/, '');
-    const match = /^http:\/\/(\d{1,3}(?:\.\d{1,3}){3}):3000\/api\/v1$/.exec(candidate);
-    const octets = match?.[1].split('.').map(Number) || [];
-    const isPrivate =
-      octets.length === 4 &&
-      octets.every((octet) => octet <= 255) &&
-      (octets[0] === 10 ||
-        (octets[0] === 192 && octets[1] === 168) ||
-        (octets[0] === 172 && octets[1] >= 16 && octets[1] <= 31));
-    const isHttps = /^https:\/\/[a-z0-9.-]+(?::\d{2,5})?\/api\/v1$/i.test(candidate);
-    if (!isPrivate && !isHttps) {
-      setError('Usa una IP privada local o una URL HTTPS terminada en /api/v1');
-      return;
+    try {
+      const candidate = normalizeMobileApiURL(url, __DEV__ || isLocal);
+      configureApiBaseURL(candidate);
+      setUrl(candidate);
+      setActiveUrl(candidate);
+      setError('');
+      setExpanded(false);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'URL inválida.');
     }
-    configureApiBaseURL(candidate);
-    setActiveUrl(candidate);
-    setError('');
-    setExpanded(false);
   };
 
   return (
@@ -48,7 +54,7 @@ function DeveloperApiSettings() {
             Emulador: 10.0.2.2 · Teléfono: IP LAN del PC · Remoto: HTTPS
           </Text>
           <TextInput
-            accessibilityLabel="URL de la API local"
+            accessibilityLabel="URL de la API"
             value={url}
             onChangeText={setUrl}
             autoCapitalize="none"
@@ -66,12 +72,12 @@ function DeveloperApiSettings() {
           {error ? <Text style={{ color: '#B42318' }}>{error}</Text> : null}
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Aplicar servidor local"
+            accessibilityLabel="Aplicar servidor"
             onPress={apply}
             style={{ backgroundColor: colors.primary, borderRadius: 8, padding: 12 }}
           >
             <Text style={{ color: '#FFFFFF', textAlign: 'center', fontWeight: '700' }}>
-              Aplicar servidor local
+              Aplicar servidor
             </Text>
           </Pressable>
         </View>
@@ -81,14 +87,29 @@ function DeveloperApiSettings() {
 }
 
 export default function App() {
+  if (initialApiError) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: 'center',
+          padding: 24,
+          backgroundColor: colors.background,
+        }}
+      >
+        <Text style={{ color: '#B42318', fontSize: 18, fontWeight: '700' }}>
+          Error de configuración de API
+        </Text>
+        <Text style={{ color: colors.textPrimary, marginTop: 12 }}>{initialApiError}</Text>
+      </View>
+    );
+  }
   return (
     <>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} translucent={false} />
       <ERPApplication
         developerSettings={
-          (__DEV__ || NativeModules.ERPBuildMode?.isLocal === true) && Platform.OS === 'android' ? (
-            <DeveloperApiSettings />
-          ) : undefined
+          (__DEV__ || isLocal) && Platform.OS === 'android' ? <DeveloperApiSettings /> : undefined
         }
       />
     </>

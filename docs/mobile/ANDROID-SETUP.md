@@ -22,7 +22,7 @@ npm.cmd run typecheck -w apps/mobile
 
 Ejecuta la instalación desde la raíz del monorepo antes de abrir el proyecto Android en Studio. `settings.gradle` incluye `../../../node_modules/@react-native/gradle-plugin`; si esa carpeta falta, el Sync falla antes de autolinking. React Native 0.86.3 ya declara el plugin 0.86.3 y el lockfile lo fija; no necesita una dependencia duplicada. Conserva `.env` local para el backend. No pongas credenciales MongoDB, JWT ni secretos dentro del APK. El backend sigue la cadena Android → REST API → Express → MongoDB.
 
-## Debug con Metro
+## Debug
 
 ```powershell
 npm.cmd run backend:dev
@@ -31,7 +31,7 @@ npm.cmd run mobile:start
 npm.cmd run mobile:android
 ```
 
-`assembleDebug` genera `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk`, sin `index.android.bundle`; requiere Metro en 8081. Para un teléfono físico conectado por USB puede requerirse `adb reverse tcp:8081 tcp:8081` y la IP LAN del PC en el selector **Servidor de desarrollo**.
+`assembleDebug` genera `apps/mobile/android/app/build/outputs/apk/debug/app-debug.apk` con `index.android.bundle` por la configuración `debuggableVariants = []`. El servidor API inicial de debug Android es `http://10.0.2.2:3000/api/v1`; en un teléfono físico cambia **Servidor de desarrollo** a la IP LAN o al endpoint HTTPS de Render. La configuración actual abre desde el bundle y `MainApplication` fija `useDevSupport=false`, por lo que no necesita Metro para iniciar.
 
 ## APK local con JavaScript incluido
 
@@ -40,14 +40,15 @@ npm.cmd run mobile:android:local
 adb install -r apps/mobile/android/app/build/outputs/apk/local/app-local.apk
 ```
 
-`assembleLocal` genera `app-local.apk`, firmado con la clave debug estándar exclusivamente para pruebas, con bundle Hermes y assets. Llegó al login sin Metro en emuladores de 4 y 16 KB y en un teléfono SM_A266M de 4 KB (Android API 36) en pruebas anteriores. La autenticación con backend real sigue pendiente. El script usa el directorio nativo corto que configura Gradle en Windows, sin crear una letra de unidad. Los APK permanecen ignorados por Git. En macOS/Linux usa el wrapper Gradle directamente.
+`assembleLocal` genera `app-local.apk`, firmado con la clave debug estándar exclusivamente para pruebas, con bundle Hermes y assets. Llegó al login sin Metro en emuladores de 4 y 16 KB y en un teléfono SM_A266M de 4 KB (Android API 36) en pruebas anteriores. El 2026-10-07 se instaló el APK local en un teléfono físico sin Metro ni `adb reverse`; el login del administrador llegó al panel con el backend real de Render. El script usa el directorio nativo corto que configura Gradle en Windows, sin crear una letra de unidad. Los APK permanecen ignorados por Git. En macOS/Linux usa el wrapper Gradle directamente.
 
-Para probar independencia de Metro: detén Metro, confirma que 8081 no escucha, elimina cualquier `adb reverse`, instala el APK local, abre la app y verifica que llegue a login sin `Unable to load script`. Esto pasó en ambos AVD y la pantalla de login se observó también en el teléfono físico. Después prueba login válido e inválido, dashboard, logout y Logcat con backend real; esa fase sigue pendiente.
+Para probar independencia de Metro: detén Metro, confirma que 8081 no escucha, elimina cualquier `adb reverse`, instala el APK local, abre la app y verifica que llegue a login sin `Unable to load script`. Esto pasó en ambos AVD y la pantalla de login se observó también en el teléfono físico. El login válido y el dashboard se comprobaron con Render el 2026-10-07; login inválido y logout quedan fuera de esa comprobación.
 
-## API local
+## API móvil y Render
 
-La URL inicial en Android local/debug es `http://10.0.2.2:3000/api/v1` para emulador. En teléfono, abre **Servidor de desarrollo** y pon `http://IP_LAN_PC:3000/api/v1`, con PC y teléfono en la misma red privada y backend escuchando en una interfaz accesible. Se acepta también una URL HTTPS terminada en `/api/v1`; el selector no se presenta en release. El HTTP sin cifrar se habilita solo en las variantes local y debug. La configuración de release conserva HTTPS y no es un paquete de producción.
+`debug` Android empieza con `http://10.0.2.2:3000/api/v1` para el emulador. En un teléfono físico, **Servidor de desarrollo** permite una IP LAN privada o `https://repositorio-sistema-erp-backend.onrender.com/api/v1`. Las variantes `local` y `release` empiezan con ese endpoint HTTPS de Render sin intervención manual. El valor público está en `apps/mobile/android/gradle.properties` y se puede sustituir en una build con `-PmobileApiBaseUrl=https://otro-backend.example.com/api/v1`. Gradle bloquea `local` y `release` si falta la URL; la app valida HTTPS, ruta `/api/v1` y placeholders. Nunca incluyas claves ni contraseñas en esta propiedad.
 
+Para verificar el backend antes del login, consulta `GET https://repositorio-sistema-erp-backend.onrender.com/health` y `/ready`; el diagnóstico opcional `checkMobileBackendHealth` usa el cliente compartido. El login permite hasta 90 segundos porque un servicio Render Free puede tardar cerca de un minuto en despertar; las demás solicitudes conservan 30 segundos. El HTTP sin cifrar sigue limitado a `debug` y `local` por sus manifests de red existentes, solo para servidores de desarrollo.
 ## 16 KB y diagnóstico
 
 El APK local RN 0.86.3 fue inspeccionado: 11/11 `.so` arm64 y 11/11 x86_64 tienen ELF de 16 KB o superior, y `zipalign -c -P 16 -v 4` pasó. Se conservaron las cuatro ABI. El AVD 16 KB devolvió `PAGE_SIZE=16384` y el Pixel_8 estándar `4096`; ambos instalaron y abrieron el APK sin advertencia ni `FATAL EXCEPTION` observada. Aún faltan Android Studio APK Analyzer y una prueba en teléfono físico de 16 KB; el teléfono probado aquí usa páginas de 4 KB.

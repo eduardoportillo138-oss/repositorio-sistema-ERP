@@ -83,6 +83,13 @@ def enableProguardInReleaseBuilds = false
  */
 def jscFlavor = 'org.webkit:android-jsc:+'
 
+// Public endpoint, supplied by gradle.properties or overridden with -PmobileApiBaseUrl.
+def mobileApiBaseUrl = providers.gradleProperty("mobileApiBaseUrl")
+    .orElse("").get().trim()
+if (mobileApiBaseUrl && !(mobileApiBaseUrl ==~ /^https:\/\/[A-Za-z0-9.-]+(?::[0-9]+)?(?:\/api\/v1)?\/?$/)) {
+    throw new GradleException("mobileApiBaseUrl must be an HTTPS API URL without credentials or query parameters")
+}
+
 android {
     def nativeStage = System.getenv("ERP_ANDROID_CXX_STAGE")
     if (!nativeStage && System.getProperty("os.name").toLowerCase().contains("windows")) {
@@ -112,6 +119,7 @@ android {
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
+        buildConfigField "String", "MOBILE_API_BASE_URL", "\"${mobileApiBaseUrl}\""
         externalNativeBuild {
             cmake {
                 arguments "-DCMAKE_SHARED_LINKER_FLAGS=-Wl,-z,max-page-size=16384",
@@ -154,5 +162,14 @@ dependencies {
         implementation("com.facebook.react:hermes-android")
     } else {
         implementation jscFlavor
+    }
+}
+
+// Prevent creating a standalone APK that cannot connect to its backend.
+tasks.matching { it.name == "preLocalBuild" || it.name == "preReleaseBuild" }.configureEach {
+    doFirst {
+        if (!mobileApiBaseUrl) {
+            throw new GradleException("Set mobileApiBaseUrl to the real HTTPS backend URL before building local/release")
+        }
     }
 }
