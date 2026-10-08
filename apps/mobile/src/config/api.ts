@@ -101,8 +101,17 @@ export function initializeMobileApi(options: MobileApiOptions): string {
   return url;
 }
 
-/** Optional pre-login diagnostic using the shared API client and public liveness route. */
-export function checkMobileBackendHealth(baseUrl: string): Promise<unknown> {
-  const healthUrl = new URL('/health', normalizeMobileApiURL(baseUrl)).toString();
-  return apiClient.get(healthUrl);
+/** Anonymous liveness diagnostic at the Worker root, derived from the configured API URL. */
+export function checkMobileBackendHealth(
+  baseUrl: string,
+): Promise<{ status?: number; success: boolean; errorCode?: string }> {
+  const healthUrl = normalizeMobileApiURL(baseUrl).replace(/\/api\/v1$/, '/health');
+  return apiClient.checkHealth(healthUrl).then((result) => {
+    console.info('Mobile backend health', {
+      status: result.status,
+      success: result.success,
+      errorCode: result.errorCode,
+    });
+    return result;
+  });
 }

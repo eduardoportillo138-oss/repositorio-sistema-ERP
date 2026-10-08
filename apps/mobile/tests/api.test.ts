@@ -13,6 +13,7 @@ jest.mock('@erp/api-client', () => ({
   configureApiBaseURL: jest.fn(),
   apiClient: {
     get: jest.fn().mockResolvedValue({ success: true }),
+    checkHealth: jest.fn().mockResolvedValue({ status: 200, success: true }),
     login: jest.fn().mockResolvedValue({ success: true }),
   },
 }));
@@ -105,9 +106,12 @@ test('initialization configures gateway on debug and standalone before use', () 
   expect(configureApiBaseURL).toHaveBeenNthCalledWith(2, remoteUrl);
 });
 
-test('health diagnostic uses the shared client at the service root', async () => {
-  await checkMobileBackendHealth(remoteUrl);
-  expect(apiClient.get).toHaveBeenCalledWith(
+test('health diagnostic uses the anonymous client at the Worker root', async () => {
+  await expect(checkMobileBackendHealth(remoteUrl)).resolves.toEqual({
+    status: 200,
+    success: true,
+  });
+  expect(apiClient.checkHealth).toHaveBeenCalledWith(
     'https://erp-api-gateway.eduardoportillo138.workers.dev/health',
   );
 });
@@ -117,6 +121,9 @@ test('mobile login uses the initialized remote client', async () => {
   await authAPI.login('person@example.com', 'private');
   expect(configureApiBaseURL).toHaveBeenCalledWith(remoteUrl);
   expect(apiClient.login).toHaveBeenCalledTimes(1);
+  expect((configureApiBaseURL as jest.Mock).mock.invocationCallOrder[0]).toBeLessThan(
+    (apiClient.login as jest.Mock).mock.invocationCallOrder[0],
+  );
   expect(apiClient.login).toHaveBeenCalledWith({
     email: 'person@example.com',
     password: 'private',

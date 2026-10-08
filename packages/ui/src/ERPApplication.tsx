@@ -255,7 +255,13 @@ function ModuleScreen({ module }: { module: (typeof navigationModules)[number] }
     </View>
   );
 }
-function Workspace({ developerSettings }: { developerSettings?: React.ReactNode }) {
+function Workspace({
+  developerSettings,
+  checkBackendHealth,
+}: {
+  developerSettings?: React.ReactNode;
+  checkBackendHealth?: () => Promise<{ status?: number; success: boolean; errorCode?: string }>;
+}) {
   const { user, isAuthenticated, logout } = useAuth();
   const { width } = useWindowDimensions(),
     insets = useSafeAreaInsets();
@@ -290,7 +296,7 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
   if (!isAuthenticated)
     return (
       <View style={{ flex: 1 }}>
-        <LoginScreen developerSettings={developerSettings} />
+        <LoginScreen developerSettings={developerSettings} checkBackendHealth={checkBackendHealth} />
         {logoutError && (
           <View style={{ padding: 16 }}>
             <ErrorState message={logoutError} />
@@ -517,11 +523,17 @@ function Workspace({ developerSettings }: { developerSettings?: React.ReactNode 
     </View>
   );
 }
-export function ERPApplication({ developerSettings }: { developerSettings?: React.ReactNode }) {
+export function ERPApplication({
+  developerSettings,
+  checkBackendHealth,
+}: {
+  developerSettings?: React.ReactNode;
+  checkBackendHealth?: () => Promise<{ status?: number; success: boolean; errorCode?: string }>;
+}) {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <Workspace developerSettings={developerSettings} />
+        <Workspace developerSettings={developerSettings} checkBackendHealth={checkBackendHealth} />
       </AuthProvider>
     </SafeAreaProvider>
   );

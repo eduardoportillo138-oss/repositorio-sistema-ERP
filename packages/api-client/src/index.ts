@@ -501,7 +501,12 @@ export class ApiClient {
     this.client = axios.create(settings);
     this.refreshClient = axios.create(settings);
     this.client.interceptors.request.use((request: InternalAxiosRequestConfig) => {
-      if (getAccessToken()) request.headers.Authorization = 'Bearer ' + getAccessToken();
+      // A stale session must never put a bearer token on a credential request.
+      if (/^\/auth\/login(?:\?|$)/.test(request.url || '')) {
+        delete request.headers.Authorization;
+      } else if (getAccessToken()) {
+        request.headers.Authorization = 'Bearer ' + getAccessToken();
+      }
       return request;
     });
     this.client.interceptors.response.use(
@@ -544,7 +549,10 @@ export class ApiClient {
           password: credentials.password,
           ...(credentials.companyId?.trim() ? { companyId: credentials.companyId.trim() } : {}),
         },
-        { timeout: 90000 },
+        {
+          timeout: 90000,
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        },
       );
     } catch (error) {
       if (error instanceof ApiError) {
@@ -556,6 +564,24 @@ export class ApiClient {
           throw new ApiError('No se pudo conectar con el servidor.', undefined, error.code);
       }
       throw error;
+    }
+  }
+  async checkHealth(url: string): Promise<{ status?: number; success: boolean; errorCode?: string }> {
+    try {
+      // The refresh transport has no bearer interceptor. Health must stay anonymous.
+      const response = await this.refreshClient.get<{ success?: boolean }>(url, {
+        timeout: 30000,
+        headers: { Accept: 'application/json' },
+      });
+      const success = response.status === 200 && response.data?.success === true;
+      return {
+        status: response.status,
+        success,
+        ...(success ? {} : { errorCode: 'INVALID_HEALTH_RESPONSE' }),
+      };
+    } catch (cause) {
+      const error = cause instanceof ApiError ? cause : this.handleError(cause as AxiosError);
+      return { status: error.status, success: false, errorCode: error.code };
     }
   }
   refreshAccessToken(): Promise<string> {
@@ -585,24 +611,32 @@ export class ApiClient {
     return this.refreshPromise;
   }
   private handleError(error: AxiosError): ApiError {
-    if (!error.response && (globalThis as { __DEV__?: boolean }).__DEV__) {
-      // Only transport metadata: never log the request body, headers or tokens.
-      console.warn('API connection failed', {
-        baseURL: error.config?.baseURL,
-        code: error.code,
-        timeout: error.config?.timeout,
-        kind: error.code === 'ECONNABORTED' ? 'timeout' : 'network',
-      });
-    }
+    const status = error.response?.status;
     const body = error.response?.data as
       { error?: { code?: string; message?: string } } | undefined;
+    const transportMessage = (error.message || '').toLowerCase();
+    const diagnosticCode = status
+      ? status === 502 || status === 503 || status === 504
+        ? 'UPSTREAM_UNAVAILABLE'
+        : 'HTTP_' + status
+      : error.code === 'ECONNABORTED' || error.code === 'ETIMEDOUT'
+        ? 'TIMEOUT'
+        : /enotfound|unable to resolve host|dns/.test(transportMessage)
+          ? 'DNS_ERROR'
+          : /ssl|tls|certificate/.test(transportMessage)
+            ? 'TLS_ERROR'
+            : 'NETWORK_ERROR';
+    // Only diagnostic metadata: no request URL, body, headers or tokens.
+    console.warn('API request failed', {
+      name: error.name,
+      status,
+      code: diagnosticCode,
+    });
     return new ApiError(
       body?.error?.message ||
-        (error.response
-          ? 'No se pudo completar la solicitud'
-          : 'No se pudo conectar con el servidor'),
-      error.response?.status,
-      body?.error?.code,
+        (status ? 'No se pudo completar la solicitud' : 'No se pudo conectar con el servidor'),
+      status,
+      diagnosticCode,
     );
   }
   async get<T = unknown>(url: string, config?: AxiosRequestConfig): Promise<T> {

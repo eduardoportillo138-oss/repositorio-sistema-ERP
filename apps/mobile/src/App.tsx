@@ -3,6 +3,7 @@ import { NativeModules, Platform, Pressable, StatusBar, Text, TextInput, View } 
 import { ERPApplication, colors } from '@erp/ui';
 import { configureApiBaseURL } from '@erp/api-client';
 import {
+  checkMobileBackendHealth,
   initializeMobileApi,
   isMobileDevelopmentBuild,
   normalizeMobileApiURL,
@@ -118,6 +119,7 @@ export default function App() {
     <>
       <StatusBar barStyle="dark-content" backgroundColor={colors.background} translucent={false} />
       <ERPApplication
+        checkBackendHealth={() => checkMobileBackendHealth(initialApiUrl)}
         developerSettings={
           shouldShowDeveloperApiSettings({
             isDev: isDevelopment,

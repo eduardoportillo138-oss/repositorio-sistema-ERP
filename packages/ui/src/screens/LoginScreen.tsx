@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ScrollView,
   View,
@@ -9,23 +9,48 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '@erp/session';
+import { ApiError } from '@erp/api-client';
 import { ERPLogo } from '../components/ERPLogo';
 import { Input } from '../components/Input';
 import { Button } from '../components/Button';
 import { ErrorState } from '../components/DataStates';
 import { colors, radius, typography } from '../tokens';
 
-export function LoginScreen({ developerSettings }: { developerSettings?: React.ReactNode }) {
+export function LoginScreen({
+  developerSettings,
+  checkBackendHealth,
+}: {
+  developerSettings?: React.ReactNode;
+  checkBackendHealth?: () => Promise<{ status?: number; success: boolean; errorCode?: string }>;
+}) {
   const { login, isLoading } = useAuth();
   const [email, setEmail] = useState(''),
     [password, setPassword] = useState(''),
     [companyId, setCompanyId] = useState('');
   const [error, setError] = useState(''),
+    [retryable, setRetryable] = useState(false),
     [showCompany, setShowCompany] = useState(false);
   const wide = useWindowDimensions().width >= 1000;
+  const [healthState, setHealthState] = useState<'checking' | 'ready' | 'error'>(
+    checkBackendHealth ? 'checking' : 'ready',
+  );
+  const checkHealth = useCallback(async () => {
+    if (!checkBackendHealth) return;
+    setHealthState('checking');
+    try {
+      const result = await checkBackendHealth();
+      setHealthState(result.success && result.status === 200 ? 'ready' : 'error');
+    } catch {
+      setHealthState('error');
+    }
+  }, [checkBackendHealth]);
+  useEffect(() => {
+    void checkHealth();
+  }, [checkHealth]);
   const submit = async () => {
-    if (isLoading) return;
+    if (isLoading || healthState !== 'ready') return;
     setError('');
+    setRetryable(false);
     if (!email.trim() || !password) {
       setError('Escribe tu correo y contraseña.');
       return;
@@ -33,7 +58,20 @@ export function LoginScreen({ developerSettings }: { developerSettings?: React.R
     try {
       await login(email, password, companyId);
     } catch (failure) {
-      setError(failure instanceof Error ? failure.message : 'No se pudo iniciar sesión');
+      setRetryable(
+        failure instanceof ApiError &&
+          ['NETWORK_ERROR', 'DNS_ERROR', 'TLS_ERROR', 'TIMEOUT', 'UPSTREAM_UNAVAILABLE'].includes(
+            failure.code || '',
+          ),
+      );
+      if (
+        failure instanceof ApiError &&
+        (failure.code === 'TIMEOUT' || failure.code === 'UPSTREAM_UNAVAILABLE')
+      ) {
+        setError('El servidor tardó en responder. Reintenta.');
+      } else {
+        setError(failure instanceof Error ? failure.message : 'No se pudo iniciar sesión');
+      }
     }
   };
   return (
@@ -126,13 +164,25 @@ export function LoginScreen({ developerSettings }: { developerSettings?: React.R
                 />
               </View>
             )}
-            {error ? <ErrorState message={error} /> : <View style={{ height: 20 }} />}
+            {healthState === 'checking' || isLoading ? (
+              <Text accessibilityRole="alert" style={styles.health}>Cargando servidor...</Text>
+            ) : healthState === 'error' ? (
+              <ErrorState
+                message="No se pudo conectar con el servidor."
+                onRetry={() => void checkHealth()}
+              />
+            ) : error ? (
+              <ErrorState message={error} onRetry={retryable ? () => void submit() : undefined} />
+            ) : (
+              <View style={{ height: 20 }} />
+            )}
             <Button
               title="Iniciar sesión"
               onPress={() => {
                 void submit();
               }}
               loading={isLoading}
+              disabled={healthState !== 'ready'}
             />
             <Text style={styles.help}>
               ¿Necesitas acceso? Contacta al administrador de tu empresa.
@@ -206,6 +256,7 @@ const styles = StyleSheet.create({
   },
   title: { ...typography.Heading2, color: colors.textPrimary, marginBottom: 8 },
   subtitle: { ...typography.Body, color: colors.textSecondary, marginBottom: 28 },
+  health: { color: colors.textSecondary, marginVertical: 12 },
   help: {
     fontSize: 12,
     lineHeight: 19,
