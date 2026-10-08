@@ -75,7 +75,7 @@ export function getMobileApiBaseURL({
   if (!remoteUrl?.trim()) {
     throw new Error('Falta mobileApiBaseUrl para la API móvil.');
   }
-  // Standalone/local and release both start against the configured HTTPS backend.
+  // Standalone/local and release both start against the configured HTTPS gateway.
   return normalizeMobileApiURL(remoteUrl, false);
 }
 

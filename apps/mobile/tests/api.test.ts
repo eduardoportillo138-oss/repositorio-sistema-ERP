@@ -1,4 +1,5 @@
 import { configureApiBaseURL, apiClient } from '@erp/api-client';
+import { authAPI } from '../src/api/client';
 import {
   checkMobileBackendHealth,
   getMobileApiBaseURL,
@@ -10,15 +11,18 @@ import {
 
 jest.mock('@erp/api-client', () => ({
   configureApiBaseURL: jest.fn(),
-  apiClient: { get: jest.fn().mockResolvedValue({ success: true }) },
+  apiClient: {
+    get: jest.fn().mockResolvedValue({ success: true }),
+    login: jest.fn().mockResolvedValue({ success: true }),
+  },
 }));
 
-const remoteUrl = 'https://repositorio-sistema-erp-backend.onrender.com/api/v1';
+const remoteUrl = 'https://erp-api-gateway.eduardoportillo138.workers.dev/api/v1';
 const options = { isDev: false, isLocal: false, remoteUrl, platform: 'android' as const };
 
 beforeEach(() => jest.clearAllMocks());
 
-test('debug, local standalone and release default to the Render endpoint', () => {
+test('debug, local standalone and release default to the Cloudflare gateway', () => {
   expect(getMobileApiBaseURL({ ...options, isDev: true })).toBe(remoteUrl);
   expect(getMobileApiBaseURL({ ...options, isLocal: true })).toBe(remoteUrl);
   expect(getMobileApiBaseURL(options)).toBe(remoteUrl);
@@ -71,7 +75,7 @@ test('developer settings stay hidden unless explicitly enabled in Android debug'
 
 test('normalizes trailing slash and appends the API path', () => {
   expect(normalizeMobileApiURL(remoteUrl + '/')).toBe(remoteUrl);
-  expect(normalizeMobileApiURL('https://repositorio-sistema-erp-backend.onrender.com')).toBe(
+  expect(normalizeMobileApiURL('https://erp-api-gateway.eduardoportillo138.workers.dev')).toBe(
     remoteUrl,
   );
 });
@@ -93,7 +97,7 @@ test('allows private LAN HTTP only in development settings', () => {
   expect(() => normalizeMobileApiURL('https://localhost:3000/api/v1')).toThrow();
 });
 
-test('initialization configures Render on debug and standalone before use', () => {
+test('initialization configures gateway on debug and standalone before use', () => {
   expect(initializeMobileApi({ ...options, isDev: true })).toBe(remoteUrl);
   expect(initializeMobileApi({ ...options, isLocal: true })).toBe(remoteUrl);
   expect(configureApiBaseURL).toHaveBeenCalledTimes(2);
@@ -104,6 +108,18 @@ test('initialization configures Render on debug and standalone before use', () =
 test('health diagnostic uses the shared client at the service root', async () => {
   await checkMobileBackendHealth(remoteUrl);
   expect(apiClient.get).toHaveBeenCalledWith(
-    'https://repositorio-sistema-erp-backend.onrender.com/health',
+    'https://erp-api-gateway.eduardoportillo138.workers.dev/health',
   );
+});
+
+test('mobile login uses the initialized remote client', async () => {
+  initializeMobileApi(options);
+  await authAPI.login('person@example.com', 'private');
+  expect(configureApiBaseURL).toHaveBeenCalledWith(remoteUrl);
+  expect(apiClient.login).toHaveBeenCalledTimes(1);
+  expect(apiClient.login).toHaveBeenCalledWith({
+    email: 'person@example.com',
+    password: 'private',
+    companyId: undefined,
+  });
 });

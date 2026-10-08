@@ -44,12 +44,12 @@ adb install -r apps/mobile/android/app/build/outputs/apk/local/app-local.apk
 
 Para probar independencia de Metro: detén Metro, confirma que 8081 no escucha, elimina cualquier `adb reverse`, instala el APK local, abre la app y verifica que llegue a login sin `Unable to load script`. Esto pasó en ambos AVD y la pantalla de login se observó también en el teléfono físico. El login válido y el dashboard se comprobaron con Render el 2026-10-07; login inválido y logout quedan fuera de esa comprobación.
 
-## API móvil y Render
+## API móvil y Cloudflare
 
-`debug`, `local` y `release` usan por defecto `https://repositorio-sistema-erp-backend.onrender.com/api/v1` sin interacción del usuario. Ninguna de estas APK normales muestra **Servidor de desarrollo**, el campo URL ni **Aplicar servidor**. El valor público sigue en `apps/mobile/android/gradle.properties` y se puede sustituir con `-PmobileApiBaseUrl=https://otro-backend.example.com/api/v1`. Gradle bloquea `local` y `release` si falta la URL; la app valida HTTPS, ruta `/api/v1` y placeholders. Nunca incluyas claves ni contraseñas en esta propiedad.
+`debug`, `local` y `release` usan por defecto `https://erp-api-gateway.eduardoportillo138.workers.dev/api/v1` sin interacción del usuario. Ninguna de estas APK normales muestra **Servidor de desarrollo**, el campo URL ni **Aplicar servidor**. El valor público sigue en `apps/mobile/android/gradle.properties` y se puede sustituir con `-PmobileApiBaseUrl=https://repositorio-sistema-erp-backend.onrender.com/api/v1` solo para rollback explícito. Gradle bloquea `local` y `release` si falta la URL; la app valida HTTPS, ruta `/api/v1` y placeholders. Nunca incluyas claves ni contraseñas en esta propiedad.
 
 Solo para una build debug de desarrollo, `-PshowDeveloperApiSettings=true` habilita el selector manual de IP LAN, `10.0.2.2` o HTTPS. `-PuseLocalEmulatorApi=true` cambia la URL inicial de esa build debug a `http://10.0.2.2:3000/api/v1`. Ambas banderas están desactivadas por defecto y se ignoran en `local` y `release`; `__DEV__` por sí solo no muestra el selector ni activa el emulador.
-Para verificar el backend antes del login, consulta `GET https://repositorio-sistema-erp-backend.onrender.com/health` y `/ready`; el diagnóstico opcional `checkMobileBackendHealth` usa el cliente compartido. El login permite hasta 90 segundos porque un servicio Render Free puede tardar cerca de un minuto en despertar; las demás solicitudes conservan 30 segundos. El HTTP sin cifrar sigue limitado a `debug` y `local` por sus manifests de red existentes, solo para servidores de desarrollo.
+Para verificar el gateway antes del login, consulta `GET https://erp-api-gateway.eduardoportillo138.workers.dev/health` y `/ready`; el diagnóstico opcional `checkMobileBackendHealth` usa el cliente compartido. El login permite hasta 90 segundos porque un servicio Render Free puede tardar cerca de un minuto en despertar; las demás solicitudes conservan 30 segundos. El HTTP sin cifrar sigue limitado a `debug` y `local` por sus manifests de red existentes, solo para servidores de desarrollo.
 
 ## 16 KB y diagnóstico
 
