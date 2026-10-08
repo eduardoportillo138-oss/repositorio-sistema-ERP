@@ -34,6 +34,14 @@ roles del sistema no se editan y no se desactiva un rol con usuarios activos.
 Las pantallas y flujos pasan E2E en desktop, tablet y móvil; la prueba Core de
 roles/sucursales pasa 38 casos.
 
+Fase H: auditoría de cierre alineó las tarjetas del dashboard con las métricas
+que realmente entrega reportes y oculta las gráficas sin una serie disponible.
+La batería completa pasó 51 E2E en desktop, tablet y móvil; después del último
+ajuste visual pasaron además los seis E2E dirigidos al dashboard y Mobile
+Preview. La compilación raíz ejecutada por el harness también pasó. Los gates
+externos siguen siendo la verificación manual de Android Studio/teléfono,
+despliegue y migraciones controladas de MongoDB; no se cambió Atlas ni Render.
+
 ## Corte anterior
 
 Actualizado: 2026-10-02. Commit base inspeccionado: `8685186`. **CURRENT PHASE: CORE HARDENING. Estado: `CORE_HARDENING_CODE_COMPLETE`, `EXTERNAL_GATES_PENDING`.** El cierre productivo requiere los gates externos descritos abajo.

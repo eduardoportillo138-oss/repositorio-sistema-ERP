@@ -42,13 +42,18 @@ test('login: logo, proporción, teclado, errores y responsive', async ({ page },
     fullPage: true,
   });
 });
-test('dashboard real muestra disponibilidad sin inventar métricas', async ({ page }, info) => {
+test('dashboard real muestra métricas y gráficas disponibles', async ({ page }, info) => {
   const errors: string[] = [];
   page.on('pageerror', (error) => errors.push(error.message));
   await login(page);
   await expect(page.getByText('Empresa de prueba A', { exact: true })).toBeVisible();
-  await expect(page.getByText('Próximamente', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText('Tu información, pronto aquí', { exact: true })).toBeVisible();
+  await expect(page.getByText('Ventas del mes', { exact: true })).toBeVisible();
+  await expect(page.getByText('Clientes activos', { exact: true })).toBeVisible();
+  await expect(page.getByText('Productos activos', { exact: true })).toBeVisible();
+  await expect(page.getByText('Ventas en el tiempo', { exact: true })).toBeVisible();
+  await expect(page.getByText('Próximamente', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Gastos', { exact: true })).toHaveCount(0);
+  await expect(page.getByText('Utilidad neta', { exact: true })).toHaveCount(0);
   await noOverflow(page);
   expect(errors).toEqual([]);
   await page.screenshot({
@@ -578,7 +583,8 @@ test('logout revoca también la sesión en el servidor', async ({ page, request 
 });
 test('entrada de Mobile Preview comparte identidad y navegación', async ({ page }, info) => {
   await login(page, 'http://127.0.0.1:4174');
-  await expect(page.getByText('Próximamente', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Ventas del mes', { exact: true })).toBeVisible();
+  await expect(page.getByText('Ventas en el tiempo', { exact: true })).toBeVisible();
   if (info.project.name === 'mobile')
     await expect(page.getByRole('button', { name: 'Más módulos' })).toBeVisible();
   await noOverflow(page);

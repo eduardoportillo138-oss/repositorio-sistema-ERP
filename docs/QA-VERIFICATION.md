@@ -1,5 +1,17 @@
 # Verificación QA actual
 
+## Cierre de dashboard — 2026-10-07
+
+En `main` basado en `4d90e82`, el harness `node scripts/run-e2e.cjs` compiló
+paquetes, backend, web y preview móvil y pasó **51 E2E** en Chromium para
+desktop, tablet y móvil. Tras el ajuste final de distribución de tarjetas,
+`node scripts/run-e2e.cjs -g "dashboard real|Mobile Preview"` volvió a compilar
+y pasó **6 E2E**. El dashboard ahora muestra solo las métricas y series que
+devuelve el API. La compilación conserva las advertencias habituales de
+directivas `use client` de React Native Web y del bundle web mayor a 500 kB.
+
+## Evidencia histórica — 2026-10-02
+
 **Verified at:** 2026-10-02 10:34 America/Mexico_City. **Commit:** `868518619e030976d4f6fe4131eb6df28ccf5b45` (base; las pruebas se ejecutaron sobre los cambios del working tree de esta fase). **Environment:** Windows/OneDrive, Node 24.21.0, npm 11.19.0, MongoDB 7.0.24 temporal en replica set, Chromium de Playwright. Ninguna prueba usa Atlas ni la URI del `.env` local.
 
 | Comando / verificación                                               |     Exit code | Resultado actual                                                                                                                                   |

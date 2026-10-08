@@ -12,9 +12,9 @@ interface DashboardData {
   series?: Partial<Record<string, Array<{ label: string; value: number }>>>;
 }
 const metrics = [
-  { key: 'sales', title: 'Ventas', permission: 'sales.view' },
-  { key: 'expenses', title: 'Gastos', permission: 'finances.view' },
-  { key: 'netProfit', title: 'Utilidad neta', permission: 'finances.view' },
+  { key: 'sales', title: 'Ventas del mes', permission: 'sales.view' },
+  { key: 'customers', title: 'Clientes activos', permission: 'customers.view' },
+  { key: 'products', title: 'Productos activos', permission: 'products.view' },
   { key: 'suppliers', title: 'Proveedores', permission: 'suppliers.view' },
   { key: 'invoices', title: 'Facturas de venta', permission: 'sales.view' },
   { key: 'leads', title: 'Leads', permission: 'reports.view' },
@@ -23,9 +23,6 @@ const metrics = [
 const charts = [
   { key: 'sales', title: 'Ventas en el tiempo', permission: 'sales.view' },
   { key: 'purchases', title: 'Compras en el tiempo', permission: 'purchases.view' },
-  { key: 'incomeExpenses', title: 'Ingresos y gastos', permission: 'finances.view' },
-  { key: 'inventory', title: 'Inventario', permission: 'inventory.view' },
-  { key: 'crm', title: 'CRM', permission: 'reports.view' },
 ];
 export function DashboardScreen({
   modules = [],
@@ -71,10 +68,12 @@ export function DashboardScreen({
       active = false;
     };
   }, [attempt, user?.companyId, user?.permissions.join(',')]);
-  const visibleCharts = charts.filter((entry) => permitted(entry.permission));
+  const visibleCharts = charts.filter(
+    (entry) => permitted(entry.permission) && Array.isArray(data?.series?.[entry.key]),
+  );
   const selected = visibleCharts.find((entry) => entry.key === chart) || visibleCharts[0];
   const metricCards = metrics.filter((metric) => permitted(metric.permission));
-  const mainKeys = ['sales', 'expenses', 'netProfit'];
+  const mainKeys = ['sales', 'customers', 'products'];
   const renderMetric = (metric: (typeof metrics)[number]) => {
     const value = data?.metrics?.[metric.key];
     return (
