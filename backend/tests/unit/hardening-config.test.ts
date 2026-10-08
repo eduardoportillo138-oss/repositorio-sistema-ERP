@@ -27,7 +27,7 @@ test('Render instala tooling de build y web usa VITE_API_BASE_URL', () => {
   );
   expect(render).toContain('healthCheckPath: /health');
   const entry = fs.readFileSync(path.join(root, 'apps/web/src/index.tsx'), 'utf8');
-  expect(entry).toContain("import.meta.env.VITE_API_BASE_URL || '/api/v1'");
+  expect(entry).toContain("initializeWebApi(import.meta.env.VITE_API_BASE_URL, import.meta.env.PROD)");
 });
 
 test('la auditoría fallida impide que auditedMutation confirme éxito', async () => {

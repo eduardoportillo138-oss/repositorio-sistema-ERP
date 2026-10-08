@@ -10,7 +10,7 @@ El Blueprint [render.yaml](render.yaml) publica primero el backend: **GitHub →
 
 Configura en el panel de Render `MONGODB_URI`, `MONGODB_DB_NAME`, `JWT_SECRET`, `JWT_REFRESH_SECRET` y `CORS_ORIGIN`. Los secretos deben ser nuevos y distintos. **La credencial de Atlas que figuró en el historial de Git debe rotarse y revocarse antes de desplegar**; corregir la plantilla no borra ese historial. Permite en Atlas los rangos de salida reales del servicio Render. `CORS_ORIGIN` debe contener el origen HTTPS exacto del frontend, nunca `*`.
 
-La web Vite se publica en una segunda etapa como sitio estático. Usa `VITE_API_BASE_URL=<URL real del backend>/api/v1` en el build web, configura `CORS_ORIGIN` con la URL real del sitio y verifica login y dashboard. Los módulos que devuelven 501 continúan en desarrollo. Consulta la [guía de despliegue, validación y rollback](docs/DEPLOYMENT-RENDER.md). No se ha declarado una URL de servicio hasta comprobar un despliegue real.
+La web Vite se publica en una segunda etapa como sitio estático. Usa `VITE_API_BASE_URL=https://erp-api-gateway.eduardoportillo138.workers.dev/api/v1` en el build web, configura `CORS_ORIGIN` con la URL real del sitio y verifica login y dashboard. Los módulos que devuelven 501 continúan en desarrollo. Consulta la [guía de despliegue, validación y rollback](docs/DEPLOYMENT-RENDER.md). La URL del gateway se configura en el build web; verifica el login desplegado tras cada cambio.
 
 Monorepo TypeScript con API Express/Mongoose y una interfaz compartida en React Native y React Native Web.
 

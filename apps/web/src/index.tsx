@@ -1,8 +1,20 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { configureApiBaseURL } from '@erp/api-client';
 import App from './App';
+import { initializeWebApi } from './config/api';
 import './styles/base.css';
-configureApiBaseURL(import.meta.env.VITE_API_BASE_URL || '/api/v1');
+
 const element = document.getElementById('root');
-if (element) createRoot(element).render(<App />);
+if (element) {
+  const root = createRoot(element);
+  try {
+    initializeWebApi(import.meta.env.VITE_API_BASE_URL, import.meta.env.PROD);
+    root.render(<App />);
+  } catch {
+    root.render(
+      <main role="alert" style={{ padding: 24 }}>
+        Error de configuración: falta una URL de API HTTPS válida terminada en /api/v1.
+      </main>,
+    );
+  }
+}
