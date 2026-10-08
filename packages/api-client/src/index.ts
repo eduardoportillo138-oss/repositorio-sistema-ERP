@@ -448,6 +448,11 @@ export interface ApiClientConfig {
   baseURL?: string;
   timeout?: number;
 }
+export interface LoginCredentials {
+  email: string;
+  password: string;
+  companyId?: string;
+}
 export class ApiError extends Error {
   constructor(
     message: string,
@@ -526,8 +531,32 @@ export class ApiClient {
     );
   }
   setBaseURL(baseURL: string) {
-    this.client.defaults.baseURL = baseURL;
-    this.refreshClient.defaults.baseURL = baseURL;
+    const normalized = baseURL.replace(/\/+$/, '');
+    this.client.defaults.baseURL = normalized;
+    this.refreshClient.defaults.baseURL = normalized;
+  }
+  async login(credentials: LoginCredentials): Promise<ApiEnvelope<TokenResponse>> {
+    try {
+      return await this.post<ApiEnvelope<TokenResponse>>(
+        '/auth/login',
+        {
+          email: credentials.email.trim().toLowerCase(),
+          password: credentials.password,
+          ...(credentials.companyId?.trim() ? { companyId: credentials.companyId.trim() } : {}),
+        },
+        { timeout: 90000 },
+      );
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.status === 404)
+          throw new ApiError('No se encontró la ruta de autenticación configurada.', 404, error.code);
+        if (error.status === 401)
+          throw new ApiError('Credenciales inválidas.', 401, error.code);
+        if (!error.status)
+          throw new ApiError('No se pudo conectar con el servidor.', undefined, error.code);
+      }
+      throw error;
+    }
   }
   refreshAccessToken(): Promise<string> {
     if (this.refreshPromise) return this.refreshPromise;

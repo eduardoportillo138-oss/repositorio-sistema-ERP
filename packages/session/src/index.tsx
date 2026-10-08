@@ -2,8 +2,6 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import {
   apiClient,
   AuthUser,
-  ApiEnvelope,
-  TokenResponse,
   setTokens,
   getAccessToken,
   getStoredUser,
@@ -36,16 +34,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = useCallback(async (email: string, password: string, companyId?: string) => {
     setLoading(true);
     try {
-      // Render Free can take about a minute to wake; extend only the login request.
-      const envelope = await apiClient.post<ApiEnvelope<TokenResponse>>(
-        '/auth/login',
-        {
-          email: email.trim().toLowerCase(),
-          password,
-          ...(companyId?.trim() ? { companyId: companyId.trim() } : {}),
-        },
-        { timeout: 90000 },
-      );
+      const envelope = await apiClient.login({ email, password, companyId });
       const pair = envelope.data;
       if (!envelope.success || !pair?.user || !pair.accessToken || !pair.refreshToken)
         throw new Error('Respuesta de sesión inválida');
