@@ -5,6 +5,9 @@ import { IUserDocument } from '../models/user.model';
 import { userRepository } from '../repositories/user.repository';
 import { isValidEmail, isValidObjectId, isValidPassword, pagination } from '../utils/validation';
 import { auditedMutation } from './auditedMutation';
+import { config } from '../config/env';
+import { logger } from '../utils/logger';
+import { notifyUserCreated } from './user-created-notification.service';
 import {
   AuthorizationError,
   ConflictError,
@@ -43,6 +46,7 @@ async function validRole(roleId: unknown, companyId: string, allowPlatformRole =
   if (role.status !== 'active') throw new ValidationError('Rol inactivo');
   if (!allowPlatformRole && role.permissions?.some((p) => p.startsWith('platform.')))
     throw new AuthorizationError('Rol de plataforma reservado');
+  return role;
 }
 
 async function validBranch(branchId: unknown, companyId: string) {
@@ -51,6 +55,7 @@ async function validBranch(branchId: unknown, companyId: string) {
   const branch = await Branch.findOne({ _id: branchId, companyId }).exec();
   if (!branch) throw new NotFoundError('Sucursal');
   if (branch.status !== 'active') throw new ValidationError('Sucursal inactiva');
+  return branch;
 }
 
 export const userService = {
@@ -106,8 +111,8 @@ export const userService = {
     ) {
       throw new ValidationError('Email, nombre o contraseña inválidos');
     }
-    await validRole(roleId, actor.companyId, actor.isPlatformAdmin === true);
-    await validBranch(branchId, actor.companyId);
+    const role = await validRole(roleId, actor.companyId, actor.isPlatformAdmin === true);
+    const branch = await validBranch(branchId, actor.companyId);
     try {
       const user = await auditedMutation(
         async (session) =>
@@ -135,7 +140,21 @@ export const userService = {
           device,
         }),
       );
-      return publicUser(user);
+      const createdUser = publicUser(user);
+      if (config.userCreatedEmailNotifications) {
+        try {
+          await notifyUserCreated({
+            createdUser,
+            actorUserId: actor.userId,
+            roleName: role.name,
+            branchName: branch?.name,
+          });
+          logger.info('USER_CREATED_EMAIL_NOTIFICATION_SENT', { userId: createdUser.id });
+        } catch {
+          logger.error('USER_CREATED_EMAIL_NOTIFICATION_FAILED', { userId: createdUser.id });
+        }
+      }
+      return createdUser;
     } catch (error) {
       if ((error as { code?: number }).code === 11000)
         throw new ConflictError('El email ya existe en la empresa');

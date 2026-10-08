@@ -25,9 +25,29 @@ export const config = {
   enableBranches: process.env.ENABLE_BRANCHES === 'true',
   enableWarehouses: process.env.ENABLE_WAREHOUSES === 'true',
   enableMfa: process.env.ENABLE_MFA === 'true',
+  resendApiKey: process.env.RESEND_API_KEY || '',
+  emailFrom: process.env.EMAIL_FROM || '',
+  adminAlertEmail: process.env.ADMIN_ALERT_EMAIL || '',
+  userCreatedEmailNotifications: process.env.USER_CREATED_EMAIL_NOTIFICATIONS === 'true',
 };
 
 export function validateConfig(): void {
+  if (
+    process.env.USER_CREATED_EMAIL_NOTIFICATIONS &&
+    !['true', 'false'].includes(process.env.USER_CREATED_EMAIL_NOTIFICATIONS)
+  ) {
+    throw new Error('USER_CREATED_EMAIL_NOTIFICATIONS debe ser true o false');
+  }
+  if (config.userCreatedEmailNotifications) {
+    const missing = [
+      ['RESEND_API_KEY', config.resendApiKey],
+      ['EMAIL_FROM', config.emailFrom],
+      ['ADMIN_ALERT_EMAIL', config.adminAlertEmail],
+    ]
+      .filter(([, value]) => !value?.trim())
+      .map(([name]) => name);
+    if (missing.length) throw new Error(`Variables de entorno requeridas: ${missing.join(', ')}`);
+  }
   if (config.jwtSecret && config.jwtSecret === config.jwtRefreshSecret)
     throw new Error('JWT secrets deben ser distintos');
   if (
